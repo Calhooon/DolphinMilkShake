@@ -2,6 +2,11 @@
 *.pid
 *.log
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+
 # macOS
 .DS_Store
 
@@ -10,3 +15,11 @@
 .vscode/
 *.swp
 *.swo
+
+# Node (Mission Control UI)
+node_modules/
+dist/
+
+# Wallet data (never commit keys)
+*.db
+*.key

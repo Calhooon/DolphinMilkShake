@@ -1,0 +1,180 @@
+{
+  "description": "Pre-seeded research questions for the DolphinSense intelligence pipeline. Captain loads these at startup and cycles through them, generating emergent questions along the way.",
+  "questions": [
+    {
+      "id": "seed-01",
+      "question": "Which crypto communities are making the most noise about AI agents and x402 micropayments?",
+      "sources": ["reddit", "x_search", "hn"],
+      "priority": "high",
+      "category": "ai_crypto_intersection"
+    },
+    {
+      "id": "seed-02",
+      "question": "What are the trending topics on Hacker News in the last 6 hours?",
+      "sources": ["hn"],
+      "priority": "high",
+      "category": "tech_trends"
+    },
+    {
+      "id": "seed-03",
+      "question": "What is the sentiment around BSV across Reddit, X, and tech news?",
+      "sources": ["reddit", "x_search", "rss"],
+      "priority": "high",
+      "category": "bsv_ecosystem"
+    },
+    {
+      "id": "seed-04",
+      "question": "Which GitHub repos related to AI agents are gaining stars this week?",
+      "sources": ["hn", "reddit", "web_search"],
+      "priority": "medium",
+      "category": "developer_ecosystem"
+    },
+    {
+      "id": "seed-05",
+      "question": "What are people saying about micropayments and pay-per-use AI services?",
+      "sources": ["reddit", "x_search", "hn", "seo_suggest"],
+      "priority": "high",
+      "category": "ai_crypto_intersection"
+    },
+    {
+      "id": "seed-06",
+      "question": "What SEO keywords are trending for 'autonomous AI agents'?",
+      "sources": ["seo_serp", "seo_suggest"],
+      "priority": "medium",
+      "category": "seo_landscape"
+    },
+    {
+      "id": "seed-07",
+      "question": "What does the BSV mempool look like right now? Any unusual patterns?",
+      "sources": ["bsv_chain"],
+      "priority": "medium",
+      "category": "bsv_ecosystem"
+    },
+    {
+      "id": "seed-08",
+      "question": "What are the top AI/ML research papers being discussed on social media today?",
+      "sources": ["reddit", "x_search", "hn"],
+      "priority": "medium",
+      "category": "ai_research"
+    },
+    {
+      "id": "seed-09",
+      "question": "How are enterprise companies adopting AI agents? What are the pain points?",
+      "sources": ["web_search", "rss", "x_search"],
+      "priority": "medium",
+      "category": "enterprise_ai"
+    },
+    {
+      "id": "seed-10",
+      "question": "What competitive landscape exists for blockchain-based data verification services?",
+      "sources": ["web_search", "seo_serp", "reddit"],
+      "priority": "medium",
+      "category": "competitive_intel"
+    },
+    {
+      "id": "seed-11",
+      "question": "What are developers building with LLM tool-use and function calling?",
+      "sources": ["hn", "reddit", "web_search"],
+      "priority": "high",
+      "category": "developer_ecosystem"
+    },
+    {
+      "id": "seed-12",
+      "question": "What is the real-time sentiment on crypto Twitter about the market today?",
+      "sources": ["x_search", "x_trending"],
+      "priority": "high",
+      "category": "crypto_sentiment"
+    },
+    {
+      "id": "seed-13",
+      "question": "What news stories are dominating tech media right now?",
+      "sources": ["rss", "hn", "seo_serp"],
+      "priority": "high",
+      "category": "tech_trends"
+    },
+    {
+      "id": "seed-14",
+      "question": "How do different communities (Reddit vs X vs HN) discuss the same AI news differently?",
+      "sources": ["reddit", "x_search", "hn"],
+      "priority": "high",
+      "category": "cross_platform_analysis"
+    },
+    {
+      "id": "seed-15",
+      "question": "What are the most-shared URLs across Reddit, HN, and X in the past 12 hours?",
+      "sources": ["reddit", "hn", "x_search"],
+      "priority": "medium",
+      "category": "viral_content"
+    },
+    {
+      "id": "seed-16",
+      "question": "What blockchain projects besides BSV are working on overlay networks or UTXO-based indexing?",
+      "sources": ["reddit", "web_search", "hn"],
+      "priority": "medium",
+      "category": "competitive_intel"
+    },
+    {
+      "id": "seed-17",
+      "question": "What are VCs and investors saying about AI agent startups?",
+      "sources": ["x_search", "rss", "web_search"],
+      "priority": "medium",
+      "category": "investment_landscape"
+    },
+    {
+      "id": "seed-18",
+      "question": "What open-source AI agent frameworks are people actually using in production?",
+      "sources": ["hn", "reddit", "web_search"],
+      "priority": "high",
+      "category": "developer_ecosystem"
+    },
+    {
+      "id": "seed-19",
+      "question": "What regulatory discussions around AI agents are happening in government and policy circles?",
+      "sources": ["rss", "web_search", "x_search"],
+      "priority": "low",
+      "category": "regulation"
+    },
+    {
+      "id": "seed-20",
+      "question": "What are the most active BSV-related discussions happening right now across all platforms?",
+      "sources": ["reddit", "x_search", "hn", "bsv_chain"],
+      "priority": "high",
+      "category": "bsv_ecosystem"
+    },
+    {
+      "id": "seed-21",
+      "question": "What emerging narratives are forming around the intersection of AI and cryptocurrency?",
+      "sources": ["reddit", "x_search", "rss", "seo_suggest"],
+      "priority": "high",
+      "category": "ai_crypto_intersection"
+    },
+    {
+      "id": "seed-22",
+      "question": "What technical content about BSV scripting, OP_RETURN, and PushDrop is being published?",
+      "sources": ["web_search", "hn", "reddit"],
+      "priority": "medium",
+      "category": "bsv_ecosystem"
+    },
+    {
+      "id": "seed-23",
+      "question": "What is the global trending topic list right now and how does it relate to tech/AI/crypto?",
+      "sources": ["x_trending", "seo_suggest", "hn"],
+      "priority": "high",
+      "category": "global_trends"
+    },
+    {
+      "id": "seed-24",
+      "question": "What content gaps exist in the AI agents space -- topics with high search volume but few authoritative articles?",
+      "sources": ["seo_serp", "seo_suggest", "web_search"],
+      "priority": "medium",
+      "category": "seo_landscape"
+    },
+    {
+      "id": "seed-25",
+      "question": "What are the most controversial or polarizing AI topics on social media right now?",
+      "sources": ["reddit", "x_search", "hn"],
+      "priority": "medium",
+      "category": "sentiment_analysis"
+    }
+  ]
+}
