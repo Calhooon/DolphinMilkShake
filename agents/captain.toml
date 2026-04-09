@@ -1,0 +1,94 @@
+# Captain: Research Orchestrator
+# Discovers peers via ls_agent, assigns tasks, synthesizes results.
+# The "brain" of the swarm -- delegates scraping to Coral, analysis to Reef,
+# and content creation to Pearl.
+
+data_dir = "~/.dolphin-milk-captain"
+
+[wallet]
+url = "http://localhost:3322"
+origin = "http://localhost"
+timeout = 30
+
+[budget]
+max_per_task = 25_000_000     # 25M sats per task
+max_per_hour = 100_000_000    # 100M sats/hour (orchestrator spends more)
+max_per_day = 400_000_000     # 400M sats/day
+low_power_threshold = 100_000
+staging_threshold = 1_000_000
+enforcement = "strict"
+
+[llm]
+default_provider = "claude-chat"
+default_model = "claude-sonnet-4-6"
+max_tokens = 16384
+context_window = 200_000
+max_history_turns = 60
+min_recent_messages = 12
+compaction_enabled = true
+compaction_threshold = 0.75
+
+[logging]
+level = "INFO"
+format = "json"
+
+[memory]
+base_dir = "memory"
+maintenance_enabled = true
+maintenance_interval_secs = 1800
+
+[heartbeat]
+enabled = true
+inbox_poll_secs = 30
+max_concurrent_tasks = 5
+reflection_enabled = true
+reflection_interval_secs = 120
+reflection_model = "claude-haiku-4-5-20251001"
+reflection_max_iterations = 3
+checklist_cooldown_secs = 300
+
+[heartbeat.active_hours]
+start = "06:00"
+end = "23:00"
+timezone = "America/New_York"
+
+[certificates]
+agent_name = "captain"
+certificate_type = "agent-authorization"
+
+[browser]
+enabled = false   # Captain doesn't browse -- delegates to Coral
+
+[lifecycle]
+auto_sweep_enabled = true
+sweep_interval_minutes = 30
+verify_interval = 5
+consistency_check_interval = 3
+
+[compliance]
+enabled = true
+worm_mode = true
+regulations = ["hackathon-audit"]
+default_retention_days = 90
+
+[server]
+openai_compat_enabled = false
+
+[tools]
+deferral_mode = "auto"
+auto_threshold_pct = 40
+
+# --- Overlay integration (target schema, pending rust-bsv-worm#309) ---
+# This section does NOT exist in rust-bsv-worm yet. It defines the target
+# configuration for agent overlay registration.
+[overlay]
+enabled = true
+submit_url = "https://rust-overlay.dev-a3e.workers.dev"
+endpoint = "http://localhost:3001"
+capabilities = ["research-orchestration", "task-delegation", "synthesis", "peer-discovery"]
+agent_name = "Captain"
+description = "Research orchestrator that coordinates the agent swarm"
+
+# --- System prompt ---
+# Path to the system prompt file, resolved relative to this config file.
+system_prompt_file = "../prompts/captain.md"

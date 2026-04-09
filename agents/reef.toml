@@ -1,0 +1,92 @@
+# Reef: Data Analysis & Pattern Recognition Specialist
+# Processes structured data, finds patterns, performs statistical analysis.
+# No browser needed -- works with data provided by Coral or Captain.
+
+data_dir = "~/.dolphin-milk-reef"
+
+[wallet]
+url = "http://localhost:3324"
+origin = "http://localhost"
+timeout = 30
+
+[budget]
+max_per_task = 15_000_000     # 15M sats per task (analysis can be token-heavy)
+max_per_hour = 60_000_000
+max_per_day = 250_000_000
+low_power_threshold = 50_000
+staging_threshold = 500_000
+enforcement = "strict"
+
+[llm]
+default_provider = "openai-agent"
+default_model = "gpt-5-mini"
+max_tokens = 16384
+context_window = 128_000
+max_history_turns = 40
+min_recent_messages = 8
+compaction_enabled = true
+compaction_threshold = 0.75
+# Enable reasoning for analytical tasks
+reasoning_effort = "high"
+
+[logging]
+level = "INFO"
+format = "json"
+
+[memory]
+base_dir = "memory"
+maintenance_enabled = true
+maintenance_interval_secs = 3600
+
+[heartbeat]
+enabled = true
+inbox_poll_secs = 30
+max_concurrent_tasks = 3
+reflection_enabled = true
+reflection_interval_secs = 300
+reflection_model = "claude-haiku-4-5-20251001"
+reflection_max_iterations = 2
+checklist_cooldown_secs = 600
+
+[heartbeat.active_hours]
+start = "06:00"
+end = "23:00"
+timezone = "America/New_York"
+
+[certificates]
+agent_name = "reef"
+certificate_type = "agent-authorization"
+
+[browser]
+enabled = false    # Reef doesn't browse -- it analyzes data
+
+[lifecycle]
+auto_sweep_enabled = true
+sweep_interval_minutes = 60
+verify_interval = 10
+consistency_check_interval = 5
+
+[compliance]
+enabled = true
+worm_mode = true
+regulations = ["hackathon-audit"]
+default_retention_days = 90
+
+[server]
+openai_compat_enabled = false
+
+[tools]
+deferral_mode = "auto"
+auto_threshold_pct = 50
+
+# --- Overlay integration (target schema, pending rust-bsv-worm#309) ---
+[overlay]
+enabled = true
+submit_url = "https://rust-overlay.dev-a3e.workers.dev"
+endpoint = "http://localhost:3003"
+capabilities = ["data-analysis", "pattern-recognition", "statistical-reasoning", "summarization"]
+agent_name = "Reef"
+description = "Data analysis and pattern recognition specialist"
+
+# --- System prompt ---
+system_prompt_file = "../prompts/reef.md"
