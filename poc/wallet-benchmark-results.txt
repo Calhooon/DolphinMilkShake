@@ -1,0 +1,19 @@
+=== Wallet Throughput Benchmark ===
+Target: 500 OP_RETURN txs against http://localhost:3322
+Started: 2026-04-12T15:37:23Z
+
+Wallet balance before: 
+
+Batch 1: 100/100 ok, 74312ms, 1.3 tx/s
+Batch 2: 100/100 ok, 98826ms, 1.0 tx/s
+Batch 3: 100/100 ok, 300517ms, .3 tx/s
+Batch 4: 100/100 ok, 166455ms, .6 tx/s
+Batch 5: 100/100 ok, 81534ms, 1.2 tx/s
+
+=== Results ===
+Total txs: 500 success, 0 failed
+Total time: 721686ms
+Throughput: .69 tx/s
+
+Wallet balance after: 
+Finished: 2026-04-12T15:49:24Z

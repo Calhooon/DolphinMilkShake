@@ -78,9 +78,8 @@ openai_compat_enabled = false
 deferral_mode = "auto"
 auto_threshold_pct = 40
 
-# --- Overlay integration (target schema, pending rust-bsv-worm#309) ---
-# This section does NOT exist in rust-bsv-worm yet. It defines the target
-# configuration for agent overlay registration.
+# --- Overlay integration (rust-bsv-worm#309) ---
+# Agent self-registers on the overlay at startup when enabled.
 [overlay]
 enabled = true
 submit_url = "https://rust-overlay.dev-a3e.workers.dev"

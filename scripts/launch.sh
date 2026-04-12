@@ -371,8 +371,8 @@ case "${1:-all}" in
         echo ""
         log "All agents launched. Next steps:"
         info "  1. Fund wallets:    ./scripts/launch.sh fund"
-        info "  2. Register:        ./scripts/register.sh"
-        info "  3. Mission Control: open http://localhost:4000"
+        info "  2. Mission Control: open http://localhost:4000"
+        info "  (Agents self-register on the overlay at startup)"
         ;;
     stop)
         print_banner

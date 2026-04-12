@@ -1,0 +1,72 @@
+# Writer A: Produces written reports and content from analyzed data
+data_dir = "~/.dolphin-milk-writer-a"
+
+[wallet]
+url = "http://localhost:3343"
+origin = "http://localhost"
+timeout = 120
+
+[budget]
+max_per_task = 20_000_000
+max_per_hour = 60_000_000
+max_per_day = 250_000_000
+low_power_threshold = 100_000
+staging_threshold = 1_000_000
+enforcement = "strict"
+
+[llm]
+default_provider = "claude-chat"
+default_model = "claude-sonnet-4-6"
+max_tokens = 16384
+context_window = 200000
+max_history_turns = 40
+min_recent_messages = 8
+compaction_enabled = true
+compaction_threshold = 0.75
+
+[logging]
+level = "INFO"
+format = "json"
+
+[memory]
+base_dir = "memory"
+maintenance_enabled = true
+maintenance_interval_secs = 1800
+
+[heartbeat]
+enabled = true
+inbox_poll_secs = 15
+max_concurrent_tasks = 2
+reflection_enabled = false
+
+[certificates]
+agent_name = "writer-a"
+certificate_type = "agent-authorization"
+
+[browser]
+enabled = false
+
+[lifecycle]
+auto_sweep_enabled = true
+sweep_interval_minutes = 30
+
+[compliance]
+enabled = true
+worm_mode = true
+regulations = ["hackathon-audit"]
+
+[server]
+openai_compat_enabled = false
+
+[tools]
+deferral_mode = "auto"
+auto_threshold_pct = 40
+
+[overlay]
+enabled = true
+submit_url = "https://rust-overlay.dev-a3e.workers.dev"
+endpoint = "http://localhost:3022"
+capabilities = ["writing", "reporting", "content"]
+agent_name = "Writer A"
+
+system_prompt_file = "../prompts/writer.md"

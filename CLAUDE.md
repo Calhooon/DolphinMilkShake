@@ -1,163 +1,129 @@
 # DolphinSense (DolphinMilkShake)
 
-Hackathon entry: 4 autonomous AI agents with BSV wallets running a verifiable intelligence pipeline. Per-record micropayments + BRC-18 provenance proofs targeting 1.5M transactions in 24 hours.
+Hackathon entry: 25 autonomous AI agents in a 3-layer pyramid with BSV wallets running a verifiable intelligence pipeline. Natural worm proof loop generates ~1.5M transactions in 24 hours. ~$45 total cost.
 
 ## Three-Repo Architecture
 
 | Repo | Role | Status |
 |------|------|--------|
-| **rust-overlay** (`~/bsv/rust-overlay`) | BSV overlay services deployed on Cloudflare Workers. Provides agent discovery (tm_agent/ls_agent), SHIP, SLAP. | DONE. Deployed at https://rust-overlay.dev-a3e.workers.dev |
-| **rust-bsv-worm** (`~/bsv/rust-bsv-worm`) | Autonomous AI agent framework. 69 HTTP routes, PushDrop state tokens, BSV wallet, x402 payments, MessageBox, BRC-100 discovery. | Active development. Overlay client (issue #309) being implemented by another terminal. |
-| **DolphinMilkShake** (`~/bsv/DolphinMilkShake`) | THIS REPO. The APPLICATION layer -- system prompts, configs, launch scripts, research question seeds, rule-based classifier, Mission Control UI. | In progress. |
+| **rust-overlay** (`~/bsv/rust-overlay`) | BSV overlay services on CF Workers. Agent discovery (tm_agent/ls_agent), SHIP, SLAP. | DONE. Deployed at https://rust-overlay.dev-a3e.workers.dev |
+| **rust-bsv-worm** (`~/bsv/rust-bsv-worm`) | Autonomous AI agent framework. 79 routes, BRC-18 proofs, x402 payments, MessageBox, BRC-100 discovery. | Active dev. Multi-agent handshake (gate 5) in progress. |
+| **DolphinMilkShake** (`~/bsv/DolphinMilkShake`) | THIS REPO. Application layer — system prompts, configs, launch scripts, classifier, Mission Control UI. | In progress. |
 
-**Key insight: the worm needs ZERO modifications.** DolphinSense demonstrates what you can build on top of bsv-worm. The system prompts ARE the application. The worm provides the tools; the prompts tell it what to do with them.
+**Key insight: the worm needs ZERO modifications.** Each agent is an unmodified rust-bsv-worm instance with a system prompt. The prompts ARE the application.
+
+## 25-Agent Pyramid
+
+```
+Layer 1 (Top):     2 Captains (Opus) — orchestrate, produce final deliverables
+Layer 2 (Middle):  5 Coordinators (Haiku/Sonnet) — dispatch, aggregate, QA
+Layer 3 (Bottom): 18 Workers (Haiku/GPT-5-mini) — scrape, classify, write, audit
+```
+
+See ARCHITECTURE.md for full agent roster, port assignments, tx math, hardware measurements.
 
 ## File Layout
 
 ```
 DolphinMilkShake/
-├── agents/                 # Per-agent dolphin-milk.toml configs
-│   ├── captain.toml        # Broker: port 3001, wallet 3322, claude-sonnet-4-6
-│   ├── coral.toml          # Scraper: port 3002, wallet 3323, gpt-5-mini
-│   ├── reef.toml           # Analyst: port 3003, wallet 3324, gpt-5-mini
-│   └── pearl.toml          # Creator: port 3004, wallet 3325, claude-sonnet-4-6
-├── prompts/                # System prompts -- THE CORE OF THE PROJECT
-│   ├── captain.md          # Research orchestration, task decomposition, quality QA, budget mgmt
-│   ├── coral.md            # Scraping: Reddit/HN/RSS/BSV (free), X/SEO/Web (x402)
-│   ├── reef.md             # Classification: rule engine (95%) + LLM fallback (5%)
-│   └── pearl.md            # Report writing, NanoStore uploads, provenance links
+├── agents/                 # Per-agent dolphin-milk.toml configs (25 files)
+│   ├── captain.toml        # (existing, needs update for Opus + new port scheme)
+│   ├── coral.toml          # (existing, template for scraper variants)
+│   ├── reef.toml           # (existing, template for classifier variants)
+│   └── pearl.toml          # (existing, template for writer variants)
+├── prompts/                # System prompts by role
+│   ├── captain.md          # Orchestration, memory management, report assembly
+│   ├── coral.md            # Scraping template (source-specific variants)
+│   ├── reef.md             # Classification template
+│   ├── pearl.md            # Writer template
+│   ├── coordinator.md      # NEW — task dispatch + aggregation
+│   ├── crossref.md         # NEW — multi-source correlation
+│   └── auditor.md          # NEW — spot-check + quality scoring
+├── poc/                    # POC results (benchmarks, logs, measurements)
 ├── seeds/
-│   └── questions.json      # 20+ pre-seeded research questions for Captain
+│   └── questions.json      # 25 pre-seeded research questions
 ├── tools/
-│   └── classifier.py       # Rule-based classifier script Reef runs via execute_bash
+│   └── classifier.py       # Rule-based classifier (Reef runs via execute_bash)
 ├── scripts/
-│   ├── launch.sh           # Start 4 worm instances + 4 wallets + health checks
-│   └── register.sh         # Register agents on overlay via tm_agent
+│   ├── launch.sh           # Start/stop/status all 25 agents
+│   └── provision.sh        # Spin up 25 wallets + fund + certify
+├── ARCHITECTURE.md         # Full technical design
+├── DOLPHINSENSE.md         # Original 4-agent design (historical)
 ├── CLAUDE.md               # This file
 └── README.md               # Hackathon-facing README
 ```
 
 ## Agent Configuration
 
-Each agent `.toml` extends the DmConfig schema from rust-bsv-worm (`rust-bsv-worm/src/config/schema.rs`). Key sections:
+Each `.toml` extends DmConfig from rust-bsv-worm (`src/config/schema.rs`). Key sections:
+- `wallet` — URL + port for BSV wallet backend
+- `llm` — Model selection (Opus for captains, Sonnet for writers/auditors, GPT-5-mini for workers)
+- `budget` — Satoshi limits per task/hour/day
+- `heartbeat` — Inbox polling interval (15s for workers, 30s for coordinators, 60s for captains)
+- `certificates` — Agent name + capabilities for BRC-52
+- `overlay` — Self-registration at startup
+- `system_prompt_file` — Path to role-specific prompt
 
-- `wallet` -- URL + port for the BSV wallet backend
-- `llm` -- Model selection, token limits, compaction settings
-- `budget` -- Satoshi limits per task/hour/day
-- `heartbeat` -- Active hours, inbox polling, reflection, checklist
-- `certificates` -- Agent name for BRC-52 authorization
-- `browser` -- Chrome automation (only Coral has this enabled)
-- `overlay` -- Registration config for tm_agent (pending rust-bsv-worm#309)
-- `system_prompt_file` -- Path to the system prompt markdown
+Port scheme: agents on 3001-3025, wallets on 3322-3346. See ARCHITECTURE.md for full roster.
 
-Port assignments:
+## How Data Flows
 
-| Agent | Server | Wallet | Data Dir |
-|-------|--------|--------|----------|
-| Captain | 3001 | 3322 | ~/.dolphin-milk-captain |
-| Coral | 3002 | 3323 | ~/.dolphin-milk-coral |
-| Reef | 3003 | 3324 | ~/.dolphin-milk-reef |
-| Pearl | 3004 | 3325 | ~/.dolphin-milk-pearl |
+Agents have isolated workspaces. Data moves via:
+1. **MessageBox (BRC-33)** — task assignments, results, summaries (body IS the data)
+2. **NanoStore (x402)** — large datasets/reports uploaded, UHRP URL shared via message
+3. **memory_store/memory_search** — per-agent local recall (tantivy BM25 indexed)
 
-## Data Sources
+Captain stores structured memories with tags + NanoStore URLs + txids. Uses memory_search to recall when assembling reports.
 
-The agents scrape 10 source types. Free sources provide bulk volume; paid x402 sources provide high-value data:
+## How 1.5M Transactions Happen
 
-**Free (via `web_fetch`):**
-- Reddit JSON API -- `https://www.reddit.com/r/{sub}/top.json?t=hour`
-- Hacker News Firebase API -- `https://hacker-news.firebaseio.com/v0/`
-- RSS feeds -- standard XML feeds from 50-100 tech/crypto/AI news sources
-- BSV blockchain -- WhatsOnChain API (`https://api.whatsonchain.com/v1/bsv/main/`)
+NOT from batch scripts or artificial inflation. From the worm's **natural proof loop**:
+- Every iteration: x402 LLM payment + BRC-18 decision proof + BRC-48 budget tokens = ~4-5 txs
+- Every message: MessageSend + MessageReceive proofs = ~2-3 txs
+- Every task: lifecycle tokens (setup + teardown) = ~5 txs
+- Every x402 call: payment + capability proof = ~2-3 txs
 
-**Paid (via `x402_call`):**
-- X-Research -- `/search` (36K sats/page), `/trending` (3,600 sats/call)
-- SEO -- `/serp` (14,895 sats/call), `/suggest` (14,895 sats/call)
-- Web Reader -- `/read` (17,874 sats/call), `/search` (29,789 sats/call)
-- Claude Haiku -- edge-case classification + report writing via x402
+25 agents × ~7K iterations/day × ~7 txs/iteration + messaging + lifecycle = ~1.5M
 
-## Per-Record Payment Model
+## Milestones
 
-This is how we hit 1.5M transactions. Each INDIVIDUAL record generates ~3.2 txs:
+| Milestone | Due | What |
+|-----------|-----|------|
+| **M1: POC Validation** | Apr 15 | Validate risky assumptions: wallet throughput, 3-layer cascade, overlay at scale, memory recall, NanoStore sharing, 1-hour burn |
+| **M2: 24-Hour Run** | Apr 16 | Provision 25 wallets, write all configs/prompts, launch script, Mission Control UI, 4-hour dry run |
 
-| Step | Txs per record |
-|------|---------------|
-| Captain pays Coral for scraping this record | 1 |
-| Captain pays Reef for analyzing this record | 1 |
-| Provenance proof for this record (BRC-18 OP_RETURN) | 1 |
-| Captain pays Pearl for summarizing (1 per 10 records) | 0.1 |
-| Quality challenge (10% sample) | 0.1 |
-
-With ~470K records through the pipeline: 470K * 3.2 = ~1.49M transactions.
-
-At 4 agents * 5 tx/s = 20 tx/s sustained: 20 * 86,400 = 1.73M capacity. 87% utilization.
-
-## Quality Assurance
-
-Captain randomly selects 10% of records for spot-checks:
-1. Same data sent to a DIFFERENT specialist for re-analysis
-2. Results compared -- if they diverge significantly, the original specialist is challenged
-3. Loser pays a small stake (10 sats)
-4. Quality attestation cert updated
-5. Over 24 hours, specialists build reputation via cert attestations
+POC results saved in `poc/` directory. Issues #11-#22 track all work.
 
 ## Worm Tools Available to Agents
 
-These are built into rust-bsv-worm and available via the agent's tool palette:
-
-- `web_fetch` -- HTTP GET/POST, returns body text. Used for free data sources.
-- `x402_call` -- Paid API call via BSV micropayment. Used for X-Research, SEO, Web Reader, Claude.
-- `execute_bash` -- Run a shell command. Reef uses this for the rule-based classifier.
-- `memory_search` -- Search agent's local memory store. Used for cross-referencing.
-- `memory_store` -- Save data to local memory. Used for caching records.
-- `send_message` -- Send MessageBox message to another agent (BRC-33, signed + encrypted, FREE).
-- `read_messages` -- Read incoming MessageBox messages.
-- `wallet_send` -- Send BSV micropayment to an address.
-- `wallet_balance` -- Check wallet balance.
-- `discover_agent` -- Query overlay for agents with matching attributes (BRC-100).
-- `verify_agent` -- Verify agent's BRC-52 capability certificate.
-- `create_provenance` -- Record BRC-18 provenance proof (OP_RETURN with data hash).
-
-## Testing
-
-```bash
-# Check overlay health
-curl https://rust-overlay.dev-a3e.workers.dev/health
-
-# Launch all agents
-./scripts/launch.sh
-
-# Register on overlay
-./scripts/register.sh
-
-# Health check
-curl http://localhost:3001/health  # Captain
-curl http://localhost:3002/health  # Coral
-curl http://localhost:3003/health  # Reef
-curl http://localhost:3004/health  # Pearl
-
-# Test classifier standalone
-echo '{"text": "Bitcoin is amazing", "source": "reddit"}' | python3 tools/classifier.py
-```
+Built into rust-bsv-worm, no modifications needed:
+- `web_fetch` — HTTP GET/POST for free data sources
+- `x402_call` — Paid API call via BSV micropayment
+- `execute_bash` — Shell commands (classifier script, data processing)
+- `memory_store` / `memory_search` — Per-agent local memory (tantivy)
+- `send_message` — MessageBox to another agent (BRC-33, signed/encrypted, FREE)
+- `overlay_lookup` — Find agents by capability on the overlay
+- `wallet_identity` — Get own identity key
+- Plus 30+ other tools (browser, file I/O, etc.)
 
 ## Key Decisions
 
-- Captain and Pearl use claude-sonnet-4-6 (better reasoning/prose)
-- Coral and Reef use gpt-5-mini (cost efficiency on high-volume tasks)
-- Per-record payments (not per-batch) to maximize meaningful tx volume
-- Rule-based classifier handles 95% of records (no LLM cost); x402 Claude Haiku for the remaining 5%
-- All inter-agent communication via MessageBox (FREE, signed, encrypted)
-- All payments via wallet_send (real BSV micropayments)
-- All provenance via BRC-18 OP_RETURN (unique record hash per tx)
-- WORM mode (compliance) enabled for hackathon auditability
+- **Opus for Captains** — complex orchestration, 24-hour memory management, report assembly
+- **Sonnet for Writers/Auditors/Quality Lead** — quality prose and reasoning
+- **GPT-5-mini/Haiku for Workers** — fast, cheap, high-volume tasks
+- **25 agents** — enough natural tx volume from proof loop without batch scripts
+- **3-layer pyramid** — every piece of work flows through 3 layers = 3x tx multiplier
+- **NanoStore as shared data layer** — upload once, share URL, multiple agents fetch
+- **WORM mode** enabled for hackathon auditability
 
 ## Reference Implementations
 
 | What | Location |
 |------|----------|
-| TS Engine | ~/bsv/overlay-services/src/Engine.ts |
-| TS SHIP/SLAP | ~/bsv/overlay-discovery-services/src/ |
-| TS overlay-express | ~/bsv/overlay-express/src/OverlayExpress.ts |
 | Worm config schema | ~/bsv/rust-bsv-worm/src/config/schema.rs |
 | Worm tools | ~/bsv/rust-bsv-worm/src/tools/ |
-| GASP protocol | ~/bsv/gasp-core/src/GASP.ts |
-| DOLPHINSENSE plan | ~/bsv/brc-sse-payment-channels/DOLPHINSENSE.md |
+| Worm proof loop | ~/bsv/rust-bsv-worm/src/onchain/proofs.rs |
+| Worm heartbeat/scheduler | ~/bsv/rust-bsv-worm/src/heartbeat/mod.rs |
+| Worm MessageBox client | ~/bsv/rust-bsv-worm/src/messagebox/client.rs |
+| E2E handshake test | ~/bsv/rust-bsv-worm/tests/multi-worm/test_two_agent_handshake.js |
+| Overlay engine | ~/bsv/rust-overlay/crates/overlay-engine/src/engine.rs |

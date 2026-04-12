@@ -79,7 +79,7 @@ openai_compat_enabled = false
 deferral_mode = "auto"
 auto_threshold_pct = 50
 
-# --- Overlay integration (target schema, pending rust-bsv-worm#309) ---
+# --- Overlay integration (rust-bsv-worm#309) ---
 [overlay]
 enabled = true
 submit_url = "https://rust-overlay.dev-a3e.workers.dev"

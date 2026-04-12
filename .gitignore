@@ -23,3 +23,9 @@ dist/
 # Wallet data (never commit keys)
 *.db
 *.key
+.env
+
+# Test workspaces (contain wallet data, runtime state)
+test-workspace/
+test-workspace-v2/
+test-workspace-v3/
