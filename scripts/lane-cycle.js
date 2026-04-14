@@ -126,6 +126,16 @@ const SUBREDDIT = process.env.SUBREDDIT || laneConfig.subreddit;
 const COMMENT_LIMIT = parseInt(process.env.COMMENT_LIMIT || '100', 10);
 const SOAK_CYCLES = parseInt(process.env.SOAK_CYCLES || '1', 10);
 const ENABLE_SYNTHESIS = process.env.ENABLE_SYNTHESIS !== '0';
+// SYNTHESIS_EVERY_N: amortization schedule. Synthesis runs only when
+// (cycleIdx % SYNTHESIS_EVERY_N === 0). Default 25 per PLAN-C-SCALE.md
+// (1-in-25 cycles). Value 1 means "every cycle" (pre-amortization behavior).
+// Value 0 has no effect — ENABLE_SYNTHESIS=0 is the dedicated off switch.
+// For single-cycle runs (SOAK_CYCLES=1), cycleIdx=0 always matches so
+// synthesis runs on the first cycle regardless of SYNTHESIS_EVERY_N.
+const SYNTHESIS_EVERY_N = Math.max(
+  1,
+  parseInt(process.env.SYNTHESIS_EVERY_N || '25', 10),
+);
 // E20 skinny captain: two modes, selected by SKINNY_CAPTAIN_MODE.
 //   parallel (V1, E20): captain emits overlay_lookup + delegate_task as
 //     parallel tool calls in a single iteration, with the worker identity
@@ -1069,12 +1079,22 @@ async function runCycle(handle, cycleIdx) {
     log(`warn: annotated file build failed: ${e.message}`);
   }
 
-  // 9. SYNTHESIS — submit to synthesis agent (skipped if disabled)
+  // 9. SYNTHESIS — submit to synthesis agent (skipped if disabled OR amortized)
   let synthesisResult = null;
   let synthesisSats = 0;
   let nanostoreUrl = null;
   let txidsUrl = null;
-  if (ENABLE_SYNTHESIS && (workerProof.result.proofs_created || 0) > 0 && annotatedCount > 0) {
+  // Amortization: synthesis runs only when cycleIdx % SYNTHESIS_EVERY_N === 0.
+  // At default N=25, that's cycle 0, 25, 50, ... — 1 synthesis per 25 cycles.
+  // SOAK_CYCLES=1 always matches (cycleIdx=0) so smoke tests still produce
+  // a synthesis article.
+  const synthesisThisCycle = cycleIdx % SYNTHESIS_EVERY_N === 0;
+  if (
+    ENABLE_SYNTHESIS &&
+    synthesisThisCycle &&
+    (workerProof.result.proofs_created || 0) > 0 &&
+    annotatedCount > 0
+  ) {
     const synthBeforeMs = Date.now();
     const absAnnotatedPath = path.resolve(annotatedPath);
     const absTxidsPath = path.resolve(workerProof.result.txid_file);
@@ -1108,6 +1128,9 @@ async function runCycle(handle, cycleIdx) {
     }
   } else if (!ENABLE_SYNTHESIS) {
     log('synthesis: SKIPPED (ENABLE_SYNTHESIS=0)');
+  } else if (!synthesisThisCycle) {
+    const nextSynth = SYNTHESIS_EVERY_N - (cycleIdx % SYNTHESIS_EVERY_N);
+    log(`synthesis: AMORTIZED OFF (cycle ${cycleIdx}, every ${SYNTHESIS_EVERY_N}, next in ${nextSynth})`);
   } else {
     log('synthesis: SKIPPED (no proofs or no annotated records)');
   }
