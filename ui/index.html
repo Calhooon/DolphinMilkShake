@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🐬 DolphinSense Mission Control</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #131826;
+      --surface-2: #1a2033;
+      --border: #242c42;
+      --text: #e5e9f5;
+      --muted: #7a849e;
+      --accent: #4ade80;
+      --accent-2: #60a5fa;
+      --warn: #fbbf24;
+      --bad: #f87171;
+      --captain: #a78bfa;
+      --worker: #4ade80;
+      --synthesis: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      font-feature-settings: "tnum";
+    }
+    body { padding: 14px; display: grid; grid-template-columns: 1fr 360px; grid-template-rows: auto auto 1fr; gap: 14px; height: 100vh; overflow: hidden; }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    header h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    header .counters { display: flex; gap: 28px; margin-left: auto; }
+    header .counter .num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+    header .counter .lbl { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+    header .status-pill { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+    header .status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+    header .status-pill.live .dot { background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .feeder-bar {
+      grid-column: 1 / -1;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .feeder-bar .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
+    .feeder-bar .sub { padding: 4px 10px; background: var(--surface-2); border-radius: 6px; font-variant-numeric: tabular-nums; }
+    .feeder-bar .sub .name { color: var(--accent-2); font-weight: 600; }
+    .feeder-bar .sub .rate { color: var(--muted); margin-left: 6px; }
+    .feeder-bar .sub .queued { color: var(--warn); margin-left: 6px; }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .lane {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .lane-head { display: flex; align-items: center; justify-content: space-between; }
+    .lane-name { font-weight: 700; font-size: 14px; }
+    .lane-sub { font-size: 11px; color: var(--muted); }
+    .lane-stats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .agent {
+      padding: 8px 10px;
+      background: var(--surface-2);
+      border-radius: 6px;
+      border-left: 3px solid var(--border);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+    .agent.captain { border-left-color: var(--captain); }
+    .agent.worker { border-left-color: var(--worker); }
+    .agent.synthesis { border-left-color: var(--synthesis); }
+    .agent .role { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+    .agent .role.captain { color: var(--captain); }
+    .agent .role.worker { color: var(--worker); }
+    .agent .role.synthesis { color: var(--synthesis); }
+    .agent .state { color: var(--text); font-size: 11px; opacity: 0.85; text-align: right; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .agent .sats { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .agent.active { background: linear-gradient(90deg, var(--surface-2) 70%, rgba(74, 222, 128, 0.08)); }
+    .agent.done { opacity: 0.7; }
+    .agent.error { border-left-color: var(--bad); }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-head .count { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .panel-body {
+      padding: 6px 0;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .tx-item {
+      padding: 6px 14px;
+      font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(36, 44, 66, 0.3);
+      animation: flash 1s ease-out;
+    }
+    @keyframes flash { 0% { background: rgba(74, 222, 128, 0.15); } 100% { background: transparent; } }
+    .tx-item .txid { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tx-item .txid a { color: var(--accent); text-decoration: none; }
+    .tx-item .lane-tag { color: var(--accent-2); font-size: 10px; background: var(--surface-2); padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
+
+    .article-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(36, 44, 66, 0.3);
+    }
+    .article-item a { color: var(--accent); text-decoration: none; font-weight: 500; font-size: 13px; display: block; margin-bottom: 4px; }
+    .article-item a:hover { text-decoration: underline; }
+    .article-item .meta { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+    .empty { padding: 20px 14px; color: var(--muted); font-size: 11px; text-align: center; font-style: italic; }
+
+    /* scrollbar polish */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐬 DolphinSense — Mission Control</h1>
+    <div class="status-pill" id="status"><span class="dot"></span><span id="status-text">connecting…</span></div>
+    <div class="counters">
+      <div class="counter"><div class="num" id="total-txs">0</div><div class="lbl">On-chain TXs</div></div>
+      <div class="counter"><div class="num" id="total-sats">0</div><div class="lbl">Sats Spent</div></div>
+      <div class="counter"><div class="num" id="total-articles">0</div><div class="lbl">Articles</div></div>
+    </div>
+  </header>
+
+  <div class="feeder-bar" id="feeder-bar">
+    <span class="lbl">Feeder:</span>
+    <span class="empty" style="padding:0;">waiting for feeder…</span>
+  </div>
+
+  <div class="lanes" id="lanes-grid">
+    <div class="empty">waiting for lanes…</div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel">
+      <div class="panel-head">Live TX Stream <span class="count" id="tx-count">0</span></div>
+      <div class="panel-body" id="tx-stream">
+        <div class="empty">no txs yet</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Latest Articles <span class="count" id="article-count">0</span></div>
+      <div class="panel-body" id="article-feed">
+        <div class="empty">no articles yet</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------------------------------------------------------------
+    // Client state
+    // ---------------------------------------------------------------
+    const state = {
+      lanes: new Map(), // laneId → {id, subreddit, agents: {captain: {state, sats, ...}, worker:..., synthesis:...}}
+      feederHealth: null,
+      txStream: [], // rolling, newest first, capped at 100
+      articles: [], // newest first, capped at 20
+      totals: { txs: 0, sats: 0, articles: 0 },
+    };
+
+    // ---------------------------------------------------------------
+    // Utility
+    // ---------------------------------------------------------------
+    const fmt = (n) => n.toLocaleString();
+    const ts = () => new Date().toLocaleTimeString();
+    const ago = (tsSec) => {
+      if (!tsSec) return '';
+      const s = Math.round(Date.now() / 1000 - tsSec);
+      if (s < 60) return `${s}s ago`;
+      if (s < 3600) return `${Math.round(s / 60)}m ago`;
+      return `${Math.round(s / 3600)}h ago`;
+    };
+
+    // ---------------------------------------------------------------
+    // Lane state update
+    // ---------------------------------------------------------------
+    function initLane(lane) {
+      state.lanes.set(lane.id, {
+        id: lane.id,
+        subreddit: lane.subreddit,
+        agents: {
+          captain: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false },
+          worker: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false },
+          synthesis: { state: 'idle', sats: 0, url: null, cycle: null, active: false },
+        },
+        totalSats: 0,
+        totalTxs: 0,
+      });
+    }
+
+    function setAgentState(laneId, role, newState, active = false) {
+      const lane = state.lanes.get(laneId);
+      if (!lane) return;
+      lane.agents[role].state = newState;
+      lane.agents[role].active = active;
+    }
+
+    // ---------------------------------------------------------------
+    // SSE event handlers
+    // ---------------------------------------------------------------
+    function handleInit(data) {
+      state.lanes.clear();
+      for (const lane of data.lanes) initLane(lane);
+      renderLanes();
+    }
+
+    function handleFeederHealth(data) {
+      state.feederHealth = data;
+      renderFeeder();
+    }
+
+    function handleAgentEvent(laneId, role, ev) {
+      const lane = state.lanes.get(laneId);
+      if (!lane) return;
+      const agent = lane.agents[role];
+      if (!agent) return;
+
+      switch (ev.type) {
+        case 'session_start':
+          agent.state = 'starting';
+          agent.active = true;
+          agent.sats = 0;
+          break;
+        case 'think_request':
+          agent.state = 'thinking…';
+          agent.active = true;
+          break;
+        case 'think_response':
+          if (ev.sats_effective) agent.sats += ev.sats_effective;
+          if (ev.finish_reason === 'tool_calls' && ev.tool_calls && ev.tool_calls.length) {
+            const names = ev.tool_calls.map((tc) => tc.function && tc.function.name).filter(Boolean);
+            agent.state = `→ ${names.join(' + ')}`;
+          } else {
+            agent.state = 'responded';
+          }
+          agent.active = true;
+          break;
+        case 'tool_call':
+          agent.state = `running ${ev.name}`;
+          agent.active = true;
+          break;
+        case 'tool_result':
+          if (ev.name === 'overlay_lookup') agent.state = `✓ overlay (${ev.success ? 'ok' : 'err'})`;
+          else if (ev.name === 'delegate_task') agent.state = `✓ delegated`;
+          else if (ev.name === 'execute_bash') agent.state = `✓ ran bash`;
+          else if (ev.name === 'upload_to_nanostore') {
+            const content = typeof ev.content === 'string' ? ev.content : '';
+            const urlMatch = content.match(/https:\/\/storage\.googleapis\.com\/prod-uhrp\/cdn\/[A-Za-z0-9]+/);
+            if (urlMatch) {
+              agent.state = `✓ uploaded`;
+              agent.url = urlMatch[0];
+            } else {
+              agent.state = `✓ ${ev.name}`;
+            }
+          } else if (ev.name === 'file_read') agent.state = `✓ read file`;
+          else agent.state = `✓ ${ev.name}`;
+          break;
+        case 'session_end':
+          if (ev.error) {
+            agent.state = `✗ ${ev.error.slice(0, 40)}`;
+          } else {
+            agent.state = `✓ done (${fmt(ev.sats_spent || 0)} sats)`;
+          }
+          agent.sats = ev.sats_spent || agent.sats;
+          agent.active = false;
+          break;
+        case 'error':
+          agent.state = `✗ ${(ev.error || '').slice(0, 40)}`;
+          agent.active = false;
+          break;
+      }
+      renderLanes();
+    }
+
+    function handleProofEmitted(ev) {
+      state.totals.txs += 1;
+      state.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
+      if (state.txStream.length > 100) state.txStream.length = 100;
+      const lane = state.lanes.get(ev.lane);
+      if (lane) lane.totalTxs += 1;
+      renderTotals();
+      renderTxStream();
+      renderLanes();
+    }
+
+    function handleCycleAggregate(ev) {
+      const lane = state.lanes.get(ev.lane);
+      if (!lane) return;
+      const cycle = (ev.data && ev.data.cycles && ev.data.cycles[0]) || {};
+      lane.totalSats += cycle.totalSats || 0;
+      state.totals.sats += cycle.totalSats || 0;
+      if (cycle.nanostoreUrl) {
+        state.articles.unshift({
+          lane: ev.lane,
+          url: cycle.nanostoreUrl,
+          txidsUrl: cycle.txidsUrl,
+          proofs: cycle.proofsCreated || 0,
+          ts: Date.now() / 1000,
+        });
+        if (state.articles.length > 20) state.articles.length = 20;
+        state.totals.articles += 1;
+      }
+      renderTotals();
+      renderLanes();
+      renderArticles();
+    }
+
+    function handleFeederEvent(ev) {
+      // feeder scrape_start / scrape_done / error events — we just refresh
+      // via the periodic health.json snapshot, so this is mostly a no-op.
+    }
+
+    // ---------------------------------------------------------------
+    // Rendering
+    // ---------------------------------------------------------------
+    function renderTotals() {
+      document.getElementById('total-txs').textContent = fmt(state.totals.txs);
+      document.getElementById('total-sats').textContent = fmt(state.totals.sats);
+      document.getElementById('total-articles').textContent = fmt(state.totals.articles);
+    }
+
+    function renderLanes() {
+      const grid = document.getElementById('lanes-grid');
+      const lanes = Array.from(state.lanes.values());
+      if (lanes.length === 0) {
+        grid.innerHTML = '<div class="empty">waiting for lanes…</div>';
+        return;
+      }
+      grid.innerHTML = lanes.map((lane) => `
+        <div class="lane">
+          <div class="lane-head">
+            <div>
+              <div class="lane-name">${lane.id}</div>
+              <div class="lane-sub">r/${lane.subreddit}</div>
+            </div>
+            <div class="lane-stats">
+              ${lane.totalTxs} txs · ${fmt(lane.totalSats)} sats
+            </div>
+          </div>
+          ${['captain', 'worker', 'synthesis'].map((role) => {
+            const a = lane.agents[role];
+            const cls = `agent ${role}${a.active ? ' active' : ''}${a.state && a.state.startsWith('✗') ? ' error' : ''}${a.state && a.state.startsWith('✓ done') ? ' done' : ''}`;
+            return `
+              <div class="${cls}">
+                <div>
+                  <span class="role ${role}">${role}</span>
+                </div>
+                <div class="state">${a.state || 'idle'}</div>
+                <div class="sats">${a.sats ? fmt(a.sats) : ''}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `).join('');
+    }
+
+    function renderFeeder() {
+      const bar = document.getElementById('feeder-bar');
+      const h = state.feederHealth;
+      if (!h || !h.perSub) {
+        bar.innerHTML = '<span class="lbl">Feeder:</span><span class="empty" style="padding:0;">waiting…</span>';
+        return;
+      }
+      const subs = Object.entries(h.perSub);
+      bar.innerHTML = `
+        <span class="lbl">Feeder (${h.uptimeSec || 0}s):</span>
+        ${subs.map(([name, s]) => `
+          <span class="sub">
+            <span class="name">r/${name}</span>
+            <span class="rate">${s.ratePerMin != null ? s.ratePerMin.toFixed(1) : '?'}/min</span>
+            <span class="queued">Q ${s.totalQueued || 0}</span>
+          </span>
+        `).join('')}
+      `;
+    }
+
+    function renderTxStream() {
+      const el = document.getElementById('tx-stream');
+      document.getElementById('tx-count').textContent = fmt(state.totals.txs);
+      if (state.txStream.length === 0) {
+        el.innerHTML = '<div class="empty">no txs yet</div>';
+        return;
+      }
+      el.innerHTML = state.txStream.map((tx) => `
+        <div class="tx-item">
+          <span class="txid"><a href="https://whatsonchain.com/tx/${tx.txid}" target="_blank" rel="noopener">${tx.txid.slice(0, 16)}…</a></span>
+          <span class="lane-tag">${tx.lane}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderArticles() {
+      const el = document.getElementById('article-feed');
+      document.getElementById('article-count').textContent = fmt(state.articles.length);
+      if (state.articles.length === 0) {
+        el.innerHTML = '<div class="empty">no articles yet</div>';
+        return;
+      }
+      el.innerHTML = state.articles.map((a) => `
+        <div class="article-item">
+          <a href="${a.url}" target="_blank" rel="noopener">📰 ${a.lane} — ${a.proofs} proofs cited</a>
+          <div class="meta">${ago(a.ts)} · <a href="${a.txidsUrl || '#'}" target="_blank" style="color:var(--muted);">txids manifest</a></div>
+        </div>
+      `).join('');
+    }
+
+    // ---------------------------------------------------------------
+    // SSE connection
+    // ---------------------------------------------------------------
+    function connect() {
+      const status = document.getElementById('status');
+      const statusText = document.getElementById('status-text');
+      statusText.textContent = 'connecting…';
+      status.classList.remove('live');
+
+      const src = new EventSource('/events');
+
+      src.onopen = () => {
+        statusText.textContent = 'live';
+        status.classList.add('live');
+      };
+
+      src.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        switch (msg.kind) {
+          case 'init':
+            handleInit(msg);
+            break;
+          case 'feeder_health':
+            handleFeederHealth(msg.data);
+            break;
+          case 'agent':
+            handleAgentEvent(msg.lane, msg.role, msg.ev);
+            break;
+          case 'proof_emitted':
+            handleProofEmitted(msg);
+            break;
+          case 'cycle_aggregate':
+            handleCycleAggregate(msg);
+            break;
+          case 'feeder':
+            handleFeederEvent(msg.ev);
+            break;
+        }
+      };
+
+      src.onerror = () => {
+        statusText.textContent = 'reconnecting…';
+        status.classList.remove('live');
+        src.close();
+        setTimeout(connect, 2000);
+      };
+    }
+
+    // Kick off
+    connect();
+  </script>
+</body>
+</html>
