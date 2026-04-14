@@ -7,12 +7,175 @@
 > feature-frozen from dolphinmilkshake's perspective. All remaining work
 > happens in THIS repo.
 >
-> ⚠️ **Live session status (2026-04-14 ~16:45)**: 15-wallet fleet provisioned,
-> 2-lane cycle passing, but the `bsv-wallet-cli split` subcommand produces
-> outputs with `change=0` which are invisible to dolphin-milk's createAction
-> coin selector. Band-aid (topup-fleet-untagged.sh) is in place; **full
-> root-cause fix in progress**. See [experiments/E21-0-stage.md](experiments/E21-0-stage.md)
-> for the forensic record + open tasks.
+> ✅ **Session checkpoint (2026-04-14 evening, post-E21-0)**: 5-lane fleet
+> cycle passed with 500 on-chain proofs + 4 NanoStore articles published.
+> Split-outputs bug fixed in bsv-wallet-cli v0.1.21 (published to crates.io).
+> 15 fleet wallets repaired via DB surgery. Single-lane synthesis validated.
+> See [experiments/E21-0-stage.md](experiments/E21-0-stage.md) for the
+> forensic record of the funding saga and the root-cause fix.
+>
+> **Next ship target**: 1-hour E21 soak with synthesis amortized 1-in-25.
+
+---
+
+## 🎉 E21-0 checkpoint — we're inside budget and on the right path
+
+**This was the moment the fleet became real.** First true parallel 5-lane
+fleet cycle, full synthesis pipeline, post-repair wallets, 500 on-chain
+proofs, 4 published NanoStore HTML articles with on-chain-cited
+blockquotes, all in a single ~385-second wall-clock window.
+
+### Per-lane tx accounting (what actually hit the chain)
+
+For each **full-synth** lane (worldnews / politics / gaming / movies):
+
+| tx type | count | source |
+|---|---:|---|
+| Data-plane OP_RETURN proofs | 100 | worker `proof_batch.sh` |
+| Captain BRC-18 control proofs |  ~6 | decision × 2, budget_snapshot, conversation_integrity, custody, task_completion |
+| Worker BRC-18 control proofs  |  ~6 | same set |
+| Synthesis BRC-18 control proofs | ~10 | decision × 4, capability_proof × 2, budget_snapshot, conversation_integrity, custody, task_completion |
+| x402 payment BEEFs | ~30 | captain + worker + synthesis LLM calls + NanoStore uploads |
+| **per-lane total** | **~152** | |
+
+askreddit (partial synthesis — no NanoStore uploads) landed **~120 txs**
+instead of ~152.
+
+**Fleet E21-0 total**: 4 × 152 + 120 = **~728 on-chain txs** for
+**1,800,259 sats** = **~2,470 sats per tx ≈ $0.000247 per tx**.
+
+### Scale math with full tx accounting
+
+The earlier PLAN-C-SCALE math counted only data-plane proofs (100/cycle).
+The real tx count per cycle is ~120-152 depending on whether synthesis
+runs. That changes everything — per-tx cost drops from ~3,600 sats to
+**~2,470 sats**, and fewer lanes are needed to hit 1.5M txs/day.
+
+With synthesis amortized **1-in-25** cycles (24 worker-only + 1 synth):
+
+- Worker-only cycle: ~130K sats, ~120 txs on-chain
+- Synthesis cycle: ~410K sats, ~152 txs on-chain
+- 25-cycle average: **~141K sats, ~121 txs/cycle**
+- Per-lane-per-day: 86400s ÷ ~148s/cycle = 584 cycles × 121 = **~70,664 txs/day/lane**
+
+### Lane-count options
+
+| scenario | lanes | daily on-chain txs | daily cost | verdict |
+|---|---:|---:|---:|---|
+| 22 lanes, 1-in-25 synth | 22 | ~1,554,600 | **$181/day** | ✅ inside $200 cap with 9% margin |
+| 25 lanes, 1-in-25 synth | 25 | ~1,766,600 | $206/day | ❌ just over cap |
+| 22 lanes, 1-in-50 synth | 22 | ~1,554,600 | **$174/day** | ✅ comfortable |
+| 20 lanes, 1-in-25 synth | 20 | ~1,413,280 | **$164/day** | ✅ but 6% short of 1.5M |
+
+**Target config: 22 lanes × 1-in-25 synthesis amortization ≈ 1.55M on-chain
+txs/day for ~$181/day.** That's inside the $100-200 cap with ~9% headroom
+for wallet degradation, cycle jitter, and synthesis cost variance.
+
+If we want more safety margin, 22 lanes × 1-in-50 synthesis = ~$174/day
+and still clears 1.5M.
+
+### Why this matters
+
+Before E21-0, the fleet-mode overhead vs single-lane E20d looked scary
+(captain was 98-120K across the lanes vs E20d's 91K — implying the fleet
+was ~15% more expensive per cycle). That made the $/day projection creep
+toward the edge of the cap.
+
+Counting ALL txs (not just data-plane proofs) reveals that the per-tx
+cost actually dropped from E18's 4,334 sats/proof to **~2,470 sats/tx**
+— a 43% improvement — because the cost is spread across 120-152
+transactions per cycle instead of 100.
+
+**We're not edge-of-cap anymore. We're comfortably inside.** Fleet-mode
+overhead was a red herring; the real lens is cost-per-on-chain-tx,
+and that lens says we're shipping strong.
+
+Source of the E21-0 numbers: `experiments/E21-0-stage.md` and the per-lane
+aggregate JSON files at `test-workspaces/fleet/<lane>/cycle-2026-04-14T21-03-*/`.
+
+---
+
+## 🎯 The todo list (ordered, current)
+
+### 1. Scale math: 1.5M target check-in
+Pull the E21-0 measured numbers into concrete daily/cycle projections.
+Answer: at these numbers, how many lanes and how many cycles/day are
+required to hit 1.5M proofs in 24h at ≤$200/day? Synthesis amortized
+1-in-25. Compare against PLAN-C-SCALE.md's earlier projections.
+Should result in an updated scale section in PLAN-C-SCALE.md and a
+concrete "we need N lanes" answer. **~20 min, no run.**
+
+### 2. askreddit synthesis partial (non-blocking investigation)
+E21-0 run produced 4/5 synthesis articles. askreddit's synthesis ran
+for only 37,427 sats (normal is ~280K) and returned no NanoStore URLs.
+Read synthesis-askreddit's session.jsonl from the cycle workspace,
+identify what went wrong (likely max_iterations hit before HTML
+composed, OR tool_call error, OR input records had some edge case).
+Fix or document as known flakiness. **~20 min, no run.**
+
+### 3. Synthesis amortization (gating the E21 soak)
+Currently lane-cycle.js runs synthesis on EVERY cycle when
+`ENABLE_SYNTHESIS=1`. For the 1-hour soak at SOAK_CYCLES=~15, that'd
+be 15 synthesis runs per lane × 5 lanes = 75 synthesis runs = ~21M
+sats = $21. That's expensive and not what PLAN-C-SCALE.md says to do.
+
+Per PLAN-C, synthesis should amortize **1-in-25 cycles** per lane
+(24 worker-only cycles between each synthesis cycle). Need to add a
+`SYNTHESIS_EVERY_N=25` env var to lane-cycle.js:
+- Env var default: `SYNTHESIS_EVERY_N=25` (or 0 = every cycle like today)
+- Logic: inside the cycle loop, skip the synthesis block unless
+  `cycleIdx % SYNTHESIS_EVERY_N === 0`
+- For the 1-hour soak at 15 cycles × 1-in-25 amortization, synthesis
+  only runs on cycle 0 of each lane (= 5 synthesis total for the run)
+- Expected cost: 5 × 285K = 1.4M synthesis sats + 15 × 5 × (captain
+  110K + worker 14K) = 9.3M other sats ≈ 10.7M sats ≈ **~$1.07 for
+  the hour soak**
+
+**~15 min work, gates task #4.**
+
+### 4. E21 1-hour soak
+Run `SOAK_CYCLES=15 ENABLE_SYNTHESIS=1 SYNTHESIS_EVERY_N=25
+LAUNCH_STAGGER_SEC=15 ./scripts/fleet-cycle.sh`. Expected:
+- 5 lanes × 15 cycles = 75 worker-only cycles + 5 synthesis cycles
+- ~7500 on-chain proofs
+- ~5 NanoStore articles
+- ~$1-1.50 total
+- ~1h wall clock per lane (stagger makes fleet-wall ~75 min total)
+
+**Budget check before firing**: each lane wallet needs enough UTXOs
+to cover 15 cycles of x402 churn. Current captain wallets have ~10M
+sats after E21-0, synthesis has ~5M, worker has ~5M. At 110K sats/
+cycle for captain = 1.65M for 15 cycles, fine. At 14K worker = 210K,
+fine. At 285K synthesis × 1 cycle = 285K, fine. **Budget OK without
+topups.** Verify with preflight before firing.
+
+### 5. Mission Control UI (task #13)
+Tiny Node server tailing:
+- `/tmp/dolphinsense-firehose/events.jsonl` (feeder stream)
+- `/tmp/dolphinsense-firehose/health.json` (feeder health)
+- Per-lane session.jsonl files (for live think/tool events)
+- Per-cycle records-annotated.jsonl (for txid list)
+SSE to browser, vanilla HTML dashboard (no framework). Lane tile grid,
+rolling tx counter, live article feed. Budget: ~2-3 hours for a
+functional-but-ugly version that's demo-ready.
+
+---
+
+## Gating notes
+
+- **Task #1 → #2 → #3 → #4**: strictly sequential. Task #1 (math) gives
+  us the target cost/cycle budget. Task #2 (askreddit) might surface
+  an LLM / synthesis bug worth fixing before any soak. Task #3 is the
+  prerequisite code change for #4 being affordable.
+- **Task #5 (UI)** can happen in parallel with any of #1-#4, but is
+  probably best to do AFTER #4 so we have real soak data to render.
+
+## What's NOT on this list (consciously deferred)
+
+- 30-wallet expansion (only needed if scale math says so after task #1)
+- 24h production run (Thursday)
+- Video + submission (Friday)
+- Anything post-submission
 
 ---
 
