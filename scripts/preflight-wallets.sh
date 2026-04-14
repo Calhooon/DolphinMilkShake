@@ -85,12 +85,21 @@ declare -a NAMES ENVS DBS ROLES
 
 if [ -n "$INVENTORY" ] && [ -f "$INVENTORY" ]; then
     log "using inventory: $INVENTORY"
+    # Accepts two shapes:
+    #   1. flat array:  [{"name": ..., "env": ..., "db": ..., "role": ...}]
+    #   2. wrapped obj: {"wallets": [{"name": ..., "env_path": ..., "db_path": ..., "role": ...}]}
+    # (shape #2 is what provision-fleet-wallets.sh emits)
     while IFS=$'\t' read -r name env db role; do
         NAMES+=("$name")
         ENVS+=("$env")
         DBS+=("$db")
         ROLES+=("$role")
-    done < <(jq -r '.[] | [.name, .env, .db, (.role // "unknown")] | @tsv' "$INVENTORY")
+    done < <(jq -r '
+        (if type == "array" then .
+         elif type == "object" and has("wallets") then .wallets
+         else [] end)[]
+        | [.name, (.env // .env_path), (.db // .db_path), (.role // "unknown")]
+        | @tsv' "$INVENTORY")
 else
     log "using default 3-wallet dev fleet"
     NAMES=("captain" "synthesis" "worker")

@@ -174,12 +174,19 @@ fi
 # ---- step 4: optional split ------------------------------------------------
 if [ "$SPLIT_COUNT" -gt 0 ]; then
     log "step 4/4 — split new UTXO into $SPLIT_COUNT outputs"
-    SPLIT_JSON="$(run_cli "$RECV_ENV" "$RECV_DB" split --count "$SPLIT_COUNT" 2>&1 || true)"
-    SPLIT_OUT="$(printf '%s' "$SPLIT_JSON" | jq -r '.outputs // empty' 2>/dev/null | tail -n 1)"
-    SPLIT_TXID="$(printf '%s' "$SPLIT_JSON" | jq -r '.txid // empty' 2>/dev/null | tail -n 1)"
-    if [ -z "$SPLIT_OUT" ] || [ "$SPLIT_OUT" != "$SPLIT_COUNT" ]; then
-        warn "split did not return expected output count (want=$SPLIT_COUNT got='$SPLIT_OUT')"
-        warn "last line: $(printf '%s' "$SPLIT_JSON" | tail -n 5)"
+    SPLIT_RAW="$(run_cli "$RECV_ENV" "$RECV_DB" split --count "$SPLIT_COUNT" 2>&1 || true)"
+    # Extract the JSON envelope — CLI mixes log lines (WARN/INFO) with JSON
+    SPLIT_JSON_LINE="$(printf '%s\n' "$SPLIT_RAW" | grep -oE '\{"outputs":[0-9]+[^}]*\}' | tail -n 1)"
+    if [ -z "$SPLIT_JSON_LINE" ]; then
+        warn "split did not return a JSON envelope"
+        warn "last 10 lines of output:"
+        printf '%s\n' "$SPLIT_RAW" | tail -10 >&2
+        exit 6
+    fi
+    SPLIT_OUT="$(printf '%s' "$SPLIT_JSON_LINE" | jq -r '.outputs // empty')"
+    SPLIT_TXID="$(printf '%s' "$SPLIT_JSON_LINE" | jq -r '.txid // empty')"
+    if [ "$SPLIT_OUT" != "$SPLIT_COUNT" ]; then
+        warn "split output count mismatch (want=$SPLIT_COUNT got='$SPLIT_OUT')"
         exit 6
     fi
     ok "split complete: $SPLIT_OUT outputs, txid=$SPLIT_TXID"
