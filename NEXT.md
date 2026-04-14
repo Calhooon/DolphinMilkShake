@@ -6,6 +6,13 @@
 > **Checkpoint commit**: `rust-bsv-worm@f47c0c3` — dolphin-milk binary is now
 > feature-frozen from dolphinmilkshake's perspective. All remaining work
 > happens in THIS repo.
+>
+> ⚠️ **Live session status (2026-04-14 ~16:45)**: 15-wallet fleet provisioned,
+> 2-lane cycle passing, but the `bsv-wallet-cli split` subcommand produces
+> outputs with `change=0` which are invisible to dolphin-milk's createAction
+> coin selector. Band-aid (topup-fleet-untagged.sh) is in place; **full
+> root-cause fix in progress**. See [experiments/E21-0-stage.md](experiments/E21-0-stage.md)
+> for the forensic record + open tasks.
 
 ---
 

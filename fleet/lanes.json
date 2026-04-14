@@ -1,0 +1,67 @@
+{
+  "_comment": "DolphinSense fleet layout. Initial E21 5-lane smoke test uses 5 lanes × 3 agents = 15 wallets. Port scheme: wallet 3400-3499, server 8100-8199. Each lane is 3 ports consecutive (captain = base+0, worker = base+1, synthesis = base+2). Roles are identical for every lane — the E20d-validated cycle-v2 stack.",
+  "_fleet_id": "e21-5lane-smoke",
+  "_created": "2026-04-14",
+  "_port_ranges": {
+    "wallet_base": 3400,
+    "wallet_max":  3499,
+    "server_base": 8100,
+    "server_max":  8199
+  },
+  "_wallet_dir": "~/bsv/wallets/fleet",
+  "_parent_wallet_port": 3321,
+  "_overlay_url": "https://rust-overlay.dev-a3e.workers.dev",
+  "_binary": "~/bsv/rust-bsv-worm/target/release/dolphin-milk",
+  "lanes": [
+    {
+      "id": "worldnews",
+      "subreddit": "worldnews",
+      "_note": "proven VIABLE in E19b at 25 new comments/min",
+      "agents": [
+        {"role": "captain",   "name": "captain-worldnews",   "server_port": 8100, "wallet_port": 3400, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-worldnews",    "server_port": 8101, "wallet_port": 3401, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-worldnews", "server_port": 8102, "wallet_port": 3402, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "politics",
+      "subreddit": "politics",
+      "_note": "high-churn candidate from rebalance list",
+      "agents": [
+        {"role": "captain",   "name": "captain-politics",   "server_port": 8103, "wallet_port": 3403, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-politics",    "server_port": 8104, "wallet_port": 3404, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-politics", "server_port": 8105, "wallet_port": 3405, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "askreddit",
+      "subreddit": "AskReddit",
+      "_note": "high-churn candidate — conversational content, good for synthesis",
+      "agents": [
+        {"role": "captain",   "name": "captain-askreddit",   "server_port": 8106, "wallet_port": 3406, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-askreddit",    "server_port": 8107, "wallet_port": 3407, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-askreddit", "server_port": 8108, "wallet_port": 3408, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "gaming",
+      "subreddit": "gaming",
+      "_note": "high-churn candidate — broad topic, good for diversity",
+      "agents": [
+        {"role": "captain",   "name": "captain-gaming",   "server_port": 8109, "wallet_port": 3409, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-gaming",    "server_port": 8110, "wallet_port": 3410, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-gaming", "server_port": 8111, "wallet_port": 3411, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "movies",
+      "subreddit": "movies",
+      "_note": "high-churn candidate — entertainment content, good for synthesis",
+      "agents": [
+        {"role": "captain",   "name": "captain-movies",   "server_port": 8112, "wallet_port": 3412, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-movies",    "server_port": 8113, "wallet_port": 3413, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-movies", "server_port": 8114, "wallet_port": 3414, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    }
+  ]
+}
