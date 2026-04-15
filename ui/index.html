@@ -631,6 +631,90 @@
       100% { opacity: 0; transform: translateY(0); }
     }
 
+    /* 5-dot cycle phase indicator under the lane head. Lit dots show phases
+       reached so far; current dot has a subtle ring + glow. */
+    .cycle-phase {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 4px 0 6px;
+    }
+    .cycle-phase .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.18);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      transition: all 0.18s ease;
+    }
+    .cycle-phase .dot.lit {
+      background: var(--accent, #60a5fa);
+      border-color: var(--accent, #60a5fa);
+      box-shadow: 0 0 4px rgba(96, 165, 250, 0.45);
+    }
+    .cycle-phase .dot.current {
+      transform: scale(1.3);
+      box-shadow: 0 0 8px var(--accent, #60a5fa), 0 0 12px rgba(96, 165, 250, 0.4);
+      animation: phase-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes phase-pulse {
+      0%, 100% { opacity: 0.85; }
+      50%      { opacity: 1; }
+    }
+
+    /* Iter counter next to role label */
+    .agent-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .iter {
+      font-family: var(--mono, monospace);
+      font-size: 9px;
+      color: var(--text-dim, #94a3b8);
+      padding: 0 3px;
+      border-radius: 2px;
+      background: rgba(148, 163, 184, 0.08);
+    }
+    .iter:empty { display: none; }
+
+    /* Last tool call line under the state */
+    .action-row {
+      min-height: 12px;
+      padding: 1px 0;
+    }
+    .last-tool {
+      font-family: var(--mono, monospace);
+      font-size: 9px;
+      color: var(--text-dim, #94a3b8);
+      opacity: 0.85;
+    }
+    .last-tool:empty { display: none; }
+
+    /* Cost row: session sats + wallet on the same line */
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      padding: 1px 0;
+    }
+    .cost-row .sats {
+      color: var(--warn, #fbbf24);
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .cost-row .sats:empty { display: none; }
+
+    /* Color the agent strip by current phase. Subtle left border accent. */
+    .agent[data-phase="thinking"] { border-left: 2px solid #a78bfa; }
+    .agent[data-phase="tool"]     { border-left: 2px solid #fbbf24; }
+    .agent[data-phase="done"]     { border-left: 2px solid #10b981; }
+    .agent[data-phase="error"]    { border-left: 2px solid #ef4444; }
+    .agent[data-phase="starting"] { border-left: 2px solid #60a5fa; }
+    .agent[data-phase="idle"]     { border-left: 2px solid rgba(148, 163, 184, 0.2); }
+
     /* Per-agent dolphin-milk web UI port link. Tiny monospace tag next to
        the role label so the user can click straight into any agent's UI. */
     .agent-port {
@@ -1639,6 +1723,14 @@
               <div class="sats-count" data-field="sats-count">0 sats</div>
             </div>
           </div>
+          <!-- 5-dot cycle phase indicator: claim → captain → worker → synthesis → done -->
+          <div class="cycle-phase" data-field="cycle-phase" title="cycle phase">
+            <span class="dot" data-phase-step="claim"></span>
+            <span class="dot" data-phase-step="captain"></span>
+            <span class="dot" data-phase-step="worker"></span>
+            <span class="dot" data-phase-step="synthesis"></span>
+            <span class="dot" data-phase-step="done"></span>
+          </div>
           <div class="banner-slot" data-field="banner-slot"></div>
           <div class="last-delegate" data-field="last-delegate" title="most recent captain → worker delegate"></div>
           ${['captain', 'worker', 'synthesis'].map((role) => {
@@ -1648,11 +1740,14 @@
               ? `<a class="agent-port" href="http://localhost:${port}/ui/" target="_blank" rel="noopener" title="open ${role} dolphin-milk UI">:${port}↗</a>`
               : '';
             return `
-            <div class="agent ${role}" data-role="${role}">
-              <div><span class="role ${role}">${role}</span> ${portLink}</div>
+            <div class="agent ${role}" data-role="${role}" data-phase="idle">
+              <div class="agent-head"><span class="role ${role}">${role}</span> ${portLink} <span class="iter" data-field="iter"></span></div>
               <div class="state" data-field="state">idle</div>
-              <div class="sats" data-field="agent-sats"></div>
-              <div class="wallet" data-field="wallet" title="wallet balance · utxo count"></div>
+              <div class="action-row"><span class="last-tool" data-field="last-tool" title="last tool call"></span></div>
+              <div class="cost-row">
+                <span class="sats" data-field="agent-sats"></span>
+                <span class="wallet" data-field="wallet" title="wallet balance · utxo count"></span>
+              </div>
             </div>
           `;}).join('')}
         </div>
@@ -1704,6 +1799,21 @@
         }
       }
 
+      // 5-dot cycle phase indicator. Mark dots up to and including the
+      // current phase as active; reaching 'done' lights all 5.
+      const phaseOrder = ['claim', 'captain', 'worker', 'synthesis', 'done'];
+      const currentPhase = lane.cyclePhase || 'idle';
+      const phaseIdx = phaseOrder.indexOf(currentPhase);
+      const dots = tile.querySelectorAll('[data-phase-step]');
+      dots.forEach((dot) => {
+        const step = dot.getAttribute('data-phase-step');
+        const stepIdx = phaseOrder.indexOf(step);
+        const isLit = phaseIdx >= 0 && stepIdx <= phaseIdx;
+        const isCurrent = stepIdx === phaseIdx;
+        toggleClass(dot, 'lit', isLit);
+        toggleClass(dot, 'current', isCurrent);
+      });
+
       // Per-agent updates
       for (const role of ['captain', 'worker', 'synthesis']) {
         const a = lane.agents[role];
@@ -1715,9 +1825,21 @@
         toggleClass(agentEl, 'done',   !!(a.state && a.state.startsWith('✓ done')));
         toggleClass(agentEl, 'sending',   a.pulseClass === 'sending');
         toggleClass(agentEl, 'receiving', a.pulseClass === 'receiving');
+        // data-phase attribute drives color-by-phase styling
+        const phase = a.phase || 'idle';
+        if (agentEl.getAttribute('data-phase') !== phase) {
+          agentEl.setAttribute('data-phase', phase);
+        }
         // Text content — only change if different.
         setText(agentEl, 'state', a.state || 'idle');
-        setText(agentEl, 'agent-sats', a.sats ? fmt(a.sats) : '');
+        // Iter count — show "i2" compact style next to role
+        const iterText = (typeof a.iter === 'number' && a.iter > 0) ? `i${a.iter}` : '';
+        setText(agentEl, 'iter', iterText);
+        // Last tool — show under state line as dim text
+        const lastToolText = a.lastTool ? `↳ ${a.lastTool}` : '';
+        setText(agentEl, 'last-tool', lastToolText);
+        // Running session sats (live cost meter)
+        setText(agentEl, 'agent-sats', a.sats ? `${fmt(a.sats)} sats` : '');
         const walletText = (a.walletSats != null) ? `💰 ${fmt(a.walletSats)} · ${a.walletUtxos || 0}u` : '';
         setText(agentEl, 'wallet', walletText);
       }
@@ -2030,14 +2152,26 @@
         lane.totalTxs = 0;
         lane.totalSats = 0;
         lane.lastDelegateAt = p.lastDelegateAt;
-        // Agent states
+        // Cycle-level phase indicator (claim → captain → worker → synthesis → done)
+        lane.cyclePhase = p.cyclePhase || 'idle';
+        lane.cycleStartMs = p.cycleStartMs || null;
+        // Agent states — copy ALL rich fields produced by the server.
+        // Server is the single source of truth; client just renders.
         for (const role of ['captain', 'worker', 'synthesis']) {
           const srcAgent = p.agents && p.agents[role];
           const dstAgent = lane.agents[role];
           if (srcAgent && dstAgent) {
             dstAgent.state = srcAgent.state || 'idle';
+            dstAgent.phase = srcAgent.phase || 'idle';
             dstAgent.active = !!srcAgent.active;
-            if (srcAgent.sats != null) dstAgent.sats = srcAgent.sats;
+            dstAgent.iter = srcAgent.iter || 0;
+            dstAgent.lastTool = srcAgent.lastTool || null;
+            dstAgent.lastToolAt = srcAgent.lastToolAt || null;
+            dstAgent.sats = srcAgent.sats || 0;
+            dstAgent.sessionStart = srcAgent.sessionStart || null;
+            dstAgent.taskId = srcAgent.taskId || null;
+            // recentEvents kept for future detail panel
+            dstAgent.recentEvents = srcAgent.recentEvents || [];
           }
         }
       }

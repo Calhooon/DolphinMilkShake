@@ -375,6 +375,12 @@ function ensureLaneSlot(laneId) {
       agents: { captain: null, worker: null, synthesis: null },
       lastDelegateAt: null,
       cycle_dir: null,
+      // Cycle phase tracks where the lane is in its current cycle:
+      //   idle | claim | captain | worker | synthesis | upload | done
+      // Derived from agent activity sequence, useful for the per-tile
+      // 5-dot phase indicator coming in Phase 5.
+      cyclePhase: 'idle',
+      cycleStartMs: null,
     });
   }
   if (!dashboardState.txidsByLane.has(laneId)) {
@@ -560,6 +566,8 @@ function computeSnapshot() {
       agents: laneState.agents || {},
       lastDelegateAt: laneState.lastDelegateAt || null,
       cycle_dir: laneState.cycle_dir || null,
+      cyclePhase: laneState.cyclePhase || 'idle',
+      cycleStartMs: laneState.cycleStartMs || null,
     };
   }
   return {
@@ -856,48 +864,134 @@ function ensureAgentTailer(lane, role) {
         ev,
       });
 
-      // New dashboardState path — derive a compact per-agent state label
-      // from the event type and store it on the lane slot. The client
-      // reads this from the snapshot and renders it surgically.
+      // ---- RICH PER-AGENT STATE ------------------------------------
+      // Server-authoritative tracking. Every tile field has a single
+      // source of truth on this slot. Fields:
+      //   state:       short label rendered in the tile (e.g. "thinking…")
+      //   phase:       one of {idle, starting, thinking, tool, done, error}
+      //   active:      whether the agent currently has work in flight
+      //   lastTool:    last tool_call name ("delegate_task", "execute_bash", …)
+      //   lastToolAt:  epoch ms of the last tool_call
+      //   iter:        current iteration count (0-indexed, increments on tool_call)
+      //   sats:        running cost for THIS session (incremented on tool_result)
+      //   sessionStart epoch ms when current session began
+      //   taskId:      current dolphin-milk task id
+      //   name:        agent name (set once)
+      //   port:        dolphin-milk web UI port (carried via lane.agents config)
+      //   recentEvents: ring buffer of last 20 {type,name,ts,iter} for the
+      //                 detail panel in Phase 4 (kept compact)
       const laneSlot = ensureLaneSlot(lane);
-      if (!laneSlot.agents[role]) laneSlot.agents[role] = { state: 'idle', active: false };
+      if (!laneSlot.agents[role]) {
+        laneSlot.agents[role] = {
+          state: 'idle', phase: 'idle', active: false,
+          lastTool: null, lastToolAt: null,
+          iter: 0, sats: 0,
+          sessionStart: null, taskId: null,
+          name: null, port: null,
+          recentEvents: [],
+        };
+      }
       const a = laneSlot.agents[role];
       a.name = LANE_AGENTS[lane][role].name;
+      a.port = LANE_AGENTS[lane][role].server_port;
+      const nowMs = Date.now();
+
+      // Push compact event into the per-agent ring (last 20). Phase 4
+      // detail panel will subscribe to this stream.
+      const compactEv = {
+        type: ev.type,
+        name: ev.name || null,
+        ts: nowMs,
+        iter: a.iter,
+      };
+      a.recentEvents.push(compactEv);
+      if (a.recentEvents.length > 20) a.recentEvents.shift();
+
       if (ev.type === 'session_start') {
+        // Reset session-scoped state on every new session_start so stale
+        // values from a prior cycle don't leak into the new one.
         a.state = 'starting';
+        a.phase = 'starting';
         a.active = true;
+        a.lastTool = null;
+        a.lastToolAt = null;
+        a.iter = 0;
+        a.sats = 0;
+        a.sessionStart = nowMs;
+        a.taskId = ev.task_id || ev.id || null;
+        a.recentEvents = [compactEv];
+        // Lane cyclePhase advances based on which agent just started:
+        // captain → 'captain', worker → 'worker', synthesis → 'synthesis'.
+        // First captain start of a fresh cycle resets cycleStartMs.
+        if (role === 'captain') {
+          if (laneSlot.cyclePhase === 'idle' || laneSlot.cyclePhase === 'done') {
+            laneSlot.cycleStartMs = nowMs;
+          }
+          laneSlot.cyclePhase = 'captain';
+        } else if (role === 'worker') {
+          laneSlot.cyclePhase = 'worker';
+        } else if (role === 'synthesis') {
+          laneSlot.cyclePhase = 'synthesis';
+        }
       } else if (ev.type === 'think_request') {
         a.state = 'thinking…';
+        a.phase = 'thinking';
         a.active = true;
       } else if (ev.type === 'tool_call') {
-        a.state = `running ${ev.name || 'tool'}`;
+        a.state = `→ ${ev.name || 'tool'}`;
+        a.phase = 'tool';
         a.active = true;
+        a.lastTool = ev.name || null;
+        a.lastToolAt = nowMs;
+        a.iter += 1;
       } else if (ev.type === 'tool_result') {
+        // Accumulate sats from tool result if present. Different tools
+        // report cost in different fields; cover both common shapes.
+        const cost = ev.sats_effective || ev.sats || ev.cost || 0;
+        if (typeof cost === 'number' && cost > 0) {
+          a.sats += cost;
+        }
         if (ev.success === false) {
           a.state = `✗ ${ev.name || 'tool'} error`;
+          a.phase = 'error';
           a.active = false;
+        } else {
+          // Successful tool result — return to thinking until next tool
+          // or session_end. Keeps the tile from looking stuck on a tool
+          // name when the agent has actually moved on.
+          a.state = 'thinking…';
+          a.phase = 'thinking';
         }
       } else if (ev.type === 'session_end') {
-        const sats = ev.sats_effective || ev.sats || 0;
+        const sats = ev.sats_effective || ev.sats || a.sats || 0;
         const errStr = ev.error ? String(ev.error) : '';
-        // "Hit max iterations (N)" is the EXPECTED end-state for the
-        // PARALLEL-mode captain (CAPTAIN_MAX_ITER=2). It is NOT a failure
-        // — the captain intentionally caps at N tool_calls and the
-        // harness then submits the worker task directly. Render this as
-        // a normal ✓ done so it doesn't show as red error in the UI.
         const isMaxIterCap = /Hit max iterations/i.test(errStr);
         if (errStr && !isMaxIterCap) {
           a.state = `✗ ${errStr.slice(0, 40)}`;
+          a.phase = 'error';
           a.active = false;
         } else {
-          // For max-iter cap, surface the iter count compactly.
           const iterMatch = errStr.match(/\((\d+)\)/);
           const iterTag = iterMatch ? ` capped@${iterMatch[1]}` : '';
           a.state = sats > 0
             ? `✓ done${iterTag} (${sats.toLocaleString()} sats)`
             : `✓ done${iterTag}`;
+          a.phase = 'done';
           a.active = false;
-          a.sats = sats;
+        }
+        a.sats = sats;
+        // If this is the synthesis agent finishing, mark the lane's
+        // cycle as fully done (synthesis is the last phase of cycle-v2).
+        // If synthesis is disabled and the worker just finished, treat
+        // worker-end as cycle-done.
+        if (role === 'synthesis') {
+          laneSlot.cyclePhase = 'done';
+        } else if (role === 'worker' && (!laneSlot.agents.synthesis || laneSlot.agents.synthesis.phase !== 'starting')) {
+          // Worker finished and synthesis hasn't started — possibly the
+          // last phase of an ENABLE_SYNTHESIS=0 run. Mark done.
+          if (laneSlot.cyclePhase === 'worker') {
+            laneSlot.cyclePhase = 'done';
+          }
         }
       }
       scheduleBroadcast();
@@ -1034,7 +1128,14 @@ function ensureBudgetTailer(lane, role) {
       if (typeof txid !== 'string' || txid.length !== 64 || !/^[a-f0-9]+$/.test(txid)) return;
       const added = addTxid(lane, txid);
       if (added) {
-        ensureLaneSlot(lane);
+        const slot = ensureLaneSlot(lane);
+        // Attribute the spend to the originating agent's running session
+        // total. Each budget.jsonl line has a `sats` field with the cost
+        // of the BRC-29 createAction (~200 sats per proof commitment).
+        const cost = (entry && typeof entry.sats === 'number') ? entry.sats : 0;
+        if (cost > 0 && slot.agents[role]) {
+          slot.agents[role].sats = (slot.agents[role].sats || 0) + cost;
+        }
         // Also push into recentTxs so the live stream panel shows
         // captain BRC-29 txs alongside worker proof_batch txids.
         dashboardState.recentTxs.unshift({
@@ -1042,6 +1143,7 @@ function ensureBudgetTailer(lane, role) {
           cycle_dir: 'budget',  // marker — these come from agent budget.jsonl
           txid,
           ts: Date.now(),
+          role,
         });
         if (dashboardState.recentTxs.length > RECENT_TXS_MAX) {
           dashboardState.recentTxs.length = RECENT_TXS_MAX;
