@@ -1945,6 +1945,135 @@
     }
 
     // ---------------------------------------------------------------
+    // Snapshot mode — server-authoritative single-source-of-truth.
+    // Gated by ?v=snapshot query flag for A/B validation. Once flipped
+    // to default, the legacy event handlers (handleInitHistorical,
+    // handleProofEmitted, handleCycleAggregate, handleAgentEvent merge
+    // logic) can be deleted.
+    //
+    // Contract: server sends one kind:'snapshot' event on connect, and
+    // another on every debounced (150ms) state change. Client stores
+    // the most recent snapshot and renders surgically. No local
+    // reducers. No merge. No double-count. No drops.
+    // ---------------------------------------------------------------
+    // Default = snapshot (server-authoritative). Legacy event-merge path
+    // reachable via ?v=legacy for emergency fallback. Will be deleted
+    // after the next live soak proves snapshot-mode under load.
+    const USE_SNAPSHOT_MODE = new URLSearchParams(location.search).get('v') !== 'legacy';
+    let latestSnapshot = null;
+
+    function applySnapshot(snap) {
+      latestSnapshot = snap;
+
+      // Seed lanes if empty (first snapshot acts as init replacement)
+      if (state.lanes.size === 0 && Array.isArray(snap.lanes)) {
+        for (const l of snap.lanes) initLane(l);
+      }
+
+      // Totals — authoritative from snap.totals (derived from set union)
+      state.historical.txs = snap.totals.txs;
+      state.historical.sats = snap.totals.sats;
+      state.historical.articles = snap.totals.articles;
+      state.historical.cycles = snap.totals.cycles;
+      state.historical.target = snap.target;
+      state.live.txs = 0;
+      state.live.sats = 0;
+      state.live.articleCount = 0;
+
+      // Per-lane — authoritative. Everything lives in snap.perLane[laneId].
+      for (const [laneId, lane] of state.lanes.entries()) {
+        const p = snap.perLane[laneId];
+        if (!p) continue;
+        lane.historicalTxs = p.txs;
+        lane.historicalSats = p.sats;
+        lane.totalTxs = 0;
+        lane.totalSats = 0;
+        lane.lastDelegateAt = p.lastDelegateAt;
+        // Agent states
+        for (const role of ['captain', 'worker', 'synthesis']) {
+          const srcAgent = p.agents && p.agents[role];
+          const dstAgent = lane.agents[role];
+          if (srcAgent && dstAgent) {
+            dstAgent.state = srcAgent.state || 'idle';
+            dstAgent.active = !!srcAgent.active;
+            if (srcAgent.sats != null) dstAgent.sats = srcAgent.sats;
+          }
+        }
+      }
+
+      // Wallet health — snap.walletHealth is {"lane:role": {sats, utxos}}
+      for (const [key, w] of Object.entries(snap.walletHealth || {})) {
+        const [laneId, role] = key.split(':');
+        const lane = state.lanes.get(laneId);
+        if (!lane) continue;
+        const agent = lane.agents[role];
+        if (!agent) continue;
+        agent.walletSats = w.sats;
+        agent.walletUtxos = w.utxos;
+      }
+
+      // Tx stream — replace the stream list with snap.recentTxs
+      // (newest first). Client just renders it; no increments.
+      state.live.txStream = (snap.recentTxs || []).map((t) => ({
+        txid: t.txid,
+        lane: t.lane,
+        ts: t.ts / 1000,
+      }));
+
+      // Activity feed — replace with snap.recentFlows
+      state.activity = (snap.recentFlows || []).map((f) => ({
+        lane: f.lane,
+        phase: f.phase,
+        from_name: f.from_name,
+        to_name: f.to_name,
+        amount_sats: f.amount_sats || null,
+        ts: f.ts,
+      }));
+
+      // Feeder health
+      if (snap.feederHealth) state.feederHealth = snap.feederHealth;
+
+      // Articles — replace list
+      if (Array.isArray(snap.articles)) {
+        state.historical.articlesList = snap.articles;
+      }
+
+      // Trigger all renders. Surgical DOM update under the hood.
+      renderTotals();
+      renderProgress();
+      renderLanes();
+      renderTxStream();
+      renderActivity();
+      renderFeeder();
+      renderArticles();
+    }
+    function renderActivity() { renderDirty.activity = true; scheduleRender(); }
+
+    // Custom tx stream renderer for snapshot mode — full replace of the
+    // panel body from state.live.txStream. Doesn't touch the rate window
+    // (snapshot mode doesn't track rate yet — can be added later by
+    // deriving from tx timestamps in the snap).
+    function doRenderTxStreamSnapshot() {
+      const liveBody = document.getElementById('tx-stream');
+      if (!liveBody) return;
+      const items = state.live.txStream || [];
+      if (items.length === 0) {
+        if (!liveBody.querySelector('.empty')) {
+          liveBody.innerHTML = '<div class="empty">waiting for live txs…</div>';
+        }
+        return;
+      }
+      liveBody.innerHTML = items.map((t) => `
+        <div class="tx-item">
+          <span class="lane-tag">${t.lane}</span>
+          <span class="txid">${t.txid.slice(0,10)}…${t.txid.slice(-8)}</span>
+        </div>
+      `).join('');
+      const txCountEl = document.getElementById('tx-count');
+      if (txCountEl) txCountEl.textContent = fmt(items.length);
+    }
+
+    // ---------------------------------------------------------------
     // SSE connection
     // ---------------------------------------------------------------
     function connect() {
@@ -1963,6 +2092,14 @@
       src.onmessage = (e) => {
         let msg;
         try { msg = JSON.parse(e.data); } catch { return; }
+
+        // Snapshot mode: ONLY listen for kind:'snapshot'. Ignore all
+        // legacy delta events. The server is the single source of truth.
+        if (USE_SNAPSHOT_MODE) {
+          if (msg.kind === 'snapshot') applySnapshot(msg.state);
+          return;
+        }
+
         switch (msg.kind) {
           case 'init':
             handleInit(msg);

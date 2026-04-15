@@ -156,7 +156,10 @@ function scanHistoricalState() {
   // top-level non-lane entries (cursors/, health.json files, etc).
   const skipNames = new Set(['cursors', 'events.jsonl', '.DS_Store']);
   const laneIdsToScan = [...discoveredLaneIds].filter(
-    (id) => !skipNames.has(id) && !id.startsWith('health.') && !id.endsWith('.json'),
+    (id) => !skipNames.has(id)
+      && !id.startsWith('health.')
+      && !id.endsWith('.json')
+      && !id.startsWith('cycle-'),
   );
 
   // Use a Set to dedupe across all sources — same txid may appear in both
@@ -325,6 +328,281 @@ function scanHistoricalState() {
   );
 }
 
+// ---- SERVER-AUTHORITATIVE DASHBOARD STATE --------------------------------
+// Single source of truth for the dashboard. Replaces the legacy split between
+// historicalState (periodic-rescan) and client-side live-delta counters.
+//
+// Design principles:
+//   1. txidsByLane is a Map<lane, Set<txid>>. Union is never shrunk — all
+//      additions go through addTxid(). Counts are DERIVED at snapshot time
+//      from set size, never running counters. No drops possible.
+//   2. perLane aggregates (sats, cycles, articles) come from aggregate.json
+//      files via rebuildAggregatesFromDisk() which fully recomputes them on
+//      every rescan. Because they're replaced atomically from the source of
+//      truth, no race/staleness.
+//   3. agents/walletHealth/feederHealth are pure live state written by
+//      tailers. No historical fallback needed — if a tailer hasn't seen it
+//      yet, the field is empty.
+//   4. Every mutation calls scheduleBroadcast() which debounces 150ms and
+//      sends the full computed snapshot to every SSE client. Clients are
+//      pure renderers: apply snapshot → surgical DOM.
+const dashboardState = {
+  schema: 1,
+  updatedAt: Date.now(),
+  // union counts — lane → Set<txid>
+  txidsByLane: new Map(),
+  // aggregate per-lane state merged from disk + live events
+  //   laneId → {
+  //     sats, cycles, articles,         // from aggregate.json
+  //     agents: { captain, worker, synthesis }, // live agent state
+  //     lastDelegateAt,                 // epoch ms
+  //     cycle_dir,                      // most recent cycle dir name
+  //   }
+  perLane: new Map(),
+  articles: [], // [{lane, url, txidsUrl, proofs, cycleId, cycleDir, ts}] newest first
+  recentTxs: [],    // [{lane, cycle_dir, txid, ts}] newest first, cap 50
+  recentFlows: [],  // [{lane, phase, from, to, from_name, to_name, amount_sats?, ts}] newest first, cap 20
+  walletHealth: {}, // `${lane}:${role}` → {sats, utxos, updatedAt}
+  feederHealth: null,
+};
+
+function ensureLaneSlot(laneId) {
+  if (!dashboardState.perLane.has(laneId)) {
+    dashboardState.perLane.set(laneId, {
+      sats: 0,
+      cycles: 0,
+      articles: 0,
+      agents: { captain: null, worker: null, synthesis: null },
+      lastDelegateAt: null,
+      cycle_dir: null,
+    });
+  }
+  if (!dashboardState.txidsByLane.has(laneId)) {
+    dashboardState.txidsByLane.set(laneId, new Set());
+  }
+  return dashboardState.perLane.get(laneId);
+}
+
+function addTxid(laneId, txid) {
+  if (!dashboardState.txidsByLane.has(laneId)) {
+    dashboardState.txidsByLane.set(laneId, new Set());
+  }
+  const set = dashboardState.txidsByLane.get(laneId);
+  const before = set.size;
+  set.add(txid);
+  return set.size > before; // true if newly added
+}
+
+// Recompute perLane.sats/cycles/articles + articles list from aggregate.json
+// files. This is idempotent and replaces the aggregate-derived fields
+// atomically from disk — the source of truth for those counts.
+function rebuildAggregatesFromDisk() {
+  // Reset aggregate fields on every lane in our state. DO NOT touch
+  // txidsByLane (that's additive) or agents/wallet/feeder (pure live).
+  for (const laneState of dashboardState.perLane.values()) {
+    laneState.sats = 0;
+    laneState.cycles = 0;
+    laneState.articles = 0;
+  }
+  const articles = [];
+
+  // Discover all lane dirs on disk — current config + historical
+  const discoveredLaneIds = new Set(LANES.map((l) => l.id));
+  try {
+    for (const e of fs.readdirSync(SHARED_DIR, { withFileTypes: true })) {
+      if (e.isDirectory()) discoveredLaneIds.add(e.name);
+    }
+  } catch { /* missing dir */ }
+  try {
+    for (const e of fs.readdirSync(FLEET_WORKSPACE, { withFileTypes: true })) {
+      if (e.isDirectory()) discoveredLaneIds.add(e.name);
+    }
+  } catch { /* missing dir */ }
+  const skipNames = new Set(['cursors', 'events.jsonl', '.DS_Store']);
+  const laneIdsToScan = [...discoveredLaneIds].filter(
+    (id) => !skipNames.has(id)
+      && !id.startsWith('health.')
+      && !id.endsWith('.json')
+      && !id.startsWith('cycle-'),
+  );
+
+  for (const laneId of laneIdsToScan) {
+    ensureLaneSlot(laneId);
+    const laneState = dashboardState.perLane.get(laneId);
+    const laneDir = path.join(FLEET_WORKSPACE, laneId);
+    let entries;
+    try { entries = fs.readdirSync(laneDir, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.startsWith('cycle-')) continue;
+      const aggPath = path.join(laneDir, entry.name, 'aggregate.json');
+      let data;
+      try { data = JSON.parse(fs.readFileSync(aggPath, 'utf8')); } catch { continue; }
+      const cycle = (data.cycles || [])[0];
+      if (!cycle) continue;
+      laneState.cycles += 1;
+      laneState.sats += cycle.totalSats || 0;
+      if (cycle.nanostoreUrl) {
+        laneState.articles += 1;
+        articles.push({
+          lane: laneId,
+          url: cycle.nanostoreUrl,
+          txidsUrl: cycle.txidsUrl,
+          proofs: cycle.proofsCreated || 0,
+          cycleId: cycle.cycleId,
+          cycleDir: entry.name,
+          ts: parseCycleDirTs(entry.name),
+        });
+      }
+    }
+  }
+  articles.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (articles.length > 200) articles.length = 200;
+  dashboardState.articles = articles;
+}
+
+// Walk records.jsonl.txids and budget.jsonl across all discovered lanes,
+// adding txids to dashboardState.txidsByLane. Set union => never shrinks.
+// Called at boot + on 20s rescan. Safe to call repeatedly.
+function rebuildTxidsFromDisk() {
+  const discoveredLaneIds = new Set(LANES.map((l) => l.id));
+  try {
+    for (const e of fs.readdirSync(SHARED_DIR, { withFileTypes: true })) {
+      if (e.isDirectory()) discoveredLaneIds.add(e.name);
+    }
+  } catch { /* missing dir */ }
+  try {
+    for (const e of fs.readdirSync(FLEET_WORKSPACE, { withFileTypes: true })) {
+      if (e.isDirectory()) discoveredLaneIds.add(e.name);
+    }
+  } catch { /* missing dir */ }
+  const skipNames = new Set(['cursors', 'events.jsonl', '.DS_Store']);
+  const laneIdsToScan = [...discoveredLaneIds].filter(
+    (id) => !skipNames.has(id)
+      && !id.startsWith('health.')
+      && !id.endsWith('.json')
+      && !id.startsWith('cycle-'),
+  );
+  for (const laneId of laneIdsToScan) {
+    ensureLaneSlot(laneId);
+    // records.jsonl.txids (data-plane proofs)
+    const sharedLaneDir = path.join(SHARED_DIR, laneId);
+    let sharedEntries;
+    try { sharedEntries = fs.readdirSync(sharedLaneDir, { withFileTypes: true }); } catch { sharedEntries = []; }
+    for (const entry of sharedEntries) {
+      if (!entry.isDirectory() || !entry.name.startsWith('cycle-')) continue;
+      const txidsFile = path.join(sharedLaneDir, entry.name, 'records.jsonl.txids');
+      try {
+        const content = fs.readFileSync(txidsFile, 'utf8');
+        for (const line of content.split('\n')) {
+          const t = line.trim();
+          if (t.length === 64 && /^[a-f0-9]+$/.test(t)) addTxid(laneId, t);
+        }
+      } catch { /* file may not exist for all cycle dirs */ }
+    }
+    // budget.jsonl (control-plane proofs via agent actions)
+    const fleetLaneDir = path.join(FLEET_WORKSPACE, laneId);
+    let agentEntries;
+    try { agentEntries = fs.readdirSync(fleetLaneDir, { withFileTypes: true }); } catch { agentEntries = []; }
+    for (const agentEntry of agentEntries) {
+      if (!agentEntry.isDirectory()) continue;
+      if (agentEntry.name.startsWith('cycle-')) continue;
+      const tasksDir = path.join(fleetLaneDir, agentEntry.name, 'tasks');
+      let taskEntries;
+      try { taskEntries = fs.readdirSync(tasksDir, { withFileTypes: true }); } catch { continue; }
+      for (const task of taskEntries) {
+        if (!task.isDirectory()) continue;
+        const budgetFile = path.join(tasksDir, task.name, 'budget.jsonl');
+        let raw;
+        try { raw = fs.readFileSync(budgetFile, 'utf8'); } catch { continue; }
+        for (const line of raw.split('\n')) {
+          if (!line.trim()) continue;
+          try {
+            const entry = JSON.parse(line);
+            const txid = entry && entry.details && entry.details.txid;
+            if (typeof txid === 'string' && txid.length === 64 && /^[a-f0-9]+$/.test(txid)) {
+              addTxid(laneId, txid);
+            }
+          } catch { /* malformed line */ }
+        }
+      }
+    }
+  }
+}
+
+// Full disk rebuild — txids (additive) + aggregates (atomic replace).
+function rebuildDashboardFromDisk() {
+  const t0 = Date.now();
+  rebuildTxidsFromDisk();
+  rebuildAggregatesFromDisk();
+  dashboardState.updatedAt = Date.now();
+  let totalTxs = 0;
+  for (const set of dashboardState.txidsByLane.values()) totalTxs += set.size;
+  console.log(`[ui] dashboard rebuilt (${Date.now() - t0}ms): ${totalTxs} txs across ${dashboardState.perLane.size} lanes`);
+}
+
+// Compute the snapshot payload that gets broadcast to clients. Derived from
+// dashboardState at call time — no running totals. Totals = sum over sets.
+function computeSnapshot() {
+  const totals = { txs: 0, sats: 0, articles: 0, cycles: 0 };
+  const perLaneOut = {};
+  for (const [laneId, laneState] of dashboardState.perLane.entries()) {
+    const txidSet = dashboardState.txidsByLane.get(laneId);
+    const laneTxs = txidSet ? txidSet.size : 0;
+    totals.txs += laneTxs;
+    totals.sats += laneState.sats || 0;
+    totals.cycles += laneState.cycles || 0;
+    totals.articles += laneState.articles || 0;
+    perLaneOut[laneId] = {
+      txs: laneTxs,
+      sats: laneState.sats || 0,
+      cycles: laneState.cycles || 0,
+      articles: laneState.articles || 0,
+      agents: laneState.agents || {},
+      lastDelegateAt: laneState.lastDelegateAt || null,
+      cycle_dir: laneState.cycle_dir || null,
+    };
+  }
+  return {
+    schema: 1,
+    target: TARGET_TXS,
+    updatedAt: dashboardState.updatedAt,
+    totals,
+    perLane: perLaneOut,
+    articles: dashboardState.articles,
+    recentTxs: dashboardState.recentTxs,
+    recentFlows: dashboardState.recentFlows,
+    walletHealth: dashboardState.walletHealth,
+    feederHealth: dashboardState.feederHealth,
+    lanes: LANES.map((l) => ({
+      id: l.id,
+      subreddit: l.subreddit,
+      source: l.source || 'reddit',
+      display_prefix: l.display_prefix || '',
+      agents: (l.agents || []).map((a) => ({ role: a.role, name: a.name, server_port: a.server_port })),
+    })),
+  };
+}
+
+// Debounced broadcast: many mutations in rapid succession coalesce into one
+// snapshot send. 150ms gives us real-time feel without flooding clients.
+let _broadcastTimer = null;
+function scheduleBroadcast() {
+  dashboardState.updatedAt = Date.now();
+  if (_broadcastTimer) return;
+  _broadcastTimer = setTimeout(() => {
+    _broadcastTimer = null;
+    broadcastSnapshot();
+  }, 150);
+}
+
+function broadcastSnapshot() {
+  const snap = computeSnapshot();
+  const payload = `data: ${JSON.stringify({ kind: 'snapshot', state: snap })}\n\n`;
+  for (const res of clients) {
+    try { res.write(payload); } catch { /* ignore broken pipes */ }
+  }
+}
+
 // Best-effort parse of a cycle dir name like "cycle-2026-04-14T20-57-49-XXXXX"
 // into a Unix timestamp (seconds). Returns 0 on failure.
 function parseCycleDirTs(dirName) {
@@ -483,6 +761,8 @@ function pollFeederHealth() {
   if (serialized !== lastHealthSnapshot) {
     lastHealthSnapshot = serialized;
     broadcast({ kind: 'feeder_health', data: merged });
+    dashboardState.feederHealth = merged;
+    scheduleBroadcast();
   }
 }
 
@@ -565,6 +845,40 @@ function ensureAgentTailer(lane, role) {
         ev,
       });
 
+      // New dashboardState path — derive a compact per-agent state label
+      // from the event type and store it on the lane slot. The client
+      // reads this from the snapshot and renders it surgically.
+      const laneSlot = ensureLaneSlot(lane);
+      if (!laneSlot.agents[role]) laneSlot.agents[role] = { state: 'idle', active: false };
+      const a = laneSlot.agents[role];
+      a.name = LANE_AGENTS[lane][role].name;
+      if (ev.type === 'session_start') {
+        a.state = 'starting';
+        a.active = true;
+      } else if (ev.type === 'think_request') {
+        a.state = 'thinking…';
+        a.active = true;
+      } else if (ev.type === 'tool_call') {
+        a.state = `running ${ev.name || 'tool'}`;
+        a.active = true;
+      } else if (ev.type === 'tool_result') {
+        if (ev.success === false) {
+          a.state = `✗ ${ev.name || 'tool'} error`;
+          a.active = false;
+        }
+      } else if (ev.type === 'session_end') {
+        const sats = ev.sats_effective || ev.sats || 0;
+        if (ev.error) {
+          a.state = `✗ ${String(ev.error).slice(0, 40)}`;
+          a.active = false;
+        } else {
+          a.state = sats > 0 ? `✓ done (${sats.toLocaleString()} sats)` : '✓ done';
+          a.active = false;
+          a.sats = sats;
+        }
+      }
+      scheduleBroadcast();
+
       // Detect inter-agent messages and emit a dedicated "message_flow"
       // event so the UI can render a visual handoff between agent tiles.
       //
@@ -586,6 +900,18 @@ function ensureAgentTailer(lane, role) {
         };
         recordFlow(flow);
         broadcast(flow);
+        // dashboardState mirror
+        dashboardState.recentFlows.unshift({
+          lane, phase: 'sending',
+          from: 'captain', to: 'worker',
+          from_name: flow.from_name, to_name: flow.to_name,
+          ts: flow.ts,
+        });
+        if (dashboardState.recentFlows.length > RECENT_FLOWS_MAX) {
+          dashboardState.recentFlows.length = RECENT_FLOWS_MAX;
+        }
+        laneSlot.lastDelegateAt = flow.ts;
+        scheduleBroadcast();
       }
       if (role === 'captain' && ev.type === 'tool_result' && ev.name === 'delegate_task' && ev.success) {
         let commission_id = null;
@@ -612,6 +938,18 @@ function ensureAgentTailer(lane, role) {
         };
         recordFlow(flow);
         broadcast(flow);
+        dashboardState.recentFlows.unshift({
+          lane, phase: 'confirmed',
+          from: 'captain', to: 'worker',
+          from_name: flow.from_name, to_name: flow.to_name,
+          amount_sats, commission_id,
+          ts: flow.ts,
+        });
+        if (dashboardState.recentFlows.length > RECENT_FLOWS_MAX) {
+          dashboardState.recentFlows.length = RECENT_FLOWS_MAX;
+        }
+        laneSlot.lastDelegateAt = flow.ts;
+        scheduleBroadcast();
       }
       // Worker picking up the commission from its inbox: the first
       // think_request after session_start signals "received message".
@@ -629,6 +967,16 @@ function ensureAgentTailer(lane, role) {
         };
         recordFlow(flow);
         broadcast(flow);
+        dashboardState.recentFlows.unshift({
+          lane, phase: 'received',
+          from: 'captain', to: 'worker',
+          from_name: flow.from_name, to_name: flow.to_name,
+          ts: flow.ts,
+        });
+        if (dashboardState.recentFlows.length > RECENT_FLOWS_MAX) {
+          dashboardState.recentFlows.length = RECENT_FLOWS_MAX;
+        }
+        scheduleBroadcast();
       }
     },
     // Replay the last 128 KB of the session.jsonl when we first see the
@@ -711,6 +1059,10 @@ function pollCycleAggregates() {
         const data = JSON.parse(raw);
         seenAggregates.set(aggPath, mtime);
         broadcast({ kind: 'cycle_aggregate', lane: lane.id, cycle_dir: entry.name, data });
+        // dashboardState: fresh aggregate arrived — recompute aggregate fields
+        // (idempotent) and schedule a broadcast.
+        rebuildAggregatesFromDisk();
+        scheduleBroadcast();
       } catch { /* still being written — leave prev mtime so we retry */ }
     }
   }
@@ -767,11 +1119,26 @@ function pollTxidStreams() {
                 cycle_dir: entry.name,
                 txid,
               };
-              // Push into ring buffer (newest first) so new SSE clients
-              // get an immediately-populated tx stream on connect.
+              // Legacy: ring buffer + per-event broadcast
               recentTxs.unshift(ev);
               if (recentTxs.length > RECENT_TXS_MAX) recentTxs.length = RECENT_TXS_MAX;
               broadcast(ev);
+              // New: dashboardState union + recentTxs ring + debounced snapshot
+              const added = addTxid(lane.id, txid);
+              if (added) {
+                const laneSlot = ensureLaneSlot(lane.id);
+                laneSlot.cycle_dir = entry.name;
+                dashboardState.recentTxs.unshift({
+                  lane: lane.id,
+                  cycle_dir: entry.name,
+                  txid,
+                  ts: Date.now(),
+                });
+                if (dashboardState.recentTxs.length > RECENT_TXS_MAX) {
+                  dashboardState.recentTxs.length = RECENT_TXS_MAX;
+                }
+                scheduleBroadcast();
+              }
             }
           }
         });
@@ -875,9 +1242,16 @@ function pollWallets() {
             sats: result.sats,
             utxos: result.utxos,
           });
+          // Mirror into dashboardState
+          dashboardState.walletHealth[key] = {
+            sats: result.sats,
+            utxos: result.utxos,
+            updatedAt: Date.now(),
+          };
         }
         if (pending === 0 && updates.length > 0) {
           broadcast({ kind: 'wallet_health', updates });
+          scheduleBroadcast();
         }
       });
     }
@@ -911,6 +1285,9 @@ setInterval(() => {
       articlesList: historicalState.articlesList,
       perLane: historicalState.perLane,
     });
+    // New path: rebuild dashboardState and broadcast snapshot
+    rebuildDashboardFromDisk();
+    scheduleBroadcast();
   } catch (e) {
     console.error('[ui] rescan error:', e.message);
   }
@@ -1029,6 +1406,13 @@ function handleSse(req, res) {
     }
   }
 
+  // Send initial snapshot so clients using the new architecture have
+  // immediate state. Clients using the legacy path simply ignore it
+  // because they don't register a handler for `kind: 'snapshot'`.
+  try {
+    res.write(`data: ${JSON.stringify({ kind: 'snapshot', state: computeSnapshot() })}\n\n`);
+  } catch { /* ignore */ }
+
   clients.add(res);
 
   // Heartbeat every 30s to keep the connection alive through proxies
@@ -1065,6 +1449,15 @@ const server = http.createServer((req, res) => {
   //   ?offset=N      pagination (default 0)
   //   ?limit=N       pagination (default 500, max 5000)
   // Response: { total, offset, limit, txs: [{txid, lane}], scannedAt, byLaneCounts }
+  // GET /api/state — returns the current dashboardState snapshot as JSON.
+  // Used for debugging (compare against what the client shows) and for
+  // any non-SSE consumers that want one-shot state.
+  if (pathname === '/api/state') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    res.end(JSON.stringify(computeSnapshot()));
+    return;
+  }
+
   if (pathname === '/api/txs') {
     const laneFilter = url.searchParams.get('lane');
     const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10));
@@ -1098,6 +1491,9 @@ const server = http.createServer((req, res) => {
 // Scan historical state BEFORE starting the server so the first SSE client
 // always gets a non-empty init_historical. Also primes seenAggregates.
 scanHistoricalState();
+// New path: rebuild dashboardState from disk so the FIRST snapshot broadcast
+// is immediately accurate, no lazy fill-in.
+rebuildDashboardFromDisk();
 
 // Prime the recentTxs ring buffer from disk at boot so the FIRST cold-start
 // SSE client sees an already-populated Live TX Stream. Without this, the
@@ -1147,6 +1543,13 @@ function primeRecentTxs() {
       lane: c.lane,
       cycle_dir: c.cycle_dir,
       txid: c.txid,
+    });
+    // Mirror into dashboardState.recentTxs (newest first, compact shape).
+    dashboardState.recentTxs.push({
+      lane: c.lane,
+      cycle_dir: c.cycle_dir,
+      txid: c.txid,
+      ts: c.mtimeMs,
     });
   }
   console.log(`[ui] recentTxs primed: ${recentTxs.length} entries`);
