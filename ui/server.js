@@ -1078,6 +1078,39 @@ function ensureAgentTailer(lane, role) {
           a.phase = 'error';
           a.active = false;
         } else {
+          // LIVE article upload detection: synthesis agent's
+          // upload_to_nanostore tool_result with success=true means
+          // a fresh article just landed. Extract the URL from the
+          // content payload and bump dashboardState.articles + the
+          // per-lane article counter immediately, instead of waiting
+          // for cycle aggregate.json + 20s rescan.
+          if (role === 'synthesis' && ev.name === 'upload_to_nanostore') {
+            try {
+              const content = typeof ev.content === 'string'
+                ? JSON.parse(ev.content)
+                : ev.content;
+              const url = content && (content.public_url || content.url || content.nanostore_url);
+              if (typeof url === 'string' && url.length > 0) {
+                // Push to the articles list (newest first) — dedup by URL
+                const existing = dashboardState.articles.find((a2) => a2.url === url);
+                if (!existing) {
+                  dashboardState.articles.unshift({
+                    lane,
+                    url,
+                    txidsUrl: content.txids_url || content.txidsUrl || null,
+                    proofs: content.proofs || content.proof_count || 0,
+                    cycleId: content.cycle_id || laneSlot.cycle_dir || null,
+                    cycleDir: laneSlot.cycle_dir || null,
+                    ts: Math.floor(Date.now() / 1000),
+                  });
+                  if (dashboardState.articles.length > 200) {
+                    dashboardState.articles.length = 200;
+                  }
+                  laneSlot.articles = (laneSlot.articles || 0) + 1;
+                }
+              }
+            } catch { /* malformed content — ignore */ }
+          }
           // Successful tool result — return to thinking until next tool
           // or session_end. Keeps the tile from looking stuck on a tool
           // name when the agent has actually moved on.
