@@ -169,16 +169,53 @@
       .right-panel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
-    /* Each bottom panel gets generous height — enough for the TX breakdown's
-       7 categories with bars, the activity feed's recent handoffs, the
-       article list, etc. Internal scroll if content exceeds. */
+    /* Each bottom panel grows naturally to fit its content. NO internal
+       scroll cap — the user complaint was "can't get to the bottom" which
+       happens when panels capture the scroll wheel via internal overflow.
+       Letting the page grow vertically and scroll as one unit means the
+       scroll wheel always scrolls the page no matter where the cursor is.
+       Each panel still has a min-height for visual consistency. */
     .right-panel .panel {
-      min-height: 360px;
-      max-height: 480px;
+      min-height: 320px;
+      max-height: none !important;
+      overflow: visible !important;
     }
+    /* Panel-body never internally-scrolls in the bottom-grid layout. Lists
+       inside (tx stream, activity feed, articles) grow with their content.
+       The !important overrides the global .panel-body { overflow-y: auto }
+       rule from the legacy fixed-viewport era. */
     .right-panel .panel-body {
-      overflow-y: auto;
+      overflow: visible !important;
+      max-height: none !important;
+      flex: none !important;
     }
+    /* Cap the tx stream + activity + article lists so they don't make
+       the page absurdly tall (50 txs at ~25px each = 1250px would make
+       the panel taller than viewport). overflow: hidden NOT auto — we
+       want the page wheel to scroll the WHOLE page, not capture into
+       a sublist. Visual clip only. The data is still all there in
+       state.* and accessible via /api/state for debugging. */
+    .right-panel #tx-stream,
+    .right-panel #all-tx-stream,
+    .right-panel #activity-feed,
+    .right-panel #article-feed {
+      max-height: 420px !important;
+      overflow: hidden !important;
+    }
+    /* Soft fade at the bottom of each clipped list to hint there's more */
+    .right-panel #tx-stream::after,
+    .right-panel #activity-feed::after,
+    .right-panel #article-feed::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: linear-gradient(180deg, transparent, var(--surface, #0f172a));
+      pointer-events: none;
+    }
+    .right-panel .panel-body { position: relative; }
 
     header {
       grid-column: 1 / -1;
