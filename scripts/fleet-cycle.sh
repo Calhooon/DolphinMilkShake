@@ -103,9 +103,16 @@ ok "$RUNNING_COUNT fleet wallets responding"
 declare -a LANE_IDS
 while read -r lid; do
     [ -z "$lid" ] && continue
-    # Skip if in SKIP_LANES
+    # Skip if in SKIP_LANES (blacklist)
     if [ -n "$SKIP_LANES" ] && printf ',%s,' "$SKIP_LANES" | grep -q ",$lid,"; then
         warn "skipping lane: $lid"
+        continue
+    fi
+    # If ONLY_LANES (whitelist) is set, include only lanes listed there.
+    # ONLY_LANES=bsky-en-11 runs just that one lane. Comma-separated for multiple:
+    # ONLY_LANES=bsky-en-11,wiki-en-3. Useful for targeted preflight or rerunning
+    # previously-failed lanes without touching the rest.
+    if [ -n "${ONLY_LANES:-}" ] && ! printf ',%s,' "$ONLY_LANES" | grep -q ",$lid,"; then
         continue
     fi
     LANE_IDS+=("$lid")
@@ -169,6 +176,7 @@ for lid in "${LANE_IDS[@]}"; do
         ENABLE_SYNTHESIS="$ENABLE_SYNTHESIS" \
         QUEUE_MODE="$QUEUE_MODE" \
         FIREHOSE_DIR="$FIREHOSE_DIR" \
+        PREFLIGHT_CERTS_ONLY="${PREFLIGHT_CERTS_ONLY:-0}" \
         node "$REPO_ROOT/scripts/lane-cycle.js" --lane "$lid" \
             > "$log_file" 2>&1
     ) &

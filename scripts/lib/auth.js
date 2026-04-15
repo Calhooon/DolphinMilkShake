@@ -238,6 +238,13 @@ async function handshake(wormPort, identityKey) {
  * Make an authenticated HTTP request to a worm server.
  * Signs via the parent wallet, sends directly to the worm.
  *
+ * Transparently retries ONCE on HTTP 401: a 401 with empty body almost always
+ * means the cached BRC-31 session went stale (server recycled nonces, or a
+ * prior error left the handshake asymmetric). Clearing the session cache and
+ * performing a fresh handshake + resign recovers. Without this retry a single
+ * transient blip can kill an entire lane (e.g. wiki-en-3 cycle 17 in the
+ * 20-lane soak on 2026-04-15).
+ *
  * @param {string} method — HTTP method (GET, POST)
  * @param {string} url — full URL (e.g. http://localhost:8080/agent)
  * @param {number} parentWalletPort — parent wallet port for signing
@@ -245,6 +252,19 @@ async function handshake(wormPort, identityKey) {
  * @returns {Promise<{ status: number, body: any }>}
  */
 async function authRequest(method, url, parentWalletPort, bodyObj) {
+  const first = await authRequestOnce(method, url, parentWalletPort, bodyObj);
+  if (first.status !== 401) return first;
+
+  // Stale session recovery: drop cached BRC-31 session for this worm and retry
+  // with a fresh handshake. One retry only — if still 401 it's a real auth
+  // failure (wrong identity key, revoked cert, etc) and the caller should see it.
+  const urlObj = new URL(url);
+  const wormPort = parseInt(urlObj.port || '80');
+  sessions.delete(`localhost:${wormPort}`);
+  return authRequestOnce(method, url, parentWalletPort, bodyObj);
+}
+
+async function authRequestOnce(method, url, parentWalletPort, bodyObj) {
   const urlObj = new URL(url);
   const wormPort = parseInt(urlObj.port || '80');
   const path = urlObj.pathname;

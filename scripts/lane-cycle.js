@@ -40,7 +40,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const { startCluster } = require('./lib/cluster');
+const { startCluster, stopCluster } = require('./lib/cluster');
 const { authGet, authPost } = require('./lib/auth');
 
 // -----------------------------------------------------------------------------
@@ -1316,6 +1316,24 @@ async function main() {
 
   for (const [name, ag] of handle.agents) {
     log(`  ${name}: ${ag.identityKey.slice(0, 16)}...`);
+  }
+
+  // PREFLIGHT_CERTS_ONLY: short-circuit right after startCluster succeeds.
+  // startCluster includes step 5 (cert audit via GET /certificates) and
+  // throws if any agent's cert doesn't cover the declared capabilities.
+  // So reaching this line means all 3 agents in this lane booted with
+  // valid BRC-52 certs. Log the certs, tear down the cluster cleanly, exit 0.
+  // Used by scripts/preflight-certs.sh before a real soak.
+  if (process.env.PREFLIGHT_CERTS_ONLY === '1') {
+    log('PREFLIGHT_CERTS_ONLY=1 — skipping cycles');
+    for (const [name, ag] of handle.agents) {
+      const caps = Array.isArray(ag.certCapabilities) ? ag.certCapabilities.join(',') : '?';
+      const hash = ag.certHash ? String(ag.certHash).slice(0, 16) : '?';
+      log(`  [cert-ok] ${name}  hash=${hash}  caps=[${caps}]`);
+    }
+    await stopCluster(handle);
+    log(`PREFLIGHT PASS — lane ${LANE_ID} (${handle.agents.size} agents)`);
+    process.exit(0);
   }
 
   const cycleSummaries = [];
