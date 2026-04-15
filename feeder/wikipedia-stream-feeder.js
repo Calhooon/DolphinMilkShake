@@ -38,6 +38,14 @@ const FIREHOSE_DIR = process.env.FIREHOSE_DIR || '/tmp/dolphinsense-firehose';
 const STREAM_URL = process.env.WIKI_STREAM_URL ||
   'https://stream.wikimedia.org/v2/stream/recentchange';
 const LANE_ID = process.env.WIKI_LANE_ID || 'wiki-en';
+
+// Tenant array — single lane by default, multi-tenant for fanout scaling.
+//   WIKI_TENANTS=wiki-en              → 1 lane (default)
+//   WIKI_TENANTS=wiki-en,wiki-en-2    → 2 lanes (10-lane setup)
+//   WIKI_TENANTS=wiki-en,wiki-en-2,wiki-en-3,wiki-en-4 → 4 lanes (15-lane)
+// Each event is round-robined to exactly ONE tenant queue. Zero dedup risk.
+const WIKI_TENANTS = (process.env.WIKI_TENANTS || LANE_ID).split(',').map(s => s.trim()).filter(Boolean);
+let wikiRR = 0;
 const HEALTH_PATH = path.join(FIREHOSE_DIR, 'health.wikipedia.json');
 const EVENTS_PATH = path.join(FIREHOSE_DIR, 'events.jsonl');
 const CURSOR_PATH = path.join(FIREHOSE_DIR, 'cursors', 'wikipedia.eventid');
@@ -58,7 +66,10 @@ const ALLOWED_TYPES = new Set(['edit', 'new']);
 const EXCLUDE_BOTS = process.env.WIKI_EXCLUDE_BOTS === '1';
 
 fs.mkdirSync(FIREHOSE_DIR, { recursive: true });
-fs.mkdirSync(path.join(FIREHOSE_DIR, LANE_ID), { recursive: true });
+// Create queue dir for every tenant so the watermark/claim flow works
+for (const t of WIKI_TENANTS) {
+  fs.mkdirSync(path.join(FIREHOSE_DIR, t), { recursive: true });
+}
 fs.mkdirSync(path.dirname(CURSOR_PATH), { recursive: true });
 
 // ---------------------------------------------------------------------------
@@ -132,28 +143,45 @@ function toEnvelope(rc) {
 // Queue write
 // ---------------------------------------------------------------------------
 
-const writeBuffer = [];
+// Per-tenant write buffers — each tenant has its own queue.jsonl + buffer
 const WRITE_FLUSH_MS = 500;
 const WRITE_FLUSH_COUNT = 50;
+const writeBuffers = Object.fromEntries(WIKI_TENANTS.map(t => [t, []]));
 
 function bufferedAppend(envelope) {
-  writeBuffer.push(JSON.stringify(envelope));
-  if (writeBuffer.length >= WRITE_FLUSH_COUNT) flushWrites();
+  // Round-robin assign each event to one tenant queue
+  const tenant = WIKI_TENANTS[wikiRR % WIKI_TENANTS.length];
+  wikiRR = (wikiRR + 1) | 0;
+  // Re-stamp envelope.data.subreddit with the tenant lane id so the
+  // downstream record carries the right lane attribution.
+  if (envelope && envelope.data) envelope.data.subreddit = tenant;
+  writeBuffers[tenant].push(JSON.stringify(envelope));
+  // Flush when ANY tenant exceeds the threshold
+  for (const t of WIKI_TENANTS) {
+    if (writeBuffers[t].length >= WRITE_FLUSH_COUNT) {
+      flushTenant(t);
+    }
+  }
+}
+
+function flushTenant(tenant) {
+  const buf = writeBuffers[tenant];
+  if (!buf || buf.length === 0) return;
+  const p = path.join(FIREHOSE_DIR, tenant, 'queue.jsonl');
+  const payload = buf.join('\n') + '\n';
+  try {
+    fs.appendFileSync(p, payload);
+    state.totalQueued += buf.length;
+    state.lastWriteTs = Date.now();
+  } catch (e) {
+    log(`flush fail (${tenant}): ${e.message}`);
+    state.errors += 1;
+  }
+  buf.length = 0;
 }
 
 function flushWrites() {
-  if (writeBuffer.length === 0) return;
-  const p = path.join(FIREHOSE_DIR, LANE_ID, 'queue.jsonl');
-  const payload = writeBuffer.join('\n') + '\n';
-  try {
-    fs.appendFileSync(p, payload);
-    state.totalQueued += writeBuffer.length;
-    state.lastWriteTs = Date.now();
-  } catch (e) {
-    log(`flush fail: ${e.message}`);
-    state.errors += 1;
-  }
-  writeBuffer.length = 0;
+  for (const t of WIKI_TENANTS) flushTenant(t);
 }
 
 setInterval(flushWrites, WRITE_FLUSH_MS).unref();

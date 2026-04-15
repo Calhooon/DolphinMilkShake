@@ -1,8 +1,8 @@
 {
-  "_comment": "DolphinSense fleet layout — E21 multi-source 5-lane. 4x Bluesky jetstream (by language) + 1x Wikipedia EventStreams. Wallet/port mapping is IDENTICAL to the prior 5-lane Reddit config — wallets at 3400-3414 are funded and provisioned. ONLY lane IDs and the source field change. Rollback: cp fleet/lanes.reddit-backup.json fleet/lanes.json.",
-  "_fleet_id": "e21-5lane-multisource",
-  "_created": "2026-04-14",
-  "_source_mix": "4 bluesky language lanes + 1 wikipedia merged-wiki lane",
+  "_comment": "DolphinSense fleet layout — E22 10-lane fanout. 4 bluesky language lanes + 1 wiki + 4 bsky-en fanout tenants + 1 wiki-en fanout tenant = 10 lanes. Wallets 3400-3414 are existing (funded). 3415-3429 are NEW (need provision + fund via scripts/provision-fleet-wallets.sh + scripts/fund-fleet-wallets.sh). Rollback: cp fleet/lanes.reddit-backup.json fleet/lanes.json.",
+  "_fleet_id": "e22-10lane-fanout",
+  "_created": "2026-04-15",
+  "_source_mix": "4 bluesky language lanes + 1 wikipedia + 4 bsky-en fanout tenants + 1 wiki-en fanout tenant",
   "_port_ranges": {
     "wallet_base": 3400,
     "wallet_max":  3499,
@@ -21,9 +21,9 @@
       "display_prefix": "🦋",
       "_note": "Bluesky English-language posts (~25/sec sustained). Feeds via bluesky-jetstream-feeder.js.",
       "agents": [
-        {"role": "captain",   "name": "captain-bsky-en",   "server_port": 8100, "wallet_port": 3400, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
-        {"role": "worker",    "name": "worker-bsky-en",    "server_port": 8101, "wallet_port": 3401, "model": "gpt-5-nano", "max_iterations": 6},
-        {"role": "synthesis", "name": "synthesis-bsky-en", "server_port": 8102, "wallet_port": 3402, "model": "gpt-5-mini", "max_iterations": 6}
+        {"role": "captain",   "name": "captain-worldnews",   "server_port": 8100, "wallet_port": 3400, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-worldnews",    "server_port": 8101, "wallet_port": 3401, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-worldnews", "server_port": 8102, "wallet_port": 3402, "model": "gpt-5-mini", "max_iterations": 6}
       ]
     },
     {
@@ -33,9 +33,9 @@
       "display_prefix": "🦋",
       "_note": "Bluesky multi-language merge (es/pt/it/fr/de/nl/ca) — single lane combining romance + germanic language communities for steady-state volume (~3-6/sec combined). Replaces original bsky-es after measuring real rate at ~0.07/sec.",
       "agents": [
-        {"role": "captain",   "name": "captain-bsky-multi",   "server_port": 8103, "wallet_port": 3403, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
-        {"role": "worker",    "name": "worker-bsky-multi",    "server_port": 8104, "wallet_port": 3404, "model": "gpt-5-nano", "max_iterations": 6},
-        {"role": "synthesis", "name": "synthesis-bsky-multi", "server_port": 8105, "wallet_port": 3405, "model": "gpt-5-mini", "max_iterations": 6}
+        {"role": "captain",   "name": "captain-politics",   "server_port": 8103, "wallet_port": 3403, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-politics",    "server_port": 8104, "wallet_port": 3404, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-politics", "server_port": 8105, "wallet_port": 3405, "model": "gpt-5-mini", "max_iterations": 6}
       ]
     },
     {
@@ -45,9 +45,9 @@
       "display_prefix": "🦋",
       "_note": "Bluesky Japanese-language posts (~8/sec). Strong language community on Bluesky.",
       "agents": [
-        {"role": "captain",   "name": "captain-bsky-ja",   "server_port": 8106, "wallet_port": 3406, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
-        {"role": "worker",    "name": "worker-bsky-ja",    "server_port": 8107, "wallet_port": 3407, "model": "gpt-5-nano", "max_iterations": 6},
-        {"role": "synthesis", "name": "synthesis-bsky-ja", "server_port": 8108, "wallet_port": 3408, "model": "gpt-5-mini", "max_iterations": 6}
+        {"role": "captain",   "name": "captain-askreddit",   "server_port": 8106, "wallet_port": 3406, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-askreddit",    "server_port": 8107, "wallet_port": 3407, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-askreddit", "server_port": 8108, "wallet_port": 3408, "model": "gpt-5-mini", "max_iterations": 6}
       ]
     },
     {
@@ -57,9 +57,9 @@
       "display_prefix": "🦋",
       "_note": "Bluesky Portuguese (pt/pt-BR/pt-PT) posts (~4/sec). Brazilian Bluesky is active.",
       "agents": [
-        {"role": "captain",   "name": "captain-bsky-pt",   "server_port": 8109, "wallet_port": 3409, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
-        {"role": "worker",    "name": "worker-bsky-pt",    "server_port": 8110, "wallet_port": 3410, "model": "gpt-5-nano", "max_iterations": 6},
-        {"role": "synthesis", "name": "synthesis-bsky-pt", "server_port": 8111, "wallet_port": 3411, "model": "gpt-5-mini", "max_iterations": 6}
+        {"role": "captain",   "name": "captain-gaming",   "server_port": 8109, "wallet_port": 3409, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-gaming",    "server_port": 8110, "wallet_port": 3410, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-gaming", "server_port": 8111, "wallet_port": 3411, "model": "gpt-5-mini", "max_iterations": 6}
       ]
     },
     {
@@ -69,9 +69,69 @@
       "display_prefix": "📖",
       "_note": "Wikipedia recent changes (enwiki + commonswiki + wikidatawiki edits, ~9.7/sec). Feeds via wikipedia-stream-feeder.js.",
       "agents": [
-        {"role": "captain",   "name": "captain-wiki-en",   "server_port": 8112, "wallet_port": 3412, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
-        {"role": "worker",    "name": "worker-wiki-en",    "server_port": 8113, "wallet_port": 3413, "model": "gpt-5-nano", "max_iterations": 6},
-        {"role": "synthesis", "name": "synthesis-wiki-en", "server_port": 8114, "wallet_port": 3414, "model": "gpt-5-mini", "max_iterations": 6}
+        {"role": "captain",   "name": "captain-movies",   "server_port": 8112, "wallet_port": 3412, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-movies",    "server_port": 8113, "wallet_port": 3413, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-movies", "server_port": 8114, "wallet_port": 3414, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "bsky-en-2",
+      "subreddit": "bsky-en-2",
+      "source": "bluesky",
+      "display_prefix": "🦋",
+      "_note": "Bluesky English fanout tenant 2 of 5. Reads bsky-en-2/queue.jsonl populated via round-robin from BSKY_EN_TENANTS in the bluesky feeder.",
+      "agents": [
+        {"role": "captain",   "name": "captain-bsky-en-2",   "server_port": 8115, "wallet_port": 3415, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-bsky-en-2",    "server_port": 8116, "wallet_port": 3416, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-bsky-en-2", "server_port": 8117, "wallet_port": 3417, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "bsky-en-3",
+      "subreddit": "bsky-en-3",
+      "source": "bluesky",
+      "display_prefix": "🦋",
+      "_note": "Bluesky English fanout tenant 3 of 5.",
+      "agents": [
+        {"role": "captain",   "name": "captain-bsky-en-3",   "server_port": 8118, "wallet_port": 3418, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-bsky-en-3",    "server_port": 8119, "wallet_port": 3419, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-bsky-en-3", "server_port": 8120, "wallet_port": 3420, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "bsky-en-4",
+      "subreddit": "bsky-en-4",
+      "source": "bluesky",
+      "display_prefix": "🦋",
+      "_note": "Bluesky English fanout tenant 4 of 5.",
+      "agents": [
+        {"role": "captain",   "name": "captain-bsky-en-4",   "server_port": 8121, "wallet_port": 3421, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-bsky-en-4",    "server_port": 8122, "wallet_port": 3422, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-bsky-en-4", "server_port": 8123, "wallet_port": 3423, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "bsky-en-5",
+      "subreddit": "bsky-en-5",
+      "source": "bluesky",
+      "display_prefix": "🦋",
+      "_note": "Bluesky English fanout tenant 5 of 5.",
+      "agents": [
+        {"role": "captain",   "name": "captain-bsky-en-5",   "server_port": 8124, "wallet_port": 3424, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-bsky-en-5",    "server_port": 8125, "wallet_port": 3425, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-bsky-en-5", "server_port": 8126, "wallet_port": 3426, "model": "gpt-5-mini", "max_iterations": 6}
+      ]
+    },
+    {
+      "id": "wiki-en-2",
+      "subreddit": "wiki-en-2",
+      "source": "wikipedia",
+      "display_prefix": "📖",
+      "_note": "Wikipedia fanout tenant 2 of 2. Reads wiki-en-2/queue.jsonl populated via round-robin from WIKI_TENANTS in the wikipedia feeder.",
+      "agents": [
+        {"role": "captain",   "name": "captain-wiki-en-2",   "server_port": 8127, "wallet_port": 3427, "model": "gpt-5-mini", "max_iterations": 2, "mode": "parallel"},
+        {"role": "worker",    "name": "worker-wiki-en-2",    "server_port": 8128, "wallet_port": 3428, "model": "gpt-5-nano", "max_iterations": 6},
+        {"role": "synthesis", "name": "synthesis-wiki-en-2", "server_port": 8129, "wallet_port": 3429, "model": "gpt-5-mini", "max_iterations": 6}
       ]
     }
   ]
