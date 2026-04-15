@@ -219,6 +219,12 @@
       letter-spacing: -0.01em;
       display: block;
     }
+    header .counter .num .unit {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 3px;
+    }
     header .counter.primary .num {
       font-size: 32px;
       background: var(--grad-primary);
@@ -388,6 +394,9 @@
       gap: 12px;
       padding-right: 6px;
       align-content: start;
+      /* Stable scrollbar gutter so appearing/disappearing scrollbar doesn't
+         shift the whole grid. */
+      scrollbar-gutter: stable;
     }
     /* On wide mission-control displays we lock to 5 fixed columns so lanes
        line up visually regardless of tile content height. auto-fit falls
@@ -413,6 +422,10 @@
                   box-shadow 0.25s var(--ease-out-quart);
       box-shadow: var(--shadow-sm);
       animation: lane-in 0.5s var(--ease-out-expo) both;
+      /* Contain layout so re-rendering this tile doesn't trigger reflow
+         in sibling tiles. Without this, a width change in lane N causes
+         the grid to recompute all 5 columns and every lane shifts. */
+      contain: layout style;
     }
     .lane::before {
       /* Top accent bar — tints per source (Bluesky mint, Wikipedia azure) */
@@ -460,6 +473,11 @@
       text-align: right;
       line-height: 1.35;
       font-weight: 600;
+      /* Reserve space so digit-count growth (e.g. 999 → 1000 → 10000) doesn't
+         push the lane-head layout around. Width fits comfortably up to
+         ~9-digit values. */
+      min-width: 110px;
+      flex-shrink: 0;
     }
     .lane-stats .tx-count { color: var(--accent); }
     .lane-stats .sats-count { color: var(--muted); font-weight: 500; }
@@ -475,7 +493,12 @@
       grid-template-rows: auto auto;
       align-items: center;
       gap: 2px 10px;
-      transition: all 0.25s var(--ease-out-quart);
+      /* Only transition border-color and box-shadow — NOT background.
+         Background transitions on rapid active↔done flips caused visible
+         "flash" during cycle-active bursts; border/shadow transitions are
+         subtle enough to read as "state change" without strobing. */
+      transition: border-color 0.25s var(--ease-out-quart),
+                  box-shadow 0.25s var(--ease-out-quart);
       position: relative;
     }
     .agent.captain { border-left-color: var(--captain); }
@@ -514,6 +537,9 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       font-weight: 500;
+      /* Prevent state text length changes from pushing the sats column.
+         Column 2 grabs all free space; text overflow ellipses if too long. */
+      min-width: 0;
     }
     .agent .sats {
       grid-column: 3;
@@ -732,14 +758,16 @@
       align-items: center;
       gap: 8px;
       border-bottom: 1px solid rgba(35, 43, 69, 0.5);
-      animation: tx-flash 1.2s var(--ease-out-quart);
-      transition: background 0.2s;
+      animation: tx-flash 0.8s var(--ease-out-quart);
     }
+    .tx-item.no-flash { animation: none; }
     .tx-item:hover { background: rgba(92, 242, 164, 0.04); }
+    /* Gentle flash — subtle left accent bar fade instead of full-row green.
+       Row background stays transparent to prevent the "strobe light" effect
+       when many items arrive in quick succession. */
     @keyframes tx-flash {
-      0%   { background: rgba(92, 242, 164, 0.22); transform: translateX(-4px); }
-      20%  { transform: translateX(0); }
-      100% { background: transparent; }
+      0%   { border-left: 2px solid var(--accent); padding-left: 14px; }
+      100% { border-left: 2px solid transparent;  padding-left: 16px; }
     }
     .tx-item .txid { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.02em; }
     .tx-item .txid a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
@@ -850,6 +878,10 @@
         <div class="lbl">Lifetime TXs <span id="lifetime-delta" class="delta">+0</span></div>
       </div>
       <div class="counter">
+        <div class="num"><span id="tx-rate">0</span><span class="unit">/s</span></div>
+        <div class="lbl">Tx Rate <span class="delta" style="opacity:0.5;">30s avg</span></div>
+      </div>
+      <div class="counter">
         <div class="num" id="lifetime-sats">0</div>
         <div class="lbl">Sats <span id="session-sats" class="delta">+0</span></div>
       </div>
@@ -922,6 +954,8 @@
         txs: 0,
         sats: 0,
         articleCount: 0,
+        txTimestamps: [], // ring buffer of Date.now() per proof_emitted
+                          // for the rolling tx/s rate counter
       },
 
       // "historical" = lifetime data loaded from disk at server start.
@@ -1129,12 +1163,27 @@
       state.live.txs += 1;
       state.live.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
       if (state.live.txStream.length > 100) state.live.txStream.length = 100;
+      // Rolling 30s window for tx/s rate. Prune on insert.
+      const now = Date.now();
+      state.live.txTimestamps.push(now);
+      const cutoff = now - 30_000;
+      while (state.live.txTimestamps.length > 0 && state.live.txTimestamps[0] < cutoff) {
+        state.live.txTimestamps.shift();
+      }
       const lane = state.lanes.get(ev.lane);
       if (lane) lane.totalTxs += 1;
+      // Surgical tx stream update — ONE new node, no full rebuild.
+      prependTxItem(ev);
+      // Update the small header count via textContent (fast, no flicker).
+      const txCountEl = document.getElementById('tx-count');
+      if (txCountEl) txCountEl.textContent = fmt(state.live.txs);
+      // Schedule light counter updates (totals + progress bar width).
       renderTotals();
       renderProgress();
-      renderTxStream();
-      renderLanes();
+      // Don't schedule renderTxStream — the surgical prepend above handled it.
+      // Don't schedule renderLanes on every proof — the hash-dedup catches
+      // identical states, but we still pay the hash computation cost. The
+      // periodic heavy render timer will pick up tx-count drift within 1s.
     }
 
     // Tracks which cycle indices we've already applied per aggregate source.
@@ -1233,36 +1282,69 @@
     }
 
     // ---------------------------------------------------------------
-    // Rendering — RAF-batched so bursts of events coalesce into one
-    // re-render per animation frame. Without this, a stream of
-    // proof_emitted events at 15+/sec calls renderLanes() on every
-    // event which re-sets grid.innerHTML, tearing down/rebuilding 15
-    // agent tiles. The teardown interrupts in-flight CSS animations
-    // and looks like a full-screen flicker.
+    // Rendering — two-tier throttle:
+    //
+    //   LIGHT renders (totals, progress, txStream) — RAF-batched,
+    //   run at most once per animation frame (max 60 Hz). These only
+    //   touch small text nodes or a single element's style width,
+    //   so they don't interrupt CSS animations.
+    //
+    //   HEAVY renders (lanes, articles, feeder) — interval-throttled
+    //   to max once per 500ms (2 Hz). These rebuild entire grid
+    //   innerHTML, which tears down DOM nodes and interrupts in-flight
+    //   CSS transitions/animations. Running them 60 Hz causes a
+    //   full-screen flicker during proof_emitted bursts. Throttling
+    //   to 2 Hz eliminates the flicker while keeping updates feeling
+    //   live enough for a ~5-minute cycle cadence.
     // ---------------------------------------------------------------
     const renderDirty = {
       totals: false, progress: false, lanes: false,
       txStream: false, articles: false, feeder: false,
     };
     let rafPending = 0;
-    function scheduleRender() {
-      if (rafPending) return;
-      rafPending = requestAnimationFrame(() => {
-        rafPending = 0;
-        if (renderDirty.totals)   { renderDirty.totals   = false; doRenderTotals(); }
-        if (renderDirty.progress) { renderDirty.progress = false; doRenderProgress(); }
-        if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
-        if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
-        if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
-        if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
-      });
+    let heavyTimer = 0;
+    // Heavy renders throttled to 1 Hz — tuned by trial. 500ms still flashed
+    // during cycle-active bursts (session events fire every ~100-300ms inside
+    // a cycle: think → tool → think → tool → etc.), which meant the innerHTML
+    // teardown/rebuild happened on every other event and interrupted CSS
+    // state transitions. 1000ms lets each state update settle before the
+    // next rebuild. Feels "live enough" at ~5-min cycle wall times.
+    const HEAVY_RENDER_MIN_INTERVAL_MS = 1000;
+    let lastHeavyRender = 0;
+    // Snapshot-based render dedup: if the lane state hash hasn't changed
+    // since the last render, skip the DOM rebuild entirely. Cuts redundant
+    // renders that were only triggered by "same event" double-emissions.
+    let lastLanesHash = '';
+
+    function flushLightRenders() {
+      rafPending = 0;
+      if (renderDirty.totals)   { renderDirty.totals   = false; doRenderTotals(); }
+      if (renderDirty.progress) { renderDirty.progress = false; doRenderProgress(); }
+      if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
     }
-    function renderTotals()   { renderDirty.totals   = true; scheduleRender(); }
-    function renderProgress() { renderDirty.progress = true; scheduleRender(); }
-    function renderLanes()    { renderDirty.lanes    = true; scheduleRender(); }
-    function renderTxStream() { renderDirty.txStream = true; scheduleRender(); }
-    function renderArticles() { renderDirty.articles = true; scheduleRender(); }
-    function renderFeeder()   { renderDirty.feeder   = true; scheduleRender(); }
+    function flushHeavyRenders() {
+      heavyTimer = 0;
+      lastHeavyRender = performance.now();
+      if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
+      if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
+      if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
+    }
+    function scheduleLight() {
+      if (rafPending) return;
+      rafPending = requestAnimationFrame(flushLightRenders);
+    }
+    function scheduleHeavy() {
+      if (heavyTimer) return;
+      const since = performance.now() - lastHeavyRender;
+      const wait = Math.max(0, HEAVY_RENDER_MIN_INTERVAL_MS - since);
+      heavyTimer = setTimeout(flushHeavyRenders, wait);
+    }
+    function renderTotals()   { renderDirty.totals   = true; scheduleLight(); }
+    function renderProgress() { renderDirty.progress = true; scheduleLight(); }
+    function renderTxStream() { renderDirty.txStream = true; scheduleLight(); }
+    function renderLanes()    { renderDirty.lanes    = true; scheduleHeavy(); }
+    function renderArticles() { renderDirty.articles = true; scheduleHeavy(); }
+    function renderFeeder()   { renderDirty.feeder   = true; scheduleHeavy(); }
 
     function doRenderTotals() {
       const lifetimeTxs = state.historical.txs + state.live.txs;
@@ -1273,6 +1355,20 @@
       document.getElementById('lifetime-articles').textContent = fmt(lifetimeArticles);
       document.getElementById('lifetime-delta').textContent = state.live.txs > 0 ? `+${fmt(state.live.txs)} live` : '+0';
       document.getElementById('session-sats').textContent = state.live.sats > 0 ? `+${fmt(state.live.sats)} live` : '+0';
+      // Tx/s — rolling 30s window. Prune stale timestamps before computing.
+      const now = Date.now();
+      const cutoff = now - 30_000;
+      while (state.live.txTimestamps.length > 0 && state.live.txTimestamps[0] < cutoff) {
+        state.live.txTimestamps.shift();
+      }
+      const rateEl = document.getElementById('tx-rate');
+      if (rateEl) {
+        const windowMs = state.live.txTimestamps.length > 1
+          ? Math.min(30_000, now - state.live.txTimestamps[0]) : 1;
+        const rate = state.live.txTimestamps.length > 0
+          ? (state.live.txTimestamps.length / (windowMs / 1000)) : 0;
+        rateEl.textContent = rate >= 10 ? rate.toFixed(0) : rate.toFixed(1);
+      }
       document.getElementById('session-articles').textContent = state.live.articleCount > 0 ? `+${fmt(state.live.articleCount)} live` : '+0';
     }
 
@@ -1285,64 +1381,137 @@
       document.getElementById('progress-pct').textContent = pct.toFixed(pct < 1 ? 3 : 2) + '%';
     }
 
+    // Surgical lane rendering. Philosophy:
+    //
+    //   1. Build tile DOM ONCE per lane on first render. Never re-run
+    //      innerHTML on the lanes-grid container after that. Every full
+    //      innerHTML rebuild destroys all child nodes and briefly leaves
+    //      the grid empty — that's the "cards disappear/reappear" flash.
+    //
+    //   2. On subsequent updates, find the existing tile by data-lane-id
+    //      and mutate specific text nodes via textContent. No teardown,
+    //      no node recreation, no layout thrash.
+    //
+    //   3. Structural changes (banner appear/disappear, agent class
+    //      active/done/error transitions) update CLASS lists and add/
+    //      remove specific child nodes — but never rebuild the tile.
+    //
+    // Performance: updating a text node costs one style/layout invalidation.
+    // Rebuilding innerHTML costs N × (parse HTML, allocate nodes, attach,
+    // compute styles, layout, paint). On a 15-agent grid at 1 Hz, the
+    // difference is night and day.
     function doRenderLanes() {
       const grid = document.getElementById('lanes-grid');
       const lanes = Array.from(state.lanes.values());
       if (lanes.length === 0) {
-        grid.innerHTML = '<div class="empty">waiting for lanes…</div>';
+        if (!grid.querySelector('.empty')) grid.innerHTML = '<div class="empty">waiting for lanes…</div>';
         return;
       }
-      grid.innerHTML = lanes.map((lane) => {
-        const bannerHtml = lane.banner ? `
-          <div class="msg-banner" data-banner-id="${lane.banner.id}">
-            📨 <strong>${lane.banner.text}</strong>
-            <span class="arrow">→</span>
-            ${lane.banner.tool || ''}
-            ${lane.banner.amt ? `<span class="amt">${fmt(lane.banner.amt)} sats</span>` : ''}
-          </div>
-        ` : '';
-        // Per-lane lifetime = historical (from scan) + session (live)
-        const laneLifetimeTxs = (lane.historicalTxs || 0) + (lane.totalTxs || 0);
-        const laneLifetimeSats = (lane.historicalSats || 0) + (lane.totalSats || 0);
-        const livePart = lane.totalTxs > 0 ? `<span style="color:var(--accent)">+${lane.totalTxs}</span>` : '';
-        return `
-          <div class="lane">
-            <div class="lane-head">
-              <div>
-                <div class="lane-name">${lane.id}</div>
-                <div class="lane-sub">${lane.display_prefix || (lane.source === 'reddit' ? 'r/' : '')}${lane.subreddit}</div>
-              </div>
-              <div class="lane-stats">
-                <div><span class="tx-count">${fmt(laneLifetimeTxs)}</span> tx ${livePart}</div>
-                <div class="sats-count">${fmt(laneLifetimeSats)} sats</div>
-              </div>
+      // If the grid is empty or showing the waiting state, build the tiles
+      // for the first time. This is the ONLY place we do innerHTML on the
+      // grid container.
+      const existing = grid.querySelectorAll('.lane[data-lane-id]');
+      if (existing.length !== lanes.length) {
+        grid.innerHTML = lanes.map((lane) => buildLaneTileHtml(lane)).join('');
+      }
+      // Now surgically update every tile. This is idempotent and cheap.
+      for (const lane of lanes) updateLaneTileSurgical(lane);
+    }
+
+    function buildLaneTileHtml(lane) {
+      // Static scaffold. All mutable text nodes get explicit data-field attrs
+      // so updateLaneTileSurgical() can find them with a single querySelector.
+      // Banner area is a permanent placeholder div that gets populated when
+      // a message flow fires.
+      const prefix = lane.display_prefix || (lane.source === 'reddit' ? 'r/' : '');
+      return `
+        <div class="lane" data-lane-id="${lane.id}">
+          <div class="lane-head">
+            <div>
+              <div class="lane-name">${lane.id}</div>
+              <div class="lane-sub">${prefix}${lane.subreddit}</div>
             </div>
-            ${bannerHtml}
-            ${['captain', 'worker', 'synthesis'].map((role) => {
-              const a = lane.agents[role];
-              const cls = [
-                'agent',
-                role,
-                a.active ? 'active' : '',
-                a.state && a.state.startsWith('✗') ? 'error' : '',
-                a.state && a.state.startsWith('✓ done') ? 'done' : '',
-                a.pulseClass || '',
-              ].filter(Boolean).join(' ');
-              const walletInfo = (a.walletSats != null)
-                ? `<div class="wallet" title="wallet balance · utxo count">💰 ${fmt(a.walletSats)} · ${a.walletUtxos || 0}u</div>`
-                : '';
-              return `
-                <div class="${cls}">
-                  <div><span class="role ${role}">${role}</span></div>
-                  <div class="state">${a.state || 'idle'}</div>
-                  <div class="sats">${a.sats ? fmt(a.sats) : ''}</div>
-                  ${walletInfo}
-                </div>
-              `;
-            }).join('')}
+            <div class="lane-stats">
+              <div><span class="tx-count" data-field="tx-count">0</span> tx <span class="live-delta" data-field="tx-live"></span></div>
+              <div class="sats-count" data-field="sats-count">0 sats</div>
+            </div>
           </div>
-        `;
-      }).join('');
+          <div class="banner-slot" data-field="banner-slot"></div>
+          ${['captain', 'worker', 'synthesis'].map((role) => `
+            <div class="agent ${role}" data-role="${role}">
+              <div><span class="role ${role}">${role}</span></div>
+              <div class="state" data-field="state">idle</div>
+              <div class="sats" data-field="agent-sats"></div>
+              <div class="wallet" data-field="wallet" title="wallet balance · utxo count"></div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function updateLaneTileSurgical(lane) {
+      const tile = document.querySelector(`.lane[data-lane-id="${lane.id}"]`);
+      if (!tile) return;
+
+      // Stats block — tx count + sats count
+      const laneLifetimeTxs = (lane.historicalTxs || 0) + (lane.totalTxs || 0);
+      const laneLifetimeSats = (lane.historicalSats || 0) + (lane.totalSats || 0);
+      setText(tile, 'tx-count', fmt(laneLifetimeTxs));
+      setText(tile, 'sats-count', `${fmt(laneLifetimeSats)} sats`);
+      const liveDelta = tile.querySelector('[data-field="tx-live"]');
+      if (liveDelta) {
+        liveDelta.textContent = lane.totalTxs > 0 ? `+${fmt(lane.totalTxs)}` : '';
+      }
+
+      // Banner slot — add/remove the message flow banner without touching
+      // the rest of the tile.
+      const slot = tile.querySelector('[data-field="banner-slot"]');
+      if (slot) {
+        if (lane.banner) {
+          const existingBanner = slot.querySelector('.msg-banner');
+          const bannerId = existingBanner && existingBanner.getAttribute('data-banner-id');
+          if (bannerId !== String(lane.banner.id)) {
+            slot.innerHTML = `
+              <div class="msg-banner" data-banner-id="${lane.banner.id}">
+                📨 <strong>${lane.banner.text}</strong>
+                <span class="arrow">→</span>
+                ${lane.banner.tool || ''}
+                ${lane.banner.amt ? `<span class="amt">${fmt(lane.banner.amt)} sats</span>` : ''}
+              </div>
+            `;
+          }
+        } else if (slot.childElementCount > 0) {
+          slot.innerHTML = '';
+        }
+      }
+
+      // Per-agent updates
+      for (const role of ['captain', 'worker', 'synthesis']) {
+        const a = lane.agents[role];
+        const agentEl = tile.querySelector(`.agent[data-role="${role}"]`);
+        if (!agentEl || !a) continue;
+        // Class transitions — only touch classList if membership changed.
+        toggleClass(agentEl, 'active', !!a.active);
+        toggleClass(agentEl, 'error',  !!(a.state && a.state.startsWith('✗')));
+        toggleClass(agentEl, 'done',   !!(a.state && a.state.startsWith('✓ done')));
+        toggleClass(agentEl, 'sending',   a.pulseClass === 'sending');
+        toggleClass(agentEl, 'receiving', a.pulseClass === 'receiving');
+        // Text content — only change if different.
+        setText(agentEl, 'state', a.state || 'idle');
+        setText(agentEl, 'agent-sats', a.sats ? fmt(a.sats) : '');
+        const walletText = (a.walletSats != null) ? `💰 ${fmt(a.walletSats)} · ${a.walletUtxos || 0}u` : '';
+        setText(agentEl, 'wallet', walletText);
+      }
+    }
+
+    // Tiny helpers to minimize DOM writes — only touch a node if its text
+    // or class state actually changed. Avoids unnecessary style recalc.
+    function setText(root, field, value) {
+      const el = root.querySelector(`[data-field="${field}"]`);
+      if (el && el.textContent !== value) el.textContent = value;
+    }
+    function toggleClass(el, cls, on) {
+      if (el.classList.contains(cls) !== on) el.classList.toggle(cls, on);
     }
 
     function doRenderFeeder() {
@@ -1365,6 +1534,19 @@
       `;
     }
 
+    // Surgical tx stream updater. PROBLEM: re-running innerHTML on every
+    // proof_emitted destroys all 100 child nodes and recreates them,
+    // restarting every item's CSS `tx-flash` keyframe animation. At
+    // 20+ events/sec × 100 items × 1.2s animation = continuous green
+    // strobe across the whole panel. Eye-searing.
+    //
+    // FIX: `renderTxStream()` now just updates the header count. New
+    // items are inserted one-at-a-time by `prependTxItem()` from the
+    // proof_emitted handler — no rebuild of existing items, no
+    // re-animation. Old items drop off the bottom when we exceed 100.
+    //
+    // Full rebuild happens ONLY on the "empty → populated" transition
+    // and the initial paint from a stale session.
     function doRenderTxStream() {
       const el = document.getElementById('tx-stream');
       document.getElementById('tx-count').textContent = fmt(state.live.txs);
@@ -1372,12 +1554,37 @@
         el.innerHTML = '<div class="empty">waiting for live txs…</div>';
         return;
       }
-      el.innerHTML = state.live.txStream.map((tx) => `
-        <div class="tx-item">
-          <span class="txid"><a href="https://whatsonchain.com/tx/${tx.txid}" target="_blank" rel="noopener">${tx.txid.slice(0, 16)}…</a></span>
-          <span class="lane-tag">${tx.lane}</span>
-        </div>
-      `).join('');
+      // First time switching from empty → populated, paint the current buffer
+      // without animation (so the initial batch doesn't strobe).
+      if (el.querySelector('.empty') || el.childElementCount === 0) {
+        el.innerHTML = state.live.txStream.map((tx) => `
+          <div class="tx-item no-flash">
+            <span class="lane-tag">${tx.lane}</span>
+            <span class="txid"><a href="https://whatsonchain.com/tx/${tx.txid}" target="_blank" rel="noopener">${tx.txid.slice(0, 10)}…${tx.txid.slice(-8)}</a></span>
+          </div>
+        `).join('');
+      }
+      // Otherwise: no-op. New items arrive via prependTxItem() surgically.
+    }
+
+    function prependTxItem(ev) {
+      const el = document.getElementById('tx-stream');
+      if (!el) return;
+      // Strip the empty state if present
+      const emptyChild = el.querySelector('.empty');
+      if (emptyChild) emptyChild.remove();
+      // Build one new tx node — only this one gets the flash animation.
+      const node = document.createElement('div');
+      node.className = 'tx-item';
+      node.innerHTML = `
+        <span class="lane-tag">${ev.lane}</span>
+        <span class="txid"><a href="https://whatsonchain.com/tx/${ev.txid}" target="_blank" rel="noopener">${ev.txid.slice(0, 10)}…${ev.txid.slice(-8)}</a></span>
+      `;
+      el.insertBefore(node, el.firstChild);
+      // Cap at 100 items — remove the oldest (last child) if over budget.
+      while (el.childElementCount > 100) {
+        el.removeChild(el.lastElementChild);
+      }
     }
 
     function doRenderArticles() {
