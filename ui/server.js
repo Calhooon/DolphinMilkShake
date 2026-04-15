@@ -1209,6 +1209,33 @@ function pollAgentSessions() {
               agent: LANE_AGENTS[lane.id][role].name,
               ev: { type: 'session_start', _synthetic: true },
             });
+            // ALSO reset the dashboardState slot so snapshot-mode clients
+            // immediately drop the stale terminal state (iter, lastTool,
+            // sats, "→ upload_to_nanostore" etc) from the prior task.
+            // Without this, agents that hung on a previous cycle keep
+            // showing stale state until the new task's first event lands.
+            const slot = dashboardState.perLane.get(lane.id);
+            if (slot && slot.agents[role]) {
+              slot.agents[role] = {
+                state: 'idle',
+                phase: 'idle',
+                active: false,
+                lastTool: null,
+                lastToolAt: null,
+                iter: 0,
+                sats: 0,
+                sessionStart: null,
+                taskId: null,
+                name: LANE_AGENTS[lane.id][role].name,
+                port: LANE_AGENTS[lane.id][role].server_port,
+                recentEvents: [],
+              };
+              scheduleBroadcast();
+            }
+            // Also reset the budget tailer for this agent so it picks up
+            // the new task's budget.jsonl from the start, not the prior
+            // task's stale offset. The tailer's internal state.file !==
+            // newPath check handles this naturally on next poll.
           }
           lastTaskPathByAgent.set(key, currentPath);
         }
