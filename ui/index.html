@@ -1833,9 +1833,22 @@
     function renderFeeder()   { renderDirty.feeder   = true; scheduleRender(); }
 
     function doRenderTotals() {
-      const lifetimeTxs = state.historical.txs + state.live.txs;
-      const lifetimeSats = state.historical.sats + state.live.sats;
-      const lifetimeArticles = state.historical.articles + state.live.articleCount;
+      // SNAPSHOT-MODE FIX: state.historical.txs already IS the full
+      // lifetime total (set directly from snap.totals.txs in applySnapshot).
+      // state.live.txs is now a "since-reload delta" computed against a
+      // baseline. Adding them together literally double-counts every tx
+      // since the page loaded. Use historical.* DIRECTLY for the display
+      // total. The "+N live" indicator below still uses state.live.* as
+      // the since-reload delta, which is correct for that purpose.
+      const lifetimeTxs = USE_SNAPSHOT_MODE
+        ? state.historical.txs
+        : state.historical.txs + state.live.txs;
+      const lifetimeSats = USE_SNAPSHOT_MODE
+        ? state.historical.sats
+        : state.historical.sats + state.live.sats;
+      const lifetimeArticles = USE_SNAPSHOT_MODE
+        ? state.historical.articles
+        : state.historical.articles + state.live.articleCount;
       document.getElementById('lifetime-txs').textContent = fmt(lifetimeTxs);
       document.getElementById('lifetime-sats').textContent = fmt(lifetimeSats);
       document.getElementById('lifetime-articles').textContent = fmt(lifetimeArticles);
@@ -1859,7 +1872,11 @@
     }
 
     function doRenderProgress() {
-      const lifetimeTxs = state.historical.txs + state.live.txs;
+      // Same fix as doRenderTotals — historical.txs is already the full
+      // lifetime total in snapshot mode, don't double-add live.txs.
+      const lifetimeTxs = USE_SNAPSHOT_MODE
+        ? state.historical.txs
+        : state.historical.txs + state.live.txs;
       const target = state.historical.target || 1500000;
       const pct = Math.min(100, (lifetimeTxs / target) * 100);
       document.getElementById('progress-fill').style.width = pct + '%';
