@@ -617,9 +617,41 @@ function ensureAgentTailer(lane, role) {
   return tailer;
 }
 
+// Per-agent last-seen task dir, used to detect lane recovery (a new task dir
+// appearing = lane started a fresh cycle after a previous one). When that
+// happens, we clear the agent's cached state and broadcast a synthetic
+// session_start so the UI resets from stale error text to "starting".
+// Without this, after a cycle errored with "✗ payment error ..." the tile
+// would keep showing that error until the NEW cycle's first real event
+// landed — which could be minutes later, and visually very misleading.
+const lastTaskPathByAgent = new Map();
+
 function pollAgentSessions() {
   for (const lane of LANES) {
     for (const role of ['captain', 'worker', 'synthesis']) {
+      const key = `${lane.id}:${role}`;
+      // Recovery reset: if the latest task dir has rotated, the previous
+      // session's cached terminal state (possibly an error) is stale. Clear
+      // it and announce a fresh session_start so the client returns to a
+      // clean "starting" state immediately. Real events will flow in as the
+      // new session writes them.
+      try {
+        const currentPath = latestTaskSession(lane.id, role);
+        if (currentPath) {
+          const prev = lastTaskPathByAgent.get(key);
+          if (prev && prev !== currentPath) {
+            agentStateCache.delete(key);
+            broadcast({
+              kind: 'agent',
+              lane: lane.id,
+              role,
+              agent: LANE_AGENTS[lane.id][role].name,
+              ev: { type: 'session_start', _synthetic: true },
+            });
+          }
+          lastTaskPathByAgent.set(key, currentPath);
+        }
+      } catch { /* ignore path lookup errors */ }
       const tailer = ensureAgentTailer(lane.id, role);
       tailer();
     }
