@@ -53,22 +53,33 @@ const EVENTS_PATH = path.join(FIREHOSE_DIR, 'events.jsonl');
 const DEDUPE_CAPACITY = parseInt(process.env.BSKY_DEDUPE_CAPACITY || '131072', 10);
 const HEALTH_WRITE_MS = parseInt(process.env.BSKY_HEALTH_MS || '2000', 10);
 
-// Lane → language whitelist. Each lane gets its own queue.jsonl.
-// A post is written to every lane whose language set includes any of the
-// post's record.langs. If we wanted exclusive routing we'd pick "first
-// match", but for volume insurance this is fine.
-// bsky-multi merges all non-English langs we care about into one lane so
-// it has enough steady-state volume to sustain a 15-cycle soak. Pure
-// per-language splits (es alone, pt alone) measured at <1/sec — well
-// under the ~0.33/sec needed to net-positive against a 100-records/cycle
-// load at ~5-min cycle times. Merging the romance + germanic communities
-// gives us ~3-6/sec combined, which is comfortable.
-const LANES = [
-  { id: 'bsky-en',    langs: new Set(['en']) },
-  { id: 'bsky-multi', langs: new Set(['es', 'pt', 'pt-BR', 'pt-PT', 'it', 'fr', 'de', 'nl', 'ca']) },
-  { id: 'bsky-ja',    langs: new Set(['ja']) },
-  { id: 'bsky-pt',    langs: new Set(['pt', 'pt-BR', 'pt-PT']) },
+// Lane GROUPS — each language group can have multiple TENANT queues that
+// share the same source filter. Posts route round-robin within a group so
+// each tenant queue gets a fair, NON-OVERLAPPING share of the firehose.
+// Each post still lands in exactly ONE queue (zero dedup risk).
+// Tenant counts are configurable via env vars so we can scale to N lanes
+// without code changes:
+//   BSKY_EN_TENANTS    default: ["bsky-en"]
+//                      10-lane: ["bsky-en","bsky-en-2","bsky-en-3","bsky-en-4","bsky-en-5"]
+const BSKY_EN_TENANTS    = (process.env.BSKY_EN_TENANTS    || 'bsky-en').split(',').map(s => s.trim()).filter(Boolean);
+const BSKY_MULTI_TENANTS = (process.env.BSKY_MULTI_TENANTS || 'bsky-multi').split(',').map(s => s.trim()).filter(Boolean);
+const BSKY_JA_TENANTS    = (process.env.BSKY_JA_TENANTS    || 'bsky-ja').split(',').map(s => s.trim()).filter(Boolean);
+const BSKY_PT_TENANTS    = (process.env.BSKY_PT_TENANTS    || 'bsky-pt').split(',').map(s => s.trim()).filter(Boolean);
+
+const LANE_GROUPS = [
+  { groupId: 'en',    langs: new Set(['en']),                                                                tenants: BSKY_EN_TENANTS },
+  { groupId: 'multi', langs: new Set(['es', 'pt', 'pt-BR', 'pt-PT', 'it', 'fr', 'de', 'nl', 'ca']),          tenants: BSKY_MULTI_TENANTS },
+  { groupId: 'ja',    langs: new Set(['ja']),                                                                tenants: BSKY_JA_TENANTS },
+  { groupId: 'pt',    langs: new Set(['pt', 'pt-BR', 'pt-PT']),                                              tenants: BSKY_PT_TENANTS },
 ];
+
+// Flat list of every tenant lane id, used for queue dir creation +
+// per-lane state tracking.
+const LANES = LANE_GROUPS.flatMap((g) => g.tenants.map((id) => ({ id, group: g.groupId, langs: g.langs })));
+
+// Per-group round-robin counter — each post in a matched group goes to
+// `tenants[counter++ % tenants.length]`. Zero coordination, zero overlap.
+const groupRR = Object.fromEntries(LANE_GROUPS.map((g) => [g.groupId, 0]));
 
 fs.mkdirSync(FIREHOSE_DIR, { recursive: true });
 for (const lane of LANES) {
@@ -269,36 +280,39 @@ function handleEvent(evt) {
   }
 
   const postLangs = Array.isArray(rec.langs) ? rec.langs : [];
-  // First-match-wins routing so each post lands in AT MOST ONE lane.
-  // Without this, a post tagged ['en', 'es'] gets written to both bsky-en
-  // and bsky-multi, which lets the same body show up in two different
-  // synthesis articles — a soft duplicate visible to anyone comparing
-  // articles across lanes. First-match guarantees cross-lane uniqueness.
-  let routedLane = null;
-  for (const lane of LANES) {
-    perLaneState[lane.id].totalSeen += 1;
+  // First-MATCHING-GROUP wins, then round-robin within that group's tenants.
+  // Each post still lands in AT MOST ONE queue file → zero dedup risk.
+  // Multi-tenant groups (e.g. bsky-en split into 5 fanout lanes) get
+  // even distribution via groupRR counter; tenant 0 then 1 then 2 etc.
+  let routedTenant = null;
+  for (const group of LANE_GROUPS) {
+    // Track totals against ALL tenants in the group for stats parity
+    for (const tid of group.tenants) perLaneState[tid].totalSeen += 1;
     let match = false;
     for (const l of postLangs) {
-      if (lane.langs.has(l)) { match = true; break; }
+      if (group.langs.has(l)) { match = true; break; }
     }
     if (!match) {
-      perLaneState[lane.id].dropped_lang_mismatch += 1;
+      for (const tid of group.tenants) perLaneState[tid].dropped_lang_mismatch += 1;
       continue;
     }
-    if (routedLane === null) {
-      routedLane = lane.id;
-      bufferedAppend(lane.id, toEnvelope(evt, lane.id));
+    if (routedTenant === null) {
+      const tenantIdx = groupRR[group.groupId] % group.tenants.length;
+      groupRR[group.groupId] = (groupRR[group.groupId] + 1) | 0;
+      routedTenant = group.tenants[tenantIdx];
+      bufferedAppend(routedTenant, toEnvelope(evt, routedTenant));
     } else {
-      // Already routed to an earlier lane — do not duplicate.
-      perLaneState[lane.id].dropped_lang_mismatch += 1;
+      // Already routed to an earlier matching group — don't duplicate.
+      for (const tid of group.tenants) perLaneState[tid].dropped_lang_mismatch += 1;
     }
   }
-  if (routedLane === null && postLangs.length === 0) {
-    // Post with no language tag. Fall back to bsky-en so we don't lose
-    // untagged English content entirely. This is also exclusive — the
-    // post lands in bsky-en only, not in any other lane.
-    bufferedAppend('bsky-en', toEnvelope(evt, 'bsky-en'));
-    perLaneState['bsky-en'].totalSeen += 1;
+  if (routedTenant === null && postLangs.length === 0) {
+    // Post with no language tag → fall through to the EN group's RR queue
+    const tenantIdx = groupRR['en'] % BSKY_EN_TENANTS.length;
+    groupRR['en'] = (groupRR['en'] + 1) | 0;
+    const tenant = BSKY_EN_TENANTS[tenantIdx];
+    bufferedAppend(tenant, toEnvelope(evt, tenant));
+    perLaneState[tenant].totalSeen += 1;
   }
 }
 
