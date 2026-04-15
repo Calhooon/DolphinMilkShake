@@ -648,12 +648,18 @@ function rebuildDashboardFromDisk() {
 // dashboardState at call time — no running totals. Totals = sum over sets.
 function computeSnapshot() {
   const totals = { txs: 0, sats: 0, articles: 0, cycles: 0 };
+  // Header lifetime sats comes from txCategories (LIVE per-tx via budget
+  // tailer) NOT per-lane aggregate.json totals (delayed until cycle end,
+  // missing in-flight LLM inference cost). The TX Breakdown panel reads
+  // from txCategories — so this keeps both numbers in sync and live.
+  for (const v of dashboardState.txCategories.values()) {
+    totals.sats += v.sats || 0;
+  }
   const perLaneOut = {};
   for (const [laneId, laneState] of dashboardState.perLane.entries()) {
     const txidSet = dashboardState.txidsByLane.get(laneId);
     const laneTxs = txidSet ? txidSet.size : 0;
     totals.txs += laneTxs;
-    totals.sats += laneState.sats || 0;
     totals.cycles += laneState.cycles || 0;
     totals.articles += laneState.articles || 0;
     perLaneOut[laneId] = {
@@ -1021,6 +1027,7 @@ function ensureAgentTailer(lane, role) {
       };
       a.recentEvents.push(compactEv);
       if (a.recentEvents.length > 20) a.recentEvents.shift();
+      a.lastEventTs = nowMs;  // for stale-error sweeper
 
       if (ev.type === 'session_start') {
         // Reset session-scoped state on every new session_start so stale
