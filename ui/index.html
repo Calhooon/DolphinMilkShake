@@ -631,6 +631,25 @@
       100% { opacity: 0; transform: translateY(0); }
     }
 
+    /* Per-agent dolphin-milk web UI port link. Tiny monospace tag next to
+       the role label so the user can click straight into any agent's UI. */
+    .agent-port {
+      font-family: var(--mono, monospace);
+      font-size: 9px;
+      color: var(--text-dim, #94a3b8);
+      text-decoration: none;
+      padding: 1px 4px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 3px;
+      margin-left: 4px;
+      transition: all 0.12s ease;
+    }
+    .agent-port:hover {
+      color: var(--accent, #60a5fa);
+      border-color: var(--accent, #60a5fa);
+      background: rgba(96, 165, 250, 0.08);
+    }
+
     /* Persistent per-tile "last delegate ago" indicator. Always visible
        once a delegate has fired, so the tile has continuous context even
        between banner flashes. */
@@ -1069,13 +1088,29 @@
     // Lane state update
     // ---------------------------------------------------------------
     function initLane(lane) {
+      // Pre-seed agent slots with server_port from the lane config so each
+      // tile can render a clickable link to the agent's dolphin-milk web
+      // UI ("http://localhost:<port>/ui/"). The lane payload from snap.lanes
+      // (or the legacy `init` event) carries an agents[] array with
+      // {role, name, server_port}. We hoist server_port up onto the per-role
+      // slot so the surgical render can find it via lane.agents[role].port.
+      const portByRole = {};
+      const nameByRole = {};
+      if (Array.isArray(lane.agents)) {
+        for (const a of lane.agents) {
+          if (a && a.role) {
+            portByRole[a.role] = a.server_port;
+            nameByRole[a.role] = a.name;
+          }
+        }
+      }
       state.lanes.set(lane.id, {
         id: lane.id,
         subreddit: lane.subreddit,
         agents: {
-          captain: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '' },
-          worker: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '' },
-          synthesis: { state: 'idle', sats: 0, url: null, cycle: null, active: false, pulseClass: '' },
+          captain:   { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '', port: portByRole.captain   || null, name: nameByRole.captain   || null },
+          worker:    { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '', port: portByRole.worker    || null, name: nameByRole.worker    || null },
+          synthesis: { state: 'idle', sats: 0, url: null, cycle: null, active: false, pulseClass: '', port: portByRole.synthesis || null, name: nameByRole.synthesis || null },
         },
         totalSats: 0,
         totalTxs: 0,
@@ -1606,14 +1641,20 @@
           </div>
           <div class="banner-slot" data-field="banner-slot"></div>
           <div class="last-delegate" data-field="last-delegate" title="most recent captain → worker delegate"></div>
-          ${['captain', 'worker', 'synthesis'].map((role) => `
+          ${['captain', 'worker', 'synthesis'].map((role) => {
+            const a = lane.agents[role] || {};
+            const port = a.port;
+            const portLink = port
+              ? `<a class="agent-port" href="http://localhost:${port}/ui/" target="_blank" rel="noopener" title="open ${role} dolphin-milk UI">:${port}↗</a>`
+              : '';
+            return `
             <div class="agent ${role}" data-role="${role}">
-              <div><span class="role ${role}">${role}</span></div>
+              <div><span class="role ${role}">${role}</span> ${portLink}</div>
               <div class="state" data-field="state">idle</div>
               <div class="sats" data-field="agent-sats"></div>
               <div class="wallet" data-field="wallet" title="wallet balance · utxo count"></div>
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       `;
     }
