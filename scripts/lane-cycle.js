@@ -199,7 +199,14 @@ fs.mkdirSync(SHARED_DIR, { recursive: true });
 
 const CAPTAIN_TIMEOUT_MS = 10 * 60 * 1000;
 const WORKER_TIMEOUT_MS = 15 * 60 * 1000;
-const SYNTHESIS_TIMEOUT_MS = 10 * 60 * 1000;
+// Synthesis bumped 10 → 20 min after E21-2 soak observation that Japanese
+// and emoji-heavy content pushes the synthesis LLM call to 60-120s per
+// iteration. With 2 LLM calls + file_read + upload_to_nanostore + tool
+// results, total cycle wall time on non-English content can hit 12-15
+// min. 10-min deadline was causing bsky-en cycle 1 and bsky-ja cycles
+// 1+6 to fail even though the agent eventually completed and uploaded.
+// 20 min gives safe margin for multilingual firehose content.
+const SYNTHESIS_TIMEOUT_MS = 20 * 60 * 1000;
 const POLL_INTERVAL_MS = 3000;
 
 // -----------------------------------------------------------------------------
