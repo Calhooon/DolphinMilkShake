@@ -1616,7 +1616,11 @@
       // loops every tile.
       if (renderDirty.totals)   { renderDirty.totals   = false; doRenderTotals(); }
       if (renderDirty.progress) { renderDirty.progress = false; doRenderProgress(); }
-      if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
+      if (renderDirty.txStream) {
+        renderDirty.txStream = false;
+        if (USE_SNAPSHOT_MODE) doRenderTxStreamSnapshot();
+        else doRenderTxStream();
+      }
       if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
       if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
       if (renderDirty.activity) { renderDirty.activity = false; doRenderActivity(); }
@@ -2125,7 +2129,28 @@
     const USE_SNAPSHOT_MODE = new URLSearchParams(location.search).get('v') !== 'legacy';
     let latestSnapshot = null;
 
+    // Since-reload baselines for the +N delta indicators in the header.
+    // Captured on the FIRST snapshot we see; subsequent snapshots compute
+    // delta = currentTotal - baseline. Resets only when the page reloads.
+    let _baselineTxs = null;
+    let _baselineSats = null;
+    let _baselineArticles = null;
+
     function applySnapshot(snap) {
+      // Diagnostics: count + record every snapshot for playwright instrumentation
+      if (window.__dm) {
+        window.__dm._snapCount = (window.__dm._snapCount || 0) + 1;
+        if (!window.__dm._snapHistory) window.__dm._snapHistory = [];
+        window.__dm._snapHistory.push({
+          t: Date.now(),
+          totalTxs: snap.totals?.txs,
+          bskyEnTxs: snap.perLane?.['bsky-en']?.txs,
+          bskyEnPhase: snap.perLane?.['bsky-en']?.cyclePhase,
+          captainState: snap.perLane?.['bsky-en']?.agents?.captain?.state,
+          captainIter: snap.perLane?.['bsky-en']?.agents?.captain?.iter,
+        });
+        if (window.__dm._snapHistory.length > 120) window.__dm._snapHistory.shift();
+      }
       latestSnapshot = snap;
 
       // Seed lanes if empty (first snapshot acts as init replacement)
@@ -2139,9 +2164,19 @@
       state.historical.articles = snap.totals.articles;
       state.historical.cycles = snap.totals.cycles;
       state.historical.target = snap.target;
-      state.live.txs = 0;
-      state.live.sats = 0;
-      state.live.articleCount = 0;
+      // Capture baselines on FIRST snapshot so the +N delta indicators
+      // can show "since you opened this page" rather than always +0.
+      if (_baselineTxs === null) {
+        _baselineTxs = snap.totals.txs;
+        _baselineSats = snap.totals.sats;
+        _baselineArticles = snap.totals.articles;
+      }
+      // state.live.* now represents the delta since reload — driven by
+      // baseline subtraction, not per-event accumulation. Negative deltas
+      // shouldn't happen but clamp at 0 just in case.
+      state.live.txs = Math.max(0, snap.totals.txs - _baselineTxs);
+      state.live.sats = Math.max(0, snap.totals.sats - _baselineSats);
+      state.live.articleCount = Math.max(0, snap.totals.articles - _baselineArticles);
 
       // Per-lane — authoritative. Everything lives in snap.perLane[laneId].
       for (const [laneId, lane] of state.lanes.entries()) {
@@ -2195,6 +2230,16 @@
         ts: t.ts / 1000,
       }));
 
+      // Derive tx/s rate from recentTxs timestamps within the last 60s.
+      // (Snapshot mode no longer pushes to txTimestamps via handleProofEmitted
+      // because all proof events flow through applySnapshot now.)
+      const nowMs = Date.now();
+      const cutoffMs = nowMs - 60_000;
+      state.live.txTimestamps = (snap.recentTxs || [])
+        .map((t) => t.ts)
+        .filter((ts) => ts >= cutoffMs)
+        .sort((a, b) => a - b);
+
       // Activity feed — replace with snap.recentFlows
       state.activity = (snap.recentFlows || []).map((f) => ({
         lane: f.lane,
@@ -2224,28 +2269,40 @@
     }
     function renderActivity() { renderDirty.activity = true; scheduleRender(); }
 
-    // Custom tx stream renderer for snapshot mode — full replace of the
-    // panel body from state.live.txStream. Doesn't touch the rate window
-    // (snapshot mode doesn't track rate yet — can be added later by
-    // deriving from tx timestamps in the snap).
+    // Tx stream renderer for snapshot mode. Uses items from state.live.txStream
+    // (populated from snap.recentTxs). Hash-dedupes against the previous render
+    // so we don't blow away DOM on every snapshot when the list hasn't changed.
+    let lastTxStreamHash = '';
     function doRenderTxStreamSnapshot() {
       const liveBody = document.getElementById('tx-stream');
       if (!liveBody) return;
       const items = state.live.txStream || [];
+      // Update the panel header tx count — show the lifetime total from
+      // state.historical.txs (set by applySnapshot from snap.totals.txs),
+      // not just the rolling stream length, so the user sees the real
+      // on-chain count.
+      const txCountEl = document.getElementById('tx-count');
+      if (txCountEl) {
+        const lifetime = (state.historical && state.historical.txs) || items.length;
+        txCountEl.textContent = fmt(lifetime);
+      }
       if (items.length === 0) {
         if (!liveBody.querySelector('.empty')) {
           liveBody.innerHTML = '<div class="empty">waiting for live txs…</div>';
         }
+        lastTxStreamHash = '';
         return;
       }
+      // Cheap content-hash: first 5 txid prefixes joined. Bail out if same.
+      const hash = items.slice(0, 5).map((t) => t.txid.slice(0, 8)).join('|');
+      if (hash === lastTxStreamHash) return;
+      lastTxStreamHash = hash;
       liveBody.innerHTML = items.map((t) => `
         <div class="tx-item">
           <span class="lane-tag">${t.lane}</span>
-          <span class="txid">${t.txid.slice(0,10)}…${t.txid.slice(-8)}</span>
+          <span class="txid"><a href="https://whatsonchain.com/tx/${t.txid}" target="_blank" rel="noopener">${t.txid.slice(0,10)}…${t.txid.slice(-8)}</a></span>
         </div>
       `).join('');
-      const txCountEl = document.getElementById('tx-count');
-      if (txCountEl) txCountEl.textContent = fmt(items.length);
     }
 
     // ---------------------------------------------------------------
@@ -2315,6 +2372,17 @@
     }
 
     // Kick off
+    // Diagnostic surface for playwright/devtools. applySnapshot pushes
+    // to _snapCount + _snapHistory; expose them here so external probes
+    // can read snapshot cadence and content.
+    window.__dm = {
+      _snapCount: 0,
+      _snapHistory: [],
+      get state() { return state; },
+      get latestSnapshot() { return latestSnapshot; },
+      get snapCount() { return window.__dm._snapCount; },
+    };
+
     setupTabs();
     connect();
 
