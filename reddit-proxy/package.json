@@ -1,0 +1,11 @@
+{
+  "name": "dolphinsense-reddit-proxy",
+  "version": "0.1.0",
+  "description": "Cloudflare Worker that proxies Reddit JSON fetches through CF edge IPs, bypassing residential IP rate limits for the DolphinSense feeder.",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail"
+  }
+}

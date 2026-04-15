@@ -237,8 +237,12 @@ async function spawnAgent(config, agent, parentKey) {
   }
   const stdoutLogPath = path.join(agent.workspace, 'server-stdout.log');
   const stderrLogPath = path.join(agent.workspace, 'server-stderr.log');
-  const stdoutFd = fs.openSync(stdoutLogPath, 'w');
-  const stderrFd = fs.openSync(stderrLogPath, 'w');
+  // Append mode so supervisor respawns don't clobber prior crash logs —
+  // we want the full history in one file to diagnose "crashed 3x in a row"
+  // scenarios during the 24h run. Still a fresh file on very first boot
+  // (the file didn't exist, so opening 'a' creates it empty).
+  const stdoutFd = fs.openSync(stdoutLogPath, 'a');
+  const stderrFd = fs.openSync(stderrLogPath, 'a');
 
   logStep(`spawning '${agent.name}' on port ${agent.port} (wallet ${agent.walletPort}, model ${agent.model})`);
 
@@ -291,6 +295,76 @@ async function spawnAgent(config, agent, parentKey) {
   logStep(`'${agent.name}' healthy (wallet connected)`);
 
   return { proc, stdoutLogPath, stderrLogPath };
+}
+
+/**
+ * Attach a supervisor to an agent handle. On unexpected process exit, respawns
+ * the agent via `spawnAgent()` with exponential backoff + restart rate limit.
+ * No-op when `supervisorState.shuttingDown` is true (intentional teardown).
+ *
+ * Respawn strategy:
+ *   - Max 3 restarts per 60-second window → circuit-breaker to stop hot loops
+ *   - Backoff: 2s → 4s → 8s (capped at 60s)
+ *   - On respawn success: re-attach supervisor so future crashes are caught
+ *   - On respawn failure: log + stop trying (agentHandle.proc stays null)
+ *
+ * The dolphin-milk boot flow handles cert acquisition and overlay registration
+ * on every startup, so a respawn produces a fully-functional agent without
+ * the cluster.js bootstrap steps 4/5/6 having to rerun.
+ */
+function attachSupervisor(agentHandle, config, agent, parentKey, supervisorState) {
+  if (!agentHandle.proc) return;
+  const proc = agentHandle.proc;
+
+  const onExit = (code, signal) => {
+    // Remove reference immediately so callers can tell the proc is dead.
+    agentHandle.proc = null;
+
+    if (supervisorState.shuttingDown) {
+      // Intentional shutdown — do not respawn.
+      return;
+    }
+
+    logError(`SUPERVISOR: agent '${agent.name}' exited unexpectedly (code=${code} signal=${signal})`);
+
+    // Rate-limit: max 3 restarts in a rolling 60-second window.
+    const now = Date.now();
+    const prior = supervisorState.restarts.get(agent.name) || [];
+    const recent = prior.filter((t) => now - t < 60_000);
+    if (recent.length >= 3) {
+      logError(
+        `SUPERVISOR: '${agent.name}' exceeded 3 restarts in 60s — circuit breaker TRIPPED, no more respawn attempts`,
+      );
+      supervisorState.tripped.add(agent.name);
+      return;
+    }
+    recent.push(now);
+    supervisorState.restarts.set(agent.name, recent);
+
+    const backoffMs = Math.min(60_000, 2_000 * Math.pow(2, recent.length - 1));
+    logStep(`SUPERVISOR: respawning '${agent.name}' in ${backoffMs}ms (attempt ${recent.length}/3)`);
+
+    setTimeout(async () => {
+      if (supervisorState.shuttingDown) return;
+      try {
+        const { proc: newProc, stdoutLogPath, stderrLogPath } = await spawnAgent(
+          config,
+          agent,
+          parentKey,
+        );
+        agentHandle.proc = newProc;
+        agentHandle.stdoutLogPath = stdoutLogPath;
+        agentHandle.stderrLogPath = stderrLogPath;
+        attachSupervisor(agentHandle, config, agent, parentKey, supervisorState);
+        logStep(`SUPERVISOR: '${agent.name}' respawned and healthy`);
+        supervisorState.totalRespawns += 1;
+      } catch (e) {
+        logError(`SUPERVISOR: respawn of '${agent.name}' FAILED: ${e.message}`);
+      }
+    }, backoffMs);
+  };
+
+  proc.once('exit', onExit);
 }
 
 /**
@@ -859,6 +933,17 @@ async function startCluster(config) {
     throw new Error('[startCluster] config.agents must be a non-empty array');
   }
 
+  // Supervisor state — lives on the handle, used by attachSupervisor() to
+  // track restart budget + suppress respawn during intentional shutdown.
+  // Enabled when config.supervise === true (default false for backward compat).
+  const supervisorState = {
+    enabled: config.supervise === true,
+    shuttingDown: false,
+    restarts: new Map(),  // agent.name → [timestamp, ...] (last 60s only)
+    tripped: new Set(),   // agent names that exceeded the restart limit
+    totalRespawns: 0,     // counter for monitoring
+  };
+
   // --- Step 1: binary check ---------------------------------------------------
   logStep(`step 1 — binary check: ${config.binary}`);
   if (!fs.existsSync(config.binary)) {
@@ -996,10 +1081,26 @@ async function startCluster(config) {
     parentKey,
     overlayUrl: config.overlay.url,
     createdAt,
+    supervisorState,
     stop(options) {
+      supervisorState.shuttingDown = true;
       return stopCluster(this, options);
     },
   };
+
+  // Attach supervisors AFTER the full cluster bootstrap succeeds — so a
+  // failure in step 4/5/6 doesn't leave dangling restart handlers on
+  // processes we're about to kill anyway.
+  if (supervisorState.enabled) {
+    for (const h of agentHandles) {
+      // Find the original agent config (by name) to thread into respawn.
+      const agentCfg = config.agents.find((a) => a.name === h.name);
+      if (agentCfg && h.spawnedByUs && h.proc) {
+        attachSupervisor(h, config, agentCfg, parentKey, supervisorState);
+      }
+    }
+    logStep(`supervisor ENABLED — ${agentHandles.length} agents will auto-respawn on crash`);
+  }
 
   try {
     writeClusterStateAtomic(stateFile, buildStateFilePayload(handle));

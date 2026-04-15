@@ -25,6 +25,12 @@ dist/
 *.key
 .env
 
+# Local secrets (wallet keys, API tokens, CF credentials) — never commit
+secrets.md
+*.secrets.md
+.dev.vars
+reddit-proxy/.dev.vars
+
 # Test workspaces (contain wallet data, runtime state)
 test-workspace/
 test-workspace-v2/
