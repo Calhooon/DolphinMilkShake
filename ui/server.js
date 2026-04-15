@@ -536,6 +536,19 @@ const agentStateCache = new Map();  // `${lane}:${role}` → latest agent event
 const RECENT_TXS_MAX = 50;
 const recentTxs = [];  // [{ kind: 'proof_emitted', lane, cycle_dir, txid }, ...] newest first
 
+// Ring buffer of recent message_flow events (captain → worker delegate_task).
+// These fire once per cycle per lane, so a full 5-lane soak produces maybe
+// one banner every 25-60 seconds — fresh clients connecting between events
+// see nothing until the next delegate lands (potentially minutes away).
+// Capped at RECENT_FLOWS_MAX to keep replay bounded.
+const RECENT_FLOWS_MAX = 20;
+const recentFlows = [];  // newest first
+
+function recordFlow(ev) {
+  recentFlows.unshift(ev);
+  if (recentFlows.length > RECENT_FLOWS_MAX) recentFlows.length = RECENT_FLOWS_MAX;
+}
+
 function ensureAgentTailer(lane, role) {
   const key = `${lane}:${role}`;
   if (agentTailers.has(key)) return agentTailers.get(key);
@@ -560,7 +573,7 @@ function ensureAgentTailer(lane, role) {
       // We emit one event on tool_call (the send intent) and an enriched
       // event on tool_result (with commission_id + amount_sats).
       if (role === 'captain' && ev.type === 'tool_call' && ev.name === 'delegate_task') {
-        broadcast({
+        const flow = {
           kind: 'message_flow',
           phase: 'sending',
           lane,
@@ -569,7 +582,10 @@ function ensureAgentTailer(lane, role) {
           tool: 'delegate_task',
           from_name: LANE_AGENTS[lane].captain.name,
           to_name: LANE_AGENTS[lane].worker.name,
-        });
+          ts: Date.now(),
+        };
+        recordFlow(flow);
+        broadcast(flow);
       }
       if (role === 'captain' && ev.type === 'tool_result' && ev.name === 'delegate_task' && ev.success) {
         let commission_id = null;
@@ -581,7 +597,7 @@ function ensureAgentTailer(lane, role) {
             amount_sats = content.amount_sats || null;
           }
         } catch { /* content may not be JSON */ }
-        broadcast({
+        const flow = {
           kind: 'message_flow',
           phase: 'confirmed',
           lane,
@@ -592,13 +608,16 @@ function ensureAgentTailer(lane, role) {
           to_name: LANE_AGENTS[lane].worker.name,
           commission_id,
           amount_sats,
-        });
+          ts: Date.now(),
+        };
+        recordFlow(flow);
+        broadcast(flow);
       }
       // Worker picking up the commission from its inbox: the first
       // think_request after session_start signals "received message".
       // We signal on session_start to make the arrival moment clear.
       if (role === 'worker' && ev.type === 'session_start') {
-        broadcast({
+        const flow = {
           kind: 'message_flow',
           phase: 'received',
           lane,
@@ -606,7 +625,10 @@ function ensureAgentTailer(lane, role) {
           to: 'worker',
           from_name: LANE_AGENTS[lane].captain.name,
           to_name: LANE_AGENTS[lane].worker.name,
-        });
+          ts: Date.now(),
+        };
+        recordFlow(flow);
+        broadcast(flow);
       }
     },
     // Replay the last 128 KB of the session.jsonl when we first see the
@@ -988,6 +1010,18 @@ function handleSse(req, res) {
     const ordered = recentTxs.slice().reverse(); // oldest first
     for (const ev of ordered) {
       res.write(`data: ${JSON.stringify(ev)}\n\n`);
+    }
+  }
+
+  // Replay recent message_flow events so fresh clients see the most
+  // recent captain → worker delegate handoffs instead of an empty activity
+  // feed until the next cycle (2-6 min per lane). Tagged with `_replay`
+  // so the client can show them in the activity feed without triggering
+  // the live pulse animation.
+  if (recentFlows.length > 0) {
+    const ordered = recentFlows.slice().reverse();
+    for (const ev of ordered) {
+      res.write(`data: ${JSON.stringify({ ...ev, _replay: true })}\n\n`);
     }
   }
 

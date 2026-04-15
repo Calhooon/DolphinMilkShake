@@ -616,7 +616,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      animation: banner-flash 3.5s ease-out forwards;
+      animation: banner-flash 8s ease-out forwards;
       pointer-events: none;
     }
     .msg-banner .amt { color: var(--warn); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -626,9 +626,68 @@
     }
     @keyframes banner-flash {
       0%   { opacity: 0; transform: translateY(-4px); }
-      6%   { opacity: 1; transform: translateY(0); }
-      80%  { opacity: 1; }
+      3%   { opacity: 1; transform: translateY(0); }
+      90%  { opacity: 1; }
       100% { opacity: 0; transform: translateY(0); }
+    }
+
+    /* Persistent per-tile "last delegate ago" indicator. Always visible
+       once a delegate has fired, so the tile has continuous context even
+       between banner flashes. */
+    .last-delegate {
+      font-size: 9px;
+      color: var(--text-dim);
+      padding: 0 2px 2px;
+      font-variant-numeric: tabular-nums;
+      min-height: 12px;
+    }
+    .last-delegate:empty { display: none; }
+
+    /* Sidebar Agent Handoffs feed */
+    #activity-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px;
+      overflow-y: auto;
+    }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      padding: 4px 6px;
+      background: rgba(148, 163, 184, 0.05);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .activity-item .icon { flex-shrink: 0; }
+    .activity-item .lane-tag {
+      font-family: var(--mono, monospace);
+      color: var(--accent, #60a5fa);
+      font-weight: 600;
+      font-size: 9px;
+    }
+    .activity-item .flow {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .activity-item .amt {
+      color: var(--warn);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      font-size: 9px;
+    }
+    .activity-item .ago {
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      font-size: 9px;
+      flex-shrink: 0;
     }
     @keyframes arrow-fly {
       0%   { transform: translateX(-12px); opacity: 0; }
@@ -929,6 +988,15 @@
     </div>
     <div class="panel">
       <div class="panel-head">
+        <span>Agent Handoffs</span>
+        <span class="count" id="activity-count">0</span>
+      </div>
+      <div class="panel-body" id="activity-feed">
+        <div class="empty">no handoffs yet…</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
         <span>Articles</span>
         <span class="count"><span id="live-article-count">0</span> live · <span id="hist-article-count">0</span> historical</span>
       </div>
@@ -958,6 +1026,11 @@
                           // for the rolling tx/s rate counter
       },
 
+      // Rolling list of recent captain → worker delegate handoffs, rendered
+      // in the sidebar. Newest first, capped at MAX_ACTIVITY. Fed by
+      // pushActivityEntry() from handleMessageFlow, including replay.
+      activity: [],
+
       // "historical" = lifetime data loaded from disk at server start.
       // Populated by init_historical event.
       historical: {
@@ -976,6 +1049,13 @@
     // Utility
     // ---------------------------------------------------------------
     const fmt = (n) => n.toLocaleString();
+    function relativeTime(ts) {
+      const secs = Math.floor((Date.now() - ts) / 1000);
+      if (secs < 5) return 'just now';
+      if (secs < 60) return `${secs}s ago`;
+      if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+      return `${Math.floor(secs / 3600)}h ago`;
+    }
     const ts = () => new Date().toLocaleTimeString();
     const ago = (tsSec) => {
       if (!tsSec) return '';
@@ -1000,6 +1080,7 @@
         totalSats: 0,
         totalTxs: 0,
         banner: null, // {text, amt, id} — short-lived message flow banner
+        lastDelegateAt: null, // epoch ms — persistent "last handoff" indicator
       });
     }
 
@@ -1242,43 +1323,90 @@
       const lane = state.lanes.get(ev.lane);
       if (!lane) return;
 
+      // Always update the persistent "last delegate" timestamp so the per-
+      // tile indicator has something to render even when no banner is live.
+      // Replayed events use their original ts so the "Xs ago" is accurate.
+      const ts = ev.ts || Date.now();
+      if (ev.phase === 'sending' || ev.phase === 'confirmed') {
+        if (!lane.lastDelegateAt || ts > lane.lastDelegateAt) {
+          lane.lastDelegateAt = ts;
+        }
+      }
+
+      // Push into the activity feed (capped at 30). Replayed events go in
+      // too, so fresh page loads have immediate history.
+      pushActivityEntry(ev);
+
+      // Replayed events skip the pulse + banner animation — they're
+      // historical and would be misleading as "live" indicators. But the
+      // lastDelegateAt + activity feed updates above already happened.
+      if (ev._replay) {
+        renderLanes();
+        return;
+      }
+
       if (ev.phase === 'sending') {
-        // Pulse the captain strip "sending" orange
         lane.agents.captain.pulseClass = 'sending';
-        // Drop a short banner on top of the lane tile
         lane.banner = {
           text: `${ev.from} → ${ev.to}`,
           tool: ev.tool,
           amt: null,
           id: Date.now(),
         };
-        // Clear the pulse after animation ends
         setTimeout(() => {
           const l = state.lanes.get(ev.lane);
           if (l) { l.agents.captain.pulseClass = ''; renderLanes(); }
-        }, 1500);
+        }, 2500);
       } else if (ev.phase === 'confirmed') {
-        // Enrich the banner with commission amount
         if (lane.banner && ev.amount_sats) {
           lane.banner.amt = ev.amount_sats;
           lane.banner.commission_id = ev.commission_id;
         }
       } else if (ev.phase === 'received') {
-        // Pulse the worker strip "receiving" blue
         lane.agents.worker.pulseClass = 'receiving';
-        // Banner drops off after 3.5s via CSS, but refresh the id so the
-        // animation restarts if another banner arrives quickly
         setTimeout(() => {
           const l = state.lanes.get(ev.lane);
           if (l) { l.agents.worker.pulseClass = ''; renderLanes(); }
-        }, 1500);
-        // Auto-clear the banner after its full animation
+        }, 2500);
+        // Banner stays up ~8s so it's actually catchable by a human eye.
         setTimeout(() => {
           const l = state.lanes.get(ev.lane);
           if (l) { l.banner = null; renderLanes(); }
-        }, 3500);
+        }, 8000);
       }
       renderLanes();
+    }
+
+    // Activity feed — a small rolling list of the most recent delegate
+    // handoffs. Rendered in the sidebar so the user always has SOMETHING
+    // to look at between sparse live events.
+    const MAX_ACTIVITY = 30;
+    function pushActivityEntry(ev) {
+      if (!state.activity) state.activity = [];
+      // Coalesce consecutive events for the same (lane, phase) within 2s
+      // to avoid duplicate entries from sending+confirmed firing together.
+      const last = state.activity[0];
+      if (last && last.lane === ev.lane && last.phase === ev.phase &&
+          Math.abs((ev.ts || Date.now()) - last.ts) < 2000) {
+        // Upgrade with amount_sats if available
+        if (ev.amount_sats) last.amount_sats = ev.amount_sats;
+        renderDirty.activity = true;
+        scheduleRender();
+        return;
+      }
+      state.activity.unshift({
+        lane: ev.lane,
+        phase: ev.phase,
+        from_name: ev.from_name,
+        to_name: ev.to_name,
+        amount_sats: ev.amount_sats || null,
+        ts: ev.ts || Date.now(),
+      });
+      if (state.activity.length > MAX_ACTIVITY) {
+        state.activity.length = MAX_ACTIVITY;
+      }
+      renderDirty.activity = true;
+      scheduleRender();
     }
 
     // ---------------------------------------------------------------
@@ -1310,7 +1438,7 @@
     // response, flicker-free because DOM nodes never get torn down.
     const renderDirty = {
       totals: false, progress: false, lanes: false,
-      txStream: false, articles: false, feeder: false,
+      txStream: false, articles: false, feeder: false, activity: false,
     };
     let rafPending = 0;
     // Kept for the lane tile dedup inside doRenderLanes — not used for
@@ -1326,6 +1454,7 @@
       if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
       if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
       if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
+      if (renderDirty.activity) { renderDirty.activity = false; doRenderActivity(); }
       if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
     }
     function scheduleRender() {
@@ -1430,6 +1559,7 @@
             </div>
           </div>
           <div class="banner-slot" data-field="banner-slot"></div>
+          <div class="last-delegate" data-field="last-delegate" title="most recent captain → worker delegate"></div>
           ${['captain', 'worker', 'synthesis'].map((role) => `
             <div class="agent ${role}" data-role="${role}">
               <div><span class="role ${role}">${role}</span></div>
@@ -1454,6 +1584,15 @@
       const liveDelta = tile.querySelector('[data-field="tx-live"]');
       if (liveDelta) {
         liveDelta.textContent = lane.totalTxs > 0 ? `+${fmt(lane.totalTxs)}` : '';
+      }
+
+      // Persistent "last delegate ago" indicator. Updated every render
+      // (which includes the 1 Hz ticker below) so the number keeps ticking
+      // even when no event has arrived since the last frame.
+      if (lane.lastDelegateAt) {
+        setText(tile, 'last-delegate', `📨 last delegate: ${relativeTime(lane.lastDelegateAt)}`);
+      } else {
+        setText(tile, 'last-delegate', '');
       }
 
       // Banner slot — add/remove the message flow banner without touching
@@ -1505,6 +1644,38 @@
     }
     function toggleClass(el, cls, on) {
       if (el.classList.contains(cls) !== on) el.classList.toggle(cls, on);
+    }
+
+    function doRenderActivity() {
+      const el = document.getElementById('activity-feed');
+      const countEl = document.getElementById('activity-count');
+      if (!el) return;
+      const items = state.activity || [];
+      if (countEl) countEl.textContent = fmt(items.length);
+      if (items.length === 0) {
+        if (!el.querySelector('.empty')) {
+          el.innerHTML = '<div class="empty">no handoffs yet…</div>';
+        }
+        return;
+      }
+      // Cheap full rebuild — capped at 30 items, single panel, doesn't
+      // animate per-item like the tx stream does.
+      el.innerHTML = items.map((a) => {
+        const phaseIcon = a.phase === 'sending' ? '📤'
+          : a.phase === 'confirmed' ? '✅'
+          : a.phase === 'received' ? '📥'
+          : '•';
+        const amt = a.amount_sats ? ` <span class="amt">${fmt(a.amount_sats)} sats</span>` : '';
+        return `
+          <div class="activity-item" data-ts="${a.ts}">
+            <span class="icon">${phaseIcon}</span>
+            <span class="lane-tag">${a.lane}</span>
+            <span class="flow">${a.from_name || a.from || 'captain'} → ${a.to_name || a.to || 'worker'}</span>
+            ${amt}
+            <span class="ago">${relativeTime(a.ts)}</span>
+          </div>
+        `;
+      }).join('');
     }
 
     function doRenderFeeder() {
@@ -1788,6 +1959,17 @@
     // Kick off
     setupTabs();
     connect();
+
+    // Tick the "X seconds ago" labels once per second. Both the per-lane
+    // last-delegate indicator and the activity feed's .ago spans need
+    // their text to age even when no new events arrive.
+    setInterval(() => {
+      if (state.lanes.size > 0) renderLanes();
+      if ((state.activity || []).length > 0) {
+        renderDirty.activity = true;
+        scheduleRender();
+      }
+    }, 1000);
   </script>
 </body>
 </html>
