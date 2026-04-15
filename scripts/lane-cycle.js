@@ -900,6 +900,20 @@ function sumSatsFromTask(body) {
 
 // Find the latest synthesis task spawned after runStartMs and pull its result
 // + sats from session.jsonl. Returns null if not found.
+//
+// Historical note: this function used to parse NANOSTORE_URL / TXIDS_URL
+// from the LLM's final message text in session_end.result. That was
+// unreliable for two reasons: (1) when NanoStore uploads fail (seen at
+// ~60% failure rate on 2026-04-15), the LLM often reports the LAST
+// attempt in its final message — overwriting earlier successful uploads
+// with the failure. (2) The regex `\S+` captured non-URL strings like
+// "ERROR:" as if they were URLs, producing garbage in aggregate.json.
+//
+// Fix: parse `tool_result` events directly for upload_to_nanostore
+// calls. Extract the `public_url` field from successful JSON results.
+// First successful HTML upload wins for nanostoreUrl, first successful
+// text/plain upload wins for txidsUrl. This captures ACTUAL successes
+// regardless of what the LLM later reports about them.
 function extractSynthesisResult(synthesisWorkspace, runStartMs) {
   const tasksDir = path.join(synthesisWorkspace, 'tasks');
   if (!fs.existsSync(tasksDir)) return null;
@@ -916,27 +930,75 @@ function extractSynthesisResult(synthesisWorkspace, runStartMs) {
   candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
   const c = candidates[0];
   const lines = fs.readFileSync(c.sessionPath, 'utf8').split('\n');
+
   let sessionEnd = null;
+  let nanostoreUrl = null; // first successful HTML upload public_url
+  let txidsUrl = null;     // first successful text/plain upload public_url
+
+  // Scan for tool_call → tool_result pairs. Track the most recent
+  // upload_to_nanostore tool_call's args so we know what content_type
+  // the result belongs to, then match it to the very next tool_result
+  // with the same call_id.
+  const pendingUpload = new Map(); // call_id → content_type
+
   for (const line of lines) {
     if (!line.trim()) continue;
     let ev;
     try { ev = JSON.parse(line); } catch { continue; }
-    if ((ev.type || '') === 'session_end') {
+    const type = ev.type || '';
+
+    if (type === 'session_end') {
       sessionEnd = ev;
-      break;
+      continue;
+    }
+
+    if (type === 'tool_call' && ev.name === 'upload_to_nanostore') {
+      // arguments may be either an object or a JSON string
+      let args = ev.arguments || ev.args;
+      if (typeof args === 'string') {
+        try { args = JSON.parse(args); } catch { args = {}; }
+      }
+      const ct = (args && args.content_type) || 'text/html';
+      if (ev.call_id) pendingUpload.set(ev.call_id, ct);
+      continue;
+    }
+
+    if (type === 'tool_result' && ev.name === 'upload_to_nanostore') {
+      const contentType = pendingUpload.get(ev.call_id) || 'text/html';
+      if (ev.call_id) pendingUpload.delete(ev.call_id);
+
+      // content field varies — may be string or already-parsed object
+      const raw = ev.content || ev.result || '';
+      let payload;
+      try {
+        payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch {
+        continue; // not JSON — likely an error string, skip
+      }
+      if (!payload || typeof payload !== 'object') continue;
+      const url = payload.public_url;
+      if (typeof url !== 'string' || !url.startsWith('http')) continue;
+
+      // First success per content type wins
+      if (contentType.startsWith('text/html') && !nanostoreUrl) {
+        nanostoreUrl = url;
+      } else if (contentType.startsWith('text/plain') && !txidsUrl) {
+        txidsUrl = url;
+      } else if (!nanostoreUrl && !txidsUrl) {
+        // Unknown content type — use heuristic: first upload is usually
+        // the txids manifest (smaller), second is the HTML article.
+        // Fall through — we'll pick this up by ordering below.
+      }
     }
   }
-  if (!sessionEnd) return null;
-  const result = String(sessionEnd.result || '');
-  const htmlMatch = result.match(/NANOSTORE_URL:\s*(\S+)/);
-  const txidsMatch = result.match(/TXIDS_URL:\s*(\S+)/);
+
   return {
     taskId: c.tid,
-    sats_spent: sessionEnd.sats_spent,
-    iterations: sessionEnd.iterations,
-    nanostoreUrl: htmlMatch ? htmlMatch[1] : null,
-    txidsUrl: txidsMatch ? txidsMatch[1] : null,
-    result,
+    sats_spent: sessionEnd ? sessionEnd.sats_spent : null,
+    iterations: sessionEnd ? sessionEnd.iterations : null,
+    nanostoreUrl,
+    txidsUrl,
+    result: sessionEnd ? String(sessionEnd.result || '') : '',
     sessionPath: c.sessionPath,
   };
 }
