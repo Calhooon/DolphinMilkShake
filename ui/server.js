@@ -527,8 +527,14 @@ function latestTaskSession(lane, role) {
 // server restart) sees nothing until the next fresh event — which might
 // be minutes away during a long LLM call. Cache stores the latest event
 // per (lane, role) so we can reconstruct agent state at connect time.
-// Also cache message_flow and proof_emitted summary state for replay.
 const agentStateCache = new Map();  // `${lane}:${role}` → latest agent event
+
+// Ring buffer of recent proof_emitted events so fresh SSE clients see
+// an immediately-populated tx stream instead of "waiting for live txs…"
+// until the next proof lands (which during a synthesis cycle can be
+// 2-5 min of silence). Capped at RECENT_TXS_MAX to bound memory.
+const RECENT_TXS_MAX = 50;
+const recentTxs = [];  // [{ kind: 'proof_emitted', lane, cycle_dir, txid }, ...] newest first
 
 function ensureAgentTailer(lane, role) {
   const key = `${lane}:${role}`;
@@ -733,12 +739,17 @@ function pollTxidStreams() {
           for (const line of lines) {
             const txid = line.trim();
             if (txid.length === 64 && /^[a-f0-9]+$/.test(txid)) {
-              broadcast({
+              const ev = {
                 kind: 'proof_emitted',
                 lane: lane.id,
                 cycle_dir: entry.name,
                 txid,
-              });
+              };
+              // Push into ring buffer (newest first) so new SSE clients
+              // get an immediately-populated tx stream on connect.
+              recentTxs.unshift(ev);
+              if (recentTxs.length > RECENT_TXS_MAX) recentTxs.length = RECENT_TXS_MAX;
+              broadcast(ev);
             }
           }
         });
@@ -967,6 +978,19 @@ function handleSse(req, res) {
     }
   }
 
+  // Replay recent proof_emitted events so the Live TX Stream panel is
+  // immediately populated instead of showing "waiting for live txs…"
+  // until the next proof lands (which during a synthesis cycle can be
+  // several minutes of silence). Send OLDEST FIRST so the client's
+  // prependTxItem() inserts them in chronological order — newest ends
+  // up at the top, matching the normal stream ordering.
+  if (recentTxs.length > 0) {
+    const ordered = recentTxs.slice().reverse(); // oldest first
+    for (const ev of ordered) {
+      res.write(`data: ${JSON.stringify(ev)}\n\n`);
+    }
+  }
+
   clients.add(res);
 
   // Heartbeat every 30s to keep the connection alive through proxies
@@ -1036,6 +1060,60 @@ const server = http.createServer((req, res) => {
 // Scan historical state BEFORE starting the server so the first SSE client
 // always gets a non-empty init_historical. Also primes seenAggregates.
 scanHistoricalState();
+
+// Prime the recentTxs ring buffer from disk at boot so the FIRST cold-start
+// SSE client sees an already-populated Live TX Stream. Without this, the
+// ring buffer is empty until the next fresh proof lands — which during a
+// synthesis cycle can mean several minutes of "waiting for live txs…".
+// Walks each current-config lane's most recent cycle dirs, grabs the tail
+// of records.jsonl.txids, and pushes ordered by mtime (newest first).
+function primeRecentTxs() {
+  const candidates = []; // { mtimeMs, lane, cycle_dir, txid }
+  for (const lane of LANES) {
+    const dir = path.join(SHARED_DIR, lane.id);
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    const cycleDirs = entries
+      .filter((e) => e.isDirectory() && e.name.startsWith('cycle-'))
+      .map((e) => {
+        const p = path.join(dir, e.name, 'records.jsonl.txids');
+        let mtimeMs = 0;
+        try { mtimeMs = fs.statSync(p).mtimeMs; } catch { return null; }
+        return { name: e.name, path: p, mtimeMs };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.mtimeMs - a.mtimeMs)
+      .slice(0, 3); // last 3 cycles per lane is plenty to fill 50 slots
+    for (const cd of cycleDirs) {
+      let content;
+      try { content = fs.readFileSync(cd.path, 'utf8'); } catch { continue; }
+      const lines = content.split('\n').filter((l) => {
+        const t = l.trim();
+        return t.length === 64 && /^[a-f0-9]+$/.test(t);
+      });
+      for (const line of lines) {
+        candidates.push({
+          mtimeMs: cd.mtimeMs,
+          lane: lane.id,
+          cycle_dir: cd.name,
+          txid: line.trim(),
+        });
+      }
+    }
+  }
+  // Newest first, cap at RECENT_TXS_MAX. Same shape the tailer produces.
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  for (const c of candidates.slice(0, RECENT_TXS_MAX)) {
+    recentTxs.push({
+      kind: 'proof_emitted',
+      lane: c.lane,
+      cycle_dir: c.cycle_dir,
+      txid: c.txid,
+    });
+  }
+  console.log(`[ui] recentTxs primed: ${recentTxs.length} entries`);
+}
+primeRecentTxs();
 
 server.listen(PORT, () => {
   console.log(`[ui] serving on http://localhost:${PORT}`);
