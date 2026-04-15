@@ -45,7 +45,10 @@ const FIREHOSE_DIR = process.env.FIREHOSE_DIR
   || '/tmp/dolphinsense-firehose';
 
 const PORT = parseInt(process.env.PORT || '7777', 10);
-const POLL_MS = parseInt(process.env.POLL_MS || '500', 10);
+// Tightened from 500ms to 150ms to reduce the worst-case disk→SSE latency
+// from ~500ms to ~150ms. Poll duration is logged below so we can verify
+// the interval isn't getting starved by the pollers themselves.
+const POLL_MS = parseInt(process.env.POLL_MS || '150', 10);
 
 // ---- load lane config once ------------------------------------------------
 let lanesDoc;
@@ -354,7 +357,15 @@ function broadcast(event) {
 // happening live. Historical state is loaded separately at startup (see
 // scanHistoricalState below) and broadcast as a single `init_historical`
 // event that the client renders distinctly from the live stream.
-function makeJsonlTailer(fileGetter, onEvent) {
+function makeJsonlTailer(fileGetter, onEvent, opts = {}) {
+  // `replayTailBytes`: when first seeing a file, read the last N bytes so
+  // the current state (agent idle/thinking/tool_call/done) can be
+  // reconstructed from recent events. Session events are idempotent —
+  // replaying them just re-applies the final state — which is safe for
+  // agent session tailers. Default 0 (pure seek-to-end) preserves the
+  // prior behavior for feeder events (where replay would re-broadcast
+  // historical events as "new" which is wrong).
+  const replayTailBytes = opts.replayTailBytes || 0;
   const state = { file: null, offset: 0, partial: '' };
   return () => {
     let file;
@@ -365,16 +376,21 @@ function makeJsonlTailer(fileGetter, onEvent) {
     }
     if (!file) return;
     if (file !== state.file) {
-      // First time seeing this file path. Seek to current end so we only
-      // tail NEW bytes. This preserves "live vs historical" separation.
+      // First time seeing this file path. If `replayTailBytes` is set,
+      // rewind from EOF by that many bytes so we can replay recent
+      // events and pick up current in-flight state. Otherwise seek
+      // to end (pure live-only mode).
       state.file = file;
       state.partial = '';
       try {
-        state.offset = fs.statSync(file).size;
+        const size = fs.statSync(file).size;
+        state.offset = Math.max(0, size - replayTailBytes);
       } catch {
         state.offset = 0;
+        return;
       }
-      return; // don't re-read what we just skipped past
+      // Fall through and read from state.offset — don't return early
+      // like the old code, because we want to process the tail bytes.
     }
     let stat;
     try { stat = fs.statSync(file); } catch { return; }
@@ -505,12 +521,23 @@ function latestTaskSession(lane, role) {
   return latest;
 }
 
+// Cache of most recent event per lane:role so we can replay "current state"
+// to SSE clients that connect AFTER the events were originally broadcast.
+// Without this, a client that connects mid-cycle (or reconnects after a
+// server restart) sees nothing until the next fresh event — which might
+// be minutes away during a long LLM call. Cache stores the latest event
+// per (lane, role) so we can reconstruct agent state at connect time.
+// Also cache message_flow and proof_emitted summary state for replay.
+const agentStateCache = new Map();  // `${lane}:${role}` → latest agent event
+
 function ensureAgentTailer(lane, role) {
   const key = `${lane}:${role}`;
   if (agentTailers.has(key)) return agentTailers.get(key);
   const tailer = makeJsonlTailer(
     () => latestTaskSession(lane, role),
     (ev) => {
+      // Update the per-agent cache so new SSE clients can replay state.
+      agentStateCache.set(key, { lane, role, agent: LANE_AGENTS[lane][role].name, ev });
       broadcast({
         kind: 'agent',
         lane,
@@ -576,6 +603,15 @@ function ensureAgentTailer(lane, role) {
         });
       }
     },
+    // Replay the last 128 KB of the session.jsonl when we first see the
+    // file. This lets the UI reconstruct current in-flight state — e.g.
+    // after a UI server restart mid-synthesis LLM call, the tailer
+    // would otherwise seek-to-end and miss the fact that the agent is
+    // active/thinking, leaving the tile stuck at "idle" until the next
+    // event (which might be minutes away during a long LLM call).
+    // Session events are idempotent — replaying them just re-applies
+    // the final state. Safe for agent session tailers.
+    { replayTailBytes: 128 * 1024 },
   );
   agentTailers.set(key, tailer);
   return tailer;
@@ -681,7 +717,15 @@ function pollTxidStreams() {
 }
 
 // ---- poll loop ------------------------------------------------------------
+// Self-diagnosing poll loop. Logs `[ui] poll ran in Xms (N clients)` when
+// the loop exceeds 100ms, so we can tell from the server log whether poll
+// duration is eating the POLL_MS interval (saturation) vs completing fast
+// and just waiting on the next tick. Silent when polls are fast.
+let _pollBusy = false;
 setInterval(() => {
+  if (_pollBusy) return; // skip this tick if the previous one is still running
+  _pollBusy = true;
+  const t0 = Date.now();
   try {
     tailFeederEvents();
     pollFeederHealth();
@@ -690,6 +734,12 @@ setInterval(() => {
     pollTxidStreams();
   } catch (e) {
     console.error('[ui] poll error:', e.message);
+  } finally {
+    const dt = Date.now() - t0;
+    if (dt > 100) {
+      console.log(`[ui] poll ran in ${dt}ms (${clients.size} clients) — approaching POLL_MS=${POLL_MS}`);
+    }
+    _pollBusy = false;
   }
 }, POLL_MS);
 
@@ -865,6 +915,24 @@ function handleSse(req, res) {
       updates.push({ lane, role, sats: val.sats, utxos: val.utxos });
     }
     res.write(`data: ${JSON.stringify({ kind: 'wallet_health', updates })}\n\n`);
+  }
+
+  // Replay cached agent state so newly-connected clients see in-flight
+  // cycle state (e.g. captain "thinking…", worker mid-proof-batch)
+  // immediately instead of waiting for the next fresh event, which can
+  // be minutes away during a long LLM call. Without this, a client that
+  // refreshes or reconnects mid-synthesis sees all agents stuck at
+  // "idle" until the next event fires.
+  if (agentStateCache.size > 0) {
+    for (const cached of agentStateCache.values()) {
+      res.write(`data: ${JSON.stringify({
+        kind: 'agent',
+        lane: cached.lane,
+        role: cached.role,
+        agent: cached.agent,
+        ev: cached.ev,
+      })}\n\n`);
+    }
   }
 
   clients.add(res);

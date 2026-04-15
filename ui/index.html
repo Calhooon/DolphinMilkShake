@@ -1297,54 +1297,47 @@
     //   to 2 Hz eliminates the flicker while keeping updates feeling
     //   live enough for a ~5-minute cycle cadence.
     // ---------------------------------------------------------------
+    // Single-tier render batching — everything runs at RAF speed.
+    //
+    // Historical note: we previously had a two-tier split where "heavy"
+    // renders (lanes, articles, feeder) were throttled to 1 Hz because
+    // they did `grid.innerHTML = ...` teardown-rebuild which caused
+    // flicker at high event rates. We've since replaced that with
+    // surgical DOM updates (querySelector + textContent + classList.
+    // toggle), which have effectively zero visual cost. The throttle is
+    // now pure latency — it was making the UI feel sluggish for no
+    // rendering benefit. Demoted to RAF coalescing = up to 60 Hz visual
+    // response, flicker-free because DOM nodes never get torn down.
     const renderDirty = {
       totals: false, progress: false, lanes: false,
       txStream: false, articles: false, feeder: false,
     };
     let rafPending = 0;
-    let heavyTimer = 0;
-    // Heavy renders throttled to 1 Hz — tuned by trial. 500ms still flashed
-    // during cycle-active bursts (session events fire every ~100-300ms inside
-    // a cycle: think → tool → think → tool → etc.), which meant the innerHTML
-    // teardown/rebuild happened on every other event and interrupted CSS
-    // state transitions. 1000ms lets each state update settle before the
-    // next rebuild. Feels "live enough" at ~5-min cycle wall times.
-    const HEAVY_RENDER_MIN_INTERVAL_MS = 1000;
-    let lastHeavyRender = 0;
-    // Snapshot-based render dedup: if the lane state hash hasn't changed
-    // since the last render, skip the DOM rebuild entirely. Cuts redundant
-    // renders that were only triggered by "same event" double-emissions.
+    // Kept for the lane tile dedup inside doRenderLanes — not used for
+    // render scheduling anymore.
     let lastLanesHash = '';
 
-    function flushLightRenders() {
+    function flushRenders() {
       rafPending = 0;
+      // Order: cheap → expensive. Lanes last because surgical update
+      // loops every tile.
       if (renderDirty.totals)   { renderDirty.totals   = false; doRenderTotals(); }
       if (renderDirty.progress) { renderDirty.progress = false; doRenderProgress(); }
       if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
-    }
-    function flushHeavyRenders() {
-      heavyTimer = 0;
-      lastHeavyRender = performance.now();
-      if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
       if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
       if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
+      if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
     }
-    function scheduleLight() {
+    function scheduleRender() {
       if (rafPending) return;
-      rafPending = requestAnimationFrame(flushLightRenders);
+      rafPending = requestAnimationFrame(flushRenders);
     }
-    function scheduleHeavy() {
-      if (heavyTimer) return;
-      const since = performance.now() - lastHeavyRender;
-      const wait = Math.max(0, HEAVY_RENDER_MIN_INTERVAL_MS - since);
-      heavyTimer = setTimeout(flushHeavyRenders, wait);
-    }
-    function renderTotals()   { renderDirty.totals   = true; scheduleLight(); }
-    function renderProgress() { renderDirty.progress = true; scheduleLight(); }
-    function renderTxStream() { renderDirty.txStream = true; scheduleLight(); }
-    function renderLanes()    { renderDirty.lanes    = true; scheduleHeavy(); }
-    function renderArticles() { renderDirty.articles = true; scheduleHeavy(); }
-    function renderFeeder()   { renderDirty.feeder   = true; scheduleHeavy(); }
+    function renderTotals()   { renderDirty.totals   = true; scheduleRender(); }
+    function renderProgress() { renderDirty.progress = true; scheduleRender(); }
+    function renderTxStream() { renderDirty.txStream = true; scheduleRender(); }
+    function renderLanes()    { renderDirty.lanes    = true; scheduleRender(); }
+    function renderArticles() { renderDirty.articles = true; scheduleRender(); }
+    function renderFeeder()   { renderDirty.feeder   = true; scheduleRender(); }
 
     function doRenderTotals() {
       const lifetimeTxs = state.historical.txs + state.live.txs;
