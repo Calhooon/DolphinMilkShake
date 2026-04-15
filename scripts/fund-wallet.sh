@@ -168,10 +168,22 @@ LAST_TXID=""
 SUCCESSFUL_SENDS=0
 TOTAL_SENT=0
 for i in $(seq 1 $NUM_SENDS); do
-    SEND_RAW="$(run_cli "$SRC_ENV" "$SRC_DB" send "$RECV_ADDR" "$SEND_AMOUNT" 2>&1 || true)"
-    SEND_JSON="$(printf '%s\n' "$SEND_RAW" | grep -oE '\{"beef":"[^"]+","txid":"[a-f0-9]+"\}' | tail -n 1 || true)"
+    # Retry up to 3 times on SQLite lock contention. The master daemon's
+    # own background work occasionally collides with our send command's
+    # SQLite writes — retrying after a backoff almost always succeeds.
+    SEND_JSON=""
+    for attempt in 1 2 3; do
+        SEND_RAW="$(run_cli "$SRC_ENV" "$SRC_DB" send "$RECV_ADDR" "$SEND_AMOUNT" 2>&1 || true)"
+        SEND_JSON="$(printf '%s\n' "$SEND_RAW" | grep -oE '\{"beef":"[^"]+","txid":"[a-f0-9]+"\}' | tail -n 1 || true)"
+        [ -n "$SEND_JSON" ] && break
+        if printf '%s' "$SEND_RAW" | grep -q "database is locked\|SQLx error"; then
+            sleep $((attempt))
+            continue
+        fi
+        break
+    done
     if [ -z "$SEND_JSON" ]; then
-        warn "send $i/$NUM_SENDS failed (no BEEF+txid JSON)"
+        warn "send $i/$NUM_SENDS failed after retries (no BEEF+txid JSON)"
         warn "last 5 lines of output:"
         printf '%s\n' "$SEND_RAW" | tail -5 >&2
         continue
@@ -194,6 +206,12 @@ for i in $(seq 1 $NUM_SENDS); do
 
     if [ "$NUM_SENDS" -gt 1 ]; then
         printf '  %s[%d/%d]%s sent %d sats → %s\n' "$BLUE" "$i" "$NUM_SENDS" "$NC" "$SEND_AMOUNT" "${TXID_I:0:16}..." >&2
+        # Inter-send pause to avoid SQLite lock contention on the source
+        # wallet daemon. Without this, rapid back-to-back sends race the
+        # daemon's own writes and ~10-20% fail with "database is locked".
+        # 600ms is empirically enough to clear locks; total cost for
+        # N=30 splits is 18s extra which is negligible.
+        sleep 0.6
     fi
 done
 
