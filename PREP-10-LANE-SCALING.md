@@ -33,19 +33,80 @@ Throughput math:
 
 Both well above the ~0.5/sec needed for 17-cycle wall time. Zero starvation risk.
 
-## Funding budget — LINEAR SIZING MODEL (with 30% safety margin)
+## Funding budget — LINEAR SIZING MODEL v2 (2× safety margin)
 
-Measured live during E21-3 + the 17-cycle soak (2026-04-15):
+**Updated 2026-04-15 after the 10-lane soak hit captain starvation
+mid-run.** The 1.3× margin from v1 was NOT enough — captains burned
+through ~140-180k/cycle (vs the 108k measured in the 5-lane soak),
+30% above projection. Captain wallets at 2M / 30 split starved by
+cycle 12-14 of 17 and required emergency mid-soak topups. Lesson:
+**captains burn faster as fleet size grows** (more concurrent x402
+calls = more lock pressure = more retries = more failed createActions
+that still consume locked UTXOs). Scale captain sizing by lane count.
+
+### v2 sizing rules
 
 ```
-Captain burn per cycle (worst observed × 1.3 safety margin):
-  measured worst: 107,984 sats/cycle (wiki-en captain)
-  with 30% margin: 140,379 sats/cycle  ← use this for sizing
+Captain burn per cycle:
+  observed range:  90k - 180k sats (varies 2× by lane mix)
+  use:             200k sats/cycle/captain  ← 2× the worst measurement
 
-Worker burn per cycle: ~17k sats/cycle × 1.3 = 22k
-Synthesis: ~700k sats per active cycle × 1.3 = 910k
-            (synthesis fires every 15 cycles by default)
+Worker burn per cycle:
+  observed:        17k - 25k
+  use:             30k sats/cycle/worker
+
+Synthesis per active cycle:
+  observed:        300k - 800k
+  use:             1M sats/cycle/synthesis (only fires every N cycles)
 ```
+
+### v2 wallet provisioning sizing (per-lane, by run length)
+
+| Run | Captain | Worker | Synthesis | Per-lane | Notes |
+|---|---|---|---|---|---|
+| 1-cycle canary | 500k / 10 | 500k / 5 | 500k / 5 | 1.5M | tiny |
+| 17-cycle test | **4M / 50** | **2M / 20** | **2M / 10** | **8M** | covers worst case 2× over |
+| 1-hour | 4M / 50 | 2M / 20 | 2M / 10 | 8M | (~13 cycles) |
+| 4-hour | **15M / 100** | 5M / 30 | 5M / 15 | 25M | (~50 cycles, 3 synth) |
+| 17-hour | 50M / 300 | 12M / 50 | 12M / 25 | 74M | (~200 cycles) |
+| 24-hour | **75M / 400** | 15M / 50 | 18M / 30 | 108M | (~288 cycles, 11 synth) |
+| 48-hour | 150M / 600 | 25M / 80 | 30M / 50 | 205M | (~576 cycles) |
+
+### Fleet costs at 5/10/15/20 lanes (provisioning only, run cost on top)
+
+| Run | per-lane | 5-lane | 10-lane | 15-lane | 20-lane |
+|---|---|---|---|---|---|
+| 17-cycle | 8M | 40M ($12) | 80M ($24) | **120M ($36)** | 160M ($48) |
+| 4-hour | 25M | 125M ($38) | 250M ($75) | **375M ($113)** | 500M ($150) |
+| 17-hour | 74M | 370M ($111) | 740M ($222) | 1.11B ($333) | 1.48B ($444) |
+| 24-hour | 108M | 540M ($162) | 1.08B ($324) | **1.62B ($486)** | 2.16B ($648) |
+
+⚠️ **24h at 15 lanes provisioning = $486** — far over the $100-200 budget.
+Big-daddy run economics need to either (a) cut LLM cost via cheaper
+captain model, (b) raise records-per-cycle from 100→200 (halves cycle
+count for same proof count), or (c) use fewer lanes for longer wall.
+
+### Worker over-funding insurance
+
+Workers spend ~25k/cycle so 17 cycles = 425k. **2M / 20 split is way
+more than enough** but the script's 5M default leaves ~4.5M idle per
+worker that becomes hard to recover. v2 drops worker default to 2M.
+
+### Provisioning strategy: AUDIT + DRAIN before each new run
+
+Before any new fleet expansion (5→10, 10→15, 15→20), run this audit:
+
+```bash
+# Find wallets with excess balance vs new target
+./scripts/preflight-wallets.sh
+# Then drain over-funded wallets back to master via fund-wallet.sh in
+# REVERSE direction (synthesis_wallet → master) before the new
+# provisioning round. This recovered ~$15 from this 10-lane run when
+# I accidentally over-funded synthesis to 10M each.
+```
+
+Always drain BEFORE provisioning so the master has headroom for the
+next round.
 
 Per-lane sizing for any run length:
 
