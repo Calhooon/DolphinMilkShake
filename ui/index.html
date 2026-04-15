@@ -95,60 +95,89 @@
     }
     /* Mission Control layout: fixed-viewport "holy grail" dashboard.
        Top strip (title/counters + progress + feeder) is fixed height; the
-       remaining viewport is split into lanes (flexible) and sidebar (380px).
-       Body itself never scrolls — only inner panels do. */
+       The dashboard SCROLLS vertically. The header is sticky so the totals
+       stay visible. The lane grid auto-wraps based on available width so 5,
+       10, or 15 lanes all look beautiful. Sidebar panels live in a 2×2 grid
+       BELOW the lanes so they get real room (~700px wide × ~360h each)
+       instead of being squeezed into a 380px right column.
+       This is the redesigned "scroll, breathe, all elements get room" model
+       — replaces the previous fixed-viewport layout that left tiles at
+       193px wide and panels at 118px tall (unreadable). */
     body {
-      padding: 14px;
+      /* Generous bottom padding so the last panel (Articles) has breathing
+         room and the user can scroll past it cleanly. The 80px bottom
+         padding gives a clear "end of page" feel rather than the last
+         panel being slammed against the viewport edge. */
+      padding: 18px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 100vh;
+      /* No height/overflow constraints — let content drive scroll */
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .progress-row {
+      /* Sit just under header */
+    }
+
+    .feeder-bar {
+      /* Above lanes */
+    }
+
+    /* The lane grid now spans full width and auto-wraps. minmax(280px, 1fr)
+       gives each tile a comfortable minimum of 280px (vs the old 193px)
+       and lets them grow to fill the row at smaller fleet sizes. At
+       1440px viewport with padding/gap, that's 5 cols at 5 lanes / 5 cols
+       at 10 lanes (2 rows) / 5 cols at 15 lanes (3 rows). */
+    .lanes {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
-      grid-template-rows: auto auto auto minmax(0, 1fr);
-      grid-template-areas:
-        "header  header"
-        "progress progress"
-        "feeder  feeder"
-        "lanes   sidebar";
-      gap: 12px;
-      height: 100vh;
-      overflow: hidden;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      /* No height constraints — lanes can grow to any number of rows.
+         260px min lets 5 lanes fit cleanly in one row at 1440 viewport
+         (5 × 260 + 4 × 16 = 1364 < 1392 lane-grid width).
+         At 1920 viewport: 7 cols. At 2560: 9 cols.
+         At 1280: 4 cols (5 lanes wraps to 4+1, accepted at small sizes). */
     }
-    header        { grid-area: header; }
-    .progress-row { grid-area: progress; }
-    .feeder-bar   { grid-area: feeder; }
-    .lanes        { grid-area: lanes;   min-height: 0; overflow-y: auto; }
-    .right-panel  { grid-area: sidebar; min-height: 0; }
-
-    /* Ultrawide — give sidebar more breathing room */
     @media (min-width: 1800px) {
-      body {
-        grid-template-columns: minmax(0, 1fr) 440px;
-        gap: 16px;
-        padding: 18px;
-      }
+      .lanes { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    }
+    @media (min-width: 2400px) {
+      .lanes { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
     }
 
-    /* Tablet — stack sidebar below lanes so lanes get full width */
-    @media (max-width: 1100px) {
-      body {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto auto auto minmax(320px, 1fr) minmax(260px, auto);
-        grid-template-areas:
-          "header"
-          "progress"
-          "feeder"
-          "lanes"
-          "sidebar";
-        height: auto;
-        min-height: 100vh;
-        overflow-y: auto;
-      }
-      .right-panel { flex-direction: row; }
-      .right-panel .panel { flex: 1; }
+    /* Bottom panel grid — TX Stream / TX Breakdown / Handoffs / Articles
+       in a 2×2 layout. At narrower viewports collapses to a single column. */
+    .right-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 1024px) {
+      .right-panel { grid-template-columns: minmax(0, 1fr); }
+    }
+    /* On ultrawide, a 4-column row reads better than 2×2 stacked */
+    @media (min-width: 2200px) {
+      .right-panel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
-    /* Mobile — tighter padding, sidebar panels stack again */
-    @media (max-width: 720px) {
-      body { padding: 10px; gap: 10px; }
-      .right-panel { flex-direction: column; }
+    /* Each bottom panel gets generous height — enough for the TX breakdown's
+       7 categories with bars, the activity feed's recent handoffs, the
+       article list, etc. Internal scroll if content exceeds. */
+    .right-panel .panel {
+      min-height: 360px;
+      max-height: 480px;
+    }
+    .right-panel .panel-body {
+      overflow-y: auto;
     }
 
     header {
@@ -387,25 +416,16 @@
     .feeder-bar .sub .queued { color: var(--muted); font-weight: 500; }
     .feeder-bar .sub .queued::before { content: 'Q '; color: var(--muted-soft); }
 
+    /* (Lane grid template defined in the body layout block above —
+       auto-fill minmax(280px, 1fr). This block keeps tile-internal styles
+       like grid-auto-rows + scrollbar-gutter that the layout depends on.) */
     .lanes {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       grid-auto-rows: min-content;
-      gap: 12px;
-      padding-right: 6px;
       align-content: start;
-      /* Stable scrollbar gutter so appearing/disappearing scrollbar doesn't
-         shift the whole grid. */
       scrollbar-gutter: stable;
     }
-    /* On wide mission-control displays we lock to 5 fixed columns so lanes
-       line up visually regardless of tile content height. auto-fit falls
-       back gracefully below this breakpoint. */
-    @media (min-width: 1280px) {
-      .lanes { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    }
     @media (max-width: 720px) {
-      .lanes { grid-template-columns: 1fr; }
+      .lanes { grid-template-columns: 1fr !important; }
     }
     .lane {
       background: var(--grad-surface);
@@ -854,12 +874,10 @@
       100% { transform: translateX(20px);  opacity: 0.3; }
     }
 
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-height: 0;
-    }
+    /* Layout for .right-panel is defined in the body layout block (2x2
+       grid by default, single col on tablet, 4-col on ultrawide). This
+       block is intentionally empty — the old flex-column layout is
+       superseded. */
     .panel {
       background: var(--grad-surface);
       border: 1px solid var(--border);
