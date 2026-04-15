@@ -775,6 +775,17 @@ function pollFeederHealth() {
 const agentTailers = new Map(); // key: `${lane}:${role}` → tailer function
 
 function latestTaskSession(lane, role) {
+  return latestTaskFile(lane, role, 'session.jsonl');
+}
+
+function latestTaskBudget(lane, role) {
+  return latestTaskFile(lane, role, 'budget.jsonl');
+}
+
+// Generic helper: walk an agent's tasks dir, return the path to the
+// latest-mtime file with the given basename. Used by both session.jsonl
+// and budget.jsonl tailers.
+function latestTaskFile(lane, role, basename) {
   const agent = LANE_AGENTS[lane] && LANE_AGENTS[lane][role];
   if (!agent) return null;
   const agentName = agent.name;
@@ -789,12 +800,12 @@ function latestTaskSession(lane, role) {
   let latestMtime = 0;
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    const sessionPath = path.join(tasksDir, entry.name, 'session.jsonl');
+    const filePath = path.join(tasksDir, entry.name, basename);
     try {
-      const stat = fs.statSync(sessionPath);
+      const stat = fs.statSync(filePath);
       if (stat.mtimeMs > latestMtime) {
         latestMtime = stat.mtimeMs;
-        latest = sessionPath;
+        latest = filePath;
       }
     } catch { /* skip */ }
   }
@@ -868,11 +879,23 @@ function ensureAgentTailer(lane, role) {
         }
       } else if (ev.type === 'session_end') {
         const sats = ev.sats_effective || ev.sats || 0;
-        if (ev.error) {
-          a.state = `✗ ${String(ev.error).slice(0, 40)}`;
+        const errStr = ev.error ? String(ev.error) : '';
+        // "Hit max iterations (N)" is the EXPECTED end-state for the
+        // PARALLEL-mode captain (CAPTAIN_MAX_ITER=2). It is NOT a failure
+        // — the captain intentionally caps at N tool_calls and the
+        // harness then submits the worker task directly. Render this as
+        // a normal ✓ done so it doesn't show as red error in the UI.
+        const isMaxIterCap = /Hit max iterations/i.test(errStr);
+        if (errStr && !isMaxIterCap) {
+          a.state = `✗ ${errStr.slice(0, 40)}`;
           a.active = false;
         } else {
-          a.state = sats > 0 ? `✓ done (${sats.toLocaleString()} sats)` : '✓ done';
+          // For max-iter cap, surface the iter count compactly.
+          const iterMatch = errStr.match(/\((\d+)\)/);
+          const iterTag = iterMatch ? ` capped@${iterMatch[1]}` : '';
+          a.state = sats > 0
+            ? `✓ done${iterTag} (${sats.toLocaleString()} sats)`
+            : `✓ done${iterTag}`;
           a.active = false;
           a.sats = sats;
         }
@@ -991,6 +1014,56 @@ function ensureAgentTailer(lane, role) {
   );
   agentTailers.set(key, tailer);
   return tailer;
+}
+
+// Per-agent budget.jsonl tailer. Captain BRC-29 createAction txs are written
+// here with `details.txid`, but they DON'T appear in records.jsonl.txids
+// (which is worker-only). Without this tailer, captain txs only enter
+// dashboardState via the 20s rebuildAggregatesFromDisk rescan — too slow,
+// the user sees frozen counters during captain phases. This tailer fires
+// per new line, calls addTxid + scheduleBroadcast immediately.
+const budgetTailers = new Map();  // key `${lane}:${role}` → tailer fn
+
+function ensureBudgetTailer(lane, role) {
+  const key = `${lane}:${role}`;
+  if (budgetTailers.has(key)) return budgetTailers.get(key);
+  const tailer = makeJsonlTailer(
+    () => latestTaskBudget(lane, role),
+    (entry) => {
+      const txid = entry && entry.details && entry.details.txid;
+      if (typeof txid !== 'string' || txid.length !== 64 || !/^[a-f0-9]+$/.test(txid)) return;
+      const added = addTxid(lane, txid);
+      if (added) {
+        ensureLaneSlot(lane);
+        // Also push into recentTxs so the live stream panel shows
+        // captain BRC-29 txs alongside worker proof_batch txids.
+        dashboardState.recentTxs.unshift({
+          lane,
+          cycle_dir: 'budget',  // marker — these come from agent budget.jsonl
+          txid,
+          ts: Date.now(),
+        });
+        if (dashboardState.recentTxs.length > RECENT_TXS_MAX) {
+          dashboardState.recentTxs.length = RECENT_TXS_MAX;
+        }
+        scheduleBroadcast();
+      }
+    },
+    // Budget files grow line-by-line as the agent acts. Replay the last
+    // 64KB on first sight so an in-flight task's recent txs land
+    // immediately rather than waiting for the next new line.
+    { replayTailBytes: 64 * 1024 },
+  );
+  budgetTailers.set(key, tailer);
+  return tailer;
+}
+
+function pollAgentBudgets() {
+  for (const lane of LANES) {
+    for (const role of ['captain', 'worker', 'synthesis']) {
+      ensureBudgetTailer(lane.id, role)();
+    }
+  }
 }
 
 // Per-agent last-seen task dir, used to detect lane recovery (a new task dir
@@ -1162,6 +1235,7 @@ setInterval(() => {
     tailFeederEvents();
     pollFeederHealth();
     pollAgentSessions();
+    pollAgentBudgets();
     pollCycleAggregates();
     pollTxidStreams();
   } catch (e) {
