@@ -133,65 +133,85 @@ SRC_BAL_BEFORE="$(run_cli "$SRC_ENV" "$SRC_DB" balance 2>/dev/null | jq -r '.sat
 RECV_BAL_BEFORE="$(run_cli "$RECV_ENV" "$RECV_DB" balance 2>/dev/null | jq -r '.satoshis // 0')"
 log "pre-send: source=$SRC_BAL_BEFORE recv=$RECV_BAL_BEFORE"
 
-# ---- step 2: send ----------------------------------------------------------
-log "step 2/4 — send $SATS sats to $RECV_ADDR"
-SEND_RAW="$(run_cli "$SRC_ENV" "$SRC_DB" send "$RECV_ADDR" "$SATS" 2>&1 || true)"
-# The send output is noisy (log lines + JSON). Extract the JSON envelope.
-SEND_JSON="$(printf '%s\n' "$SEND_RAW" | grep -oE '\{"beef":"[^"]+","txid":"[a-f0-9]+"\}' | tail -n 1 || true)"
-if [ -z "$SEND_JSON" ]; then
-    err "send did not return a BEEF+txid JSON"
-    err "last 20 lines of output:"
-    printf '%s\n' "$SEND_RAW" | tail -20 >&2
+# ---- N×send loop ----------------------------------------------------------
+#
+# CRITICAL CHANGE 2026-04-15: the old behavior was "1 big send + receiver
+# splits the new UTXO". But `bsv-wallet split` consumes the WHOLE wallet
+# (all existing UTXOs) and recreates N new ones — which is destructive
+# when the receiver wallet is in use, AND fails on SQLite contention,
+# AND doesn't actually split JUST the new UTXO we sent.
+#
+# New behavior: SENDER does the split. We do N small sends of (SATS/N)
+# each. Each send creates exactly ONE fresh UTXO at the receiver. The
+# receiver's existing UTXOs are NEVER touched. In-flight x402 calls
+# on the receiver continue uninterrupted. There is no consolidation.
+#
+# Cost: N transaction fees instead of 1. At ~60 sats/tx, 30 splits =
+# 1800 sats overhead — negligible.
+#
+# Backwards compat: SPLIT_COUNT=0 keeps the old "1 send" behavior.
+if [ "$SPLIT_COUNT" -le 1 ]; then
+    NUM_SENDS=1
+    SEND_AMOUNT=$SATS
+else
+    NUM_SENDS=$SPLIT_COUNT
+    SEND_AMOUNT=$(( SATS / SPLIT_COUNT ))
+    if [ "$SEND_AMOUNT" -lt 1000 ]; then
+        warn "per-send amount ($SEND_AMOUNT sats) is very small; using 1000 minimum"
+        SEND_AMOUNT=1000
+    fi
+fi
+
+log "step 2 — sending $NUM_SENDS × $SEND_AMOUNT sats to $RECV_ADDR (sender-side split)"
+
+LAST_TXID=""
+SUCCESSFUL_SENDS=0
+TOTAL_SENT=0
+for i in $(seq 1 $NUM_SENDS); do
+    SEND_RAW="$(run_cli "$SRC_ENV" "$SRC_DB" send "$RECV_ADDR" "$SEND_AMOUNT" 2>&1 || true)"
+    SEND_JSON="$(printf '%s\n' "$SEND_RAW" | grep -oE '\{"beef":"[^"]+","txid":"[a-f0-9]+"\}' | tail -n 1 || true)"
+    if [ -z "$SEND_JSON" ]; then
+        warn "send $i/$NUM_SENDS failed (no BEEF+txid JSON)"
+        warn "last 5 lines of output:"
+        printf '%s\n' "$SEND_RAW" | tail -5 >&2
+        continue
+    fi
+    TXID_I="$(printf '%s' "$SEND_JSON" | jq -r '.txid')"
+    BEEF_I="$(printf '%s' "$SEND_JSON" | jq -r '.beef')"
+
+    # Internalize on receiver
+    FUND_JSON="$(run_cli "$RECV_ENV" "$RECV_DB" fund "$BEEF_I" --vout 0 2>&1 || true)"
+    FUND_ACCEPTED="$(printf '%s' "$FUND_JSON" | jq -r '.accepted // false' 2>/dev/null)"
+    if [ "$FUND_ACCEPTED" != "true" ]; then
+        warn "send $i internalize failed for txid $TXID_I"
+        warn "cli output: $FUND_JSON"
+        continue
+    fi
+
+    LAST_TXID="$TXID_I"
+    SUCCESSFUL_SENDS=$((SUCCESSFUL_SENDS + 1))
+    TOTAL_SENT=$((TOTAL_SENT + SEND_AMOUNT))
+
+    if [ "$NUM_SENDS" -gt 1 ]; then
+        printf '  %s[%d/%d]%s sent %d sats → %s\n' "$BLUE" "$i" "$NUM_SENDS" "$NC" "$SEND_AMOUNT" "${TXID_I:0:16}..." >&2
+    fi
+done
+
+if [ "$SUCCESSFUL_SENDS" -eq 0 ]; then
+    err "all $NUM_SENDS sends failed"
     exit 4
 fi
-TXID="$(printf '%s' "$SEND_JSON" | jq -r '.txid')"
-BEEF="$(printf '%s' "$SEND_JSON" | jq -r '.beef')"
-ok "broadcast: txid=$TXID"
-log "beef length: ${#BEEF} chars"
+TXID="$LAST_TXID"
+ok "completed $SUCCESSFUL_SENDS/$NUM_SENDS sends, total $TOTAL_SENT sats"
 
-# ---- step 3: internalize on receiver ---------------------------------------
-log "step 3/4 — internalize BEEF on receiver (--vout 0)"
-FUND_JSON="$(run_cli "$RECV_ENV" "$RECV_DB" fund "$BEEF" --vout 0 2>&1 || true)"
-FUND_ACCEPTED="$(printf '%s' "$FUND_JSON" | jq -r '.accepted // false' 2>/dev/null)"
-if [ "$FUND_ACCEPTED" != "true" ]; then
-    err "internalize did not return accepted=true"
-    err "cli output: $FUND_JSON"
-    exit 5
-fi
-ok "receiver internalized"
-
-# Verify balance
+# Verify final balance
 RECV_BAL_AFTER="$(run_cli "$RECV_ENV" "$RECV_DB" balance 2>/dev/null | jq -r '.satoshis // 0')"
 DELTA=$(( RECV_BAL_AFTER - RECV_BAL_BEFORE ))
 log "receiver balance: $RECV_BAL_BEFORE → $RECV_BAL_AFTER (delta +$DELTA)"
 
-if [ "$DELTA" -ne "$SATS" ]; then
-    warn "balance delta ($DELTA) does not exactly match sent amount ($SATS)"
-    warn "this can happen if the daemon's monitor also caught the output;"
-    warn "if delta is 2x sats, you may have a double-count — investigate"
-fi
-
-# ---- step 4: optional split ------------------------------------------------
-if [ "$SPLIT_COUNT" -gt 0 ]; then
-    log "step 4/4 — split new UTXO into $SPLIT_COUNT outputs"
-    SPLIT_RAW="$(run_cli "$RECV_ENV" "$RECV_DB" split --count "$SPLIT_COUNT" 2>&1 || true)"
-    # Extract the JSON envelope — CLI mixes log lines (WARN/INFO) with JSON
-    SPLIT_JSON_LINE="$(printf '%s\n' "$SPLIT_RAW" | grep -oE '\{"outputs":[0-9]+[^}]*\}' | tail -n 1)"
-    if [ -z "$SPLIT_JSON_LINE" ]; then
-        warn "split did not return a JSON envelope"
-        warn "last 10 lines of output:"
-        printf '%s\n' "$SPLIT_RAW" | tail -10 >&2
-        exit 6
-    fi
-    SPLIT_OUT="$(printf '%s' "$SPLIT_JSON_LINE" | jq -r '.outputs // empty')"
-    SPLIT_TXID="$(printf '%s' "$SPLIT_JSON_LINE" | jq -r '.txid // empty')"
-    if [ "$SPLIT_OUT" != "$SPLIT_COUNT" ]; then
-        warn "split output count mismatch (want=$SPLIT_COUNT got='$SPLIT_OUT')"
-        exit 6
-    fi
-    ok "split complete: $SPLIT_OUT outputs, txid=$SPLIT_TXID"
-else
-    log "step 4/4 — skipped (no split requested)"
+if [ "$DELTA" -lt $(( TOTAL_SENT - 100 )) ]; then
+    warn "delta ($DELTA) less than sent ($TOTAL_SENT) by more than 100 sats"
+    warn "some sends may have landed but failed to internalize"
 fi
 
 # ---- summary ---------------------------------------------------------------
