@@ -573,7 +573,12 @@ async function issueCertsForAgents(agents, parentWalletPort, config) {
   // Timing: boot cert acquisition is synchronous inside create_app_state() — by
   // the time /health returns 200, the cert should already be the right one. We
   // poll briefly anyway to tolerate any async settle time.
-  const POLL_TIMEOUT_MS = 20000; // 20s — covers parent wallet signing latency
+  // 60s (was 20s) — when 20+ lanes fire at once, 40+ agents hammer the parent
+  // wallet for BRC-52 cert issuance simultaneously. Parent wallet signs one
+  // createSignature at a time, so tail-latency for the last few agents can
+  // easily exceed 20s under contention. 20-lane soak 2026-04-15 killed
+  // bsky-en-11 at exactly this line. 60s buys real headroom.
+  const POLL_TIMEOUT_MS = 60000;
   const POLL_INTERVAL_MS = 500;
 
   await Promise.all(
