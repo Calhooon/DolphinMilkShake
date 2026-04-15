@@ -1078,6 +1078,80 @@
       letter-spacing: 0.02em;
     }
 
+    /* TX Breakdown panel — categorized tx counts with horizontal bars */
+    #tx-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 8px;
+      overflow-y: auto;
+    }
+    .tx-cat {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 2px 8px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: rgba(148, 163, 184, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.08);
+      font-size: 10px;
+    }
+    .tx-cat .name {
+      grid-column: 1;
+      grid-row: 1;
+      color: var(--text);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tx-cat .count {
+      grid-column: 2;
+      grid-row: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .tx-cat .sats {
+      grid-column: 1;
+      grid-row: 2;
+      color: var(--muted-soft);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-cat .pct {
+      grid-column: 2;
+      grid-row: 2;
+      color: var(--muted-soft);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .tx-cat .bar {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      height: 3px;
+      background: rgba(148, 163, 184, 0.12);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .tx-cat .bar-fill {
+      height: 100%;
+      background: var(--accent, #60a5fa);
+      transition: width 0.4s ease-out;
+    }
+    /* Color-coded bars per category */
+    .tx-cat[data-cat="llm_inference"]    .bar-fill { background: #a78bfa; }
+    .tx-cat[data-cat="scrape_proofs"]    .bar-fill { background: #5cf2a4; }
+    .tx-cat[data-cat="state_tokens"]     .bar-fill { background: #60a5fa; }
+    .tx-cat[data-cat="proof_commitments"].bar-fill { background: #fbbf24; }
+    .tx-cat[data-cat="messaging"]        .bar-fill { background: #f472b6; }
+    .tx-cat[data-cat="nanostore_upload"] .bar-fill { background: #06b6d4; }
+    .tx-cat[data-cat="capability_proof"] .bar-fill { background: #f97316; }
+    .tx-cat[data-cat="other"]            .bar-fill { background: #94a3b8; }
+
     /* scrollbar polish */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
@@ -1142,6 +1216,15 @@
       </div>
       <div class="panel-body" id="all-tx-stream" style="display: none;">
         <div class="empty">loading all txs…</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <span>TX Breakdown</span>
+        <span class="count" id="tx-cat-total">0 categories</span>
+      </div>
+      <div class="panel-body" id="tx-breakdown">
+        <div class="empty">no txs yet…</div>
       </div>
     </div>
     <div class="panel">
@@ -1659,6 +1742,7 @@
     const renderDirty = {
       totals: false, progress: false, lanes: false,
       txStream: false, articles: false, feeder: false, activity: false,
+      txBreakdown: false,
     };
     let rafPending = 0;
     // Kept for the lane tile dedup inside doRenderLanes — not used for
@@ -1679,6 +1763,7 @@
       if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
       if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
       if (renderDirty.activity) { renderDirty.activity = false; doRenderActivity(); }
+      if (renderDirty.txBreakdown) { renderDirty.txBreakdown = false; doRenderTxBreakdown(); }
       if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
     }
     function scheduleRender() {
@@ -2308,6 +2393,10 @@
       // Feeder health
       if (snap.feederHealth) state.feederHealth = snap.feederHealth;
 
+      // Tx categories breakdown — server-derived from budget.jsonl service+op
+      // and worker scrape proofs. Client just renders, no derivation.
+      state.txCategories = snap.txCategories || {};
+
       // Articles — replace list
       if (Array.isArray(snap.articles)) {
         state.historical.articlesList = snap.articles;
@@ -2321,8 +2410,55 @@
       renderActivity();
       renderFeeder();
       renderArticles();
+      renderTxBreakdown();
     }
     function renderActivity() { renderDirty.activity = true; scheduleRender(); }
+    function renderTxBreakdown() { renderDirty.txBreakdown = true; scheduleRender(); }
+
+    // Display config — categories rendered in this order with these labels
+    const TX_CAT_DISPLAY = [
+      { id: 'llm_inference',     icon: '🧠', label: 'LLM inference' },
+      { id: 'scrape_proofs',     icon: '⚡', label: 'Scrape proofs' },
+      { id: 'state_tokens',      icon: '🪪', label: 'State tokens (BRC-48)' },
+      { id: 'proof_commitments', icon: '📜', label: 'Proof commits (BRC-18)' },
+      { id: 'messaging',         icon: '📨', label: 'Messaging (BRC-33)' },
+      { id: 'nanostore_upload',  icon: '📤', label: 'NanoStore upload' },
+      { id: 'capability_proof',  icon: '🛡', label: 'Capability proof (BRC-52)' },
+      { id: 'other',             icon: '•',  label: 'Other' },
+    ];
+
+    function doRenderTxBreakdown() {
+      const el = document.getElementById('tx-breakdown');
+      if (!el) return;
+      const cats = state.txCategories || {};
+      const totalTxs = Object.values(cats).reduce((a, c) => a + (c.count || 0), 0);
+      const totalSats = Object.values(cats).reduce((a, c) => a + (c.sats || 0), 0);
+      const headerEl = document.getElementById('tx-cat-total');
+      if (headerEl) headerEl.textContent = `${Object.keys(cats).length} categories`;
+
+      if (totalTxs === 0) {
+        if (!el.querySelector('.empty')) {
+          el.innerHTML = '<div class="empty">no txs yet…</div>';
+        }
+        return;
+      }
+
+      const rows = TX_CAT_DISPLAY.map(({ id, icon, label }) => {
+        const c = cats[id] || { count: 0, sats: 0 };
+        if (c.count === 0) return null;
+        const pct = totalTxs > 0 ? ((c.count / totalTxs) * 100) : 0;
+        return `
+          <div class="tx-cat" data-cat="${id}">
+            <div class="name">${icon} ${label}</div>
+            <div class="count">${fmt(c.count)}</div>
+            <div class="sats">${fmt(c.sats)} sats</div>
+            <div class="pct">${pct.toFixed(1)}%</div>
+            <div class="bar"><div class="bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+          </div>
+        `;
+      }).filter(Boolean).join('');
+      el.innerHTML = rows;
+    }
 
     // Tx stream renderer for snapshot mode. Uses items from state.live.txStream
     // (populated from snap.recentTxs). Hash-dedupes against the previous render

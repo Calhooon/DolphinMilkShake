@@ -346,11 +346,30 @@ function scanHistoricalState() {
 //   4. Every mutation calls scheduleBroadcast() which debounces 150ms and
 //      sends the full computed snapshot to every SSE client. Clients are
 //      pure renderers: apply snapshot → surgical DOM.
+// Tx category buckets — { category → { count, sats } }
+// Categories are derived from the budget.jsonl entry's service + operation
+// fields, OR for worker proof_batch txs (which only have txids on disk),
+// attributed wholesale to "scrape_proofs". See categorizeBudgetEntry().
+function categorizeBudgetEntry(entry) {
+  const svc = entry && entry.service;
+  const op = entry && (entry.operation || '');
+  if (svc === 'llm') return 'llm_inference';
+  if (op === 'upload_to_nanostore') return 'nanostore_upload';
+  if (typeof op === 'string' && op.startsWith('brc18_message_')) return 'messaging';
+  if (op === 'brc18_capability_proof') return 'capability_proof';
+  if (svc === 'state') return 'state_tokens';
+  if (svc === 'proofs') return 'proof_commitments';
+  return 'other';
+}
+
 const dashboardState = {
   schema: 1,
   updatedAt: Date.now(),
   // union counts — lane → Set<txid>
   txidsByLane: new Map(),
+  // Tx categories aggregated across all lanes/agents.
+  // Map<category, { count: number, sats: number }>
+  txCategories: new Map(),
   // aggregate per-lane state merged from disk + live events
   //   laneId → {
   //     sats, cycles, articles,         // from aggregate.json
@@ -397,6 +416,67 @@ function addTxid(laneId, txid) {
   const before = set.size;
   set.add(txid);
   return set.size > before; // true if newly added
+}
+
+// Helper to bump a category's count + sats. Used by budget tailer (live)
+// and rebuildTxCategoriesFromDisk (full rebuild on rescan).
+function bumpCategory(cat, sats = 0) {
+  if (!dashboardState.txCategories.has(cat)) {
+    dashboardState.txCategories.set(cat, { count: 0, sats: 0 });
+  }
+  const slot = dashboardState.txCategories.get(cat);
+  slot.count += 1;
+  slot.sats += sats || 0;
+}
+
+// Walk every budget.jsonl file across all lanes and rebuild txCategories
+// from scratch. Called from rebuildDashboardFromDisk on the 20s rescan so
+// the breakdown is always anchored to disk truth (idempotent — txCategories
+// is fully replaced, not appended). Worker scrape proofs (records.jsonl.txids)
+// are added separately by rebuildTxidsFromDisk via the addScrapeCount() call.
+function rebuildTxCategoriesFromDisk() {
+  // Reset — we're rebuilding from scratch
+  dashboardState.txCategories = new Map();
+
+  const discoveredLaneIds = new Set(LANES.map((l) => l.id));
+  try {
+    for (const e of fs.readdirSync(FLEET_WORKSPACE, { withFileTypes: true })) {
+      if (e.isDirectory()) discoveredLaneIds.add(e.name);
+    }
+  } catch { /* missing dir */ }
+  const skipNames = new Set(['cursors', 'events.jsonl', '.DS_Store']);
+  const laneIdsToScan = [...discoveredLaneIds].filter(
+    (id) => !skipNames.has(id) && !id.startsWith('health.') && !id.endsWith('.json') && !id.startsWith('cycle-'),
+  );
+
+  for (const laneId of laneIdsToScan) {
+    const laneDir = path.join(FLEET_WORKSPACE, laneId);
+    let agentEntries;
+    try { agentEntries = fs.readdirSync(laneDir, { withFileTypes: true }); } catch { continue; }
+    for (const agentEntry of agentEntries) {
+      if (!agentEntry.isDirectory() || agentEntry.name.startsWith('cycle-')) continue;
+      const tasksDir = path.join(laneDir, agentEntry.name, 'tasks');
+      let taskEntries;
+      try { taskEntries = fs.readdirSync(tasksDir, { withFileTypes: true }); } catch { continue; }
+      for (const task of taskEntries) {
+        if (!task.isDirectory()) continue;
+        const budgetFile = path.join(tasksDir, task.name, 'budget.jsonl');
+        let raw;
+        try { raw = fs.readFileSync(budgetFile, 'utf8'); } catch { continue; }
+        for (const line of raw.split('\n')) {
+          if (!line.trim()) continue;
+          try {
+            const entry = JSON.parse(line);
+            const txid = entry && entry.details && entry.details.txid;
+            if (typeof txid !== 'string' || txid.length !== 64 || !/^[a-f0-9]+$/.test(txid)) continue;
+            const cat = categorizeBudgetEntry(entry);
+            const sats = (typeof entry.sats === 'number') ? entry.sats : 0;
+            bumpCategory(cat, sats);
+          } catch { /* malformed */ }
+        }
+      }
+    }
+  }
 }
 
 // Recompute perLane.sats/cycles/articles + articles list from aggregate.json
@@ -535,15 +615,33 @@ function rebuildTxidsFromDisk() {
   }
 }
 
-// Full disk rebuild — txids (additive) + aggregates (atomic replace).
+// Full disk rebuild — txids (additive) + aggregates (atomic replace) + tx
+// categories (atomic replace from budget.jsonl walk).
 function rebuildDashboardFromDisk() {
   const t0 = Date.now();
   rebuildTxidsFromDisk();
   rebuildAggregatesFromDisk();
-  dashboardState.updatedAt = Date.now();
+  rebuildTxCategoriesFromDisk();
+  // Add the worker scrape proofs as a single category — they live in
+  // records.jsonl.txids, which has no per-tx metadata, so we attribute
+  // ALL of them to "scrape_proofs" wholesale. Count is derived from the
+  // total txids minus the categorized ones (everything in budget.jsonl
+  // is already counted). This is approximate but close — the diff is
+  // dominated by worker proof_batch which is what we want anyway.
+  let categorizedCount = 0;
+  for (const v of dashboardState.txCategories.values()) categorizedCount += v.count;
   let totalTxs = 0;
   for (const set of dashboardState.txidsByLane.values()) totalTxs += set.size;
-  console.log(`[ui] dashboard rebuilt (${Date.now() - t0}ms): ${totalTxs} txs across ${dashboardState.perLane.size} lanes`);
+  const scrapeCount = Math.max(0, totalTxs - categorizedCount);
+  if (scrapeCount > 0) {
+    // Per-tx sats for worker proof_batch is fixed at 200 sats (BRC-29 fee)
+    dashboardState.txCategories.set('scrape_proofs', {
+      count: scrapeCount,
+      sats: scrapeCount * 200,
+    });
+  }
+  dashboardState.updatedAt = Date.now();
+  console.log(`[ui] dashboard rebuilt (${Date.now() - t0}ms): ${totalTxs} txs across ${dashboardState.perLane.size} lanes (${dashboardState.txCategories.size} categories)`);
 }
 
 // Compute the snapshot payload that gets broadcast to clients. Derived from
@@ -570,6 +668,12 @@ function computeSnapshot() {
       cycleStartMs: laneState.cycleStartMs || null,
     };
   }
+  // Tx categories — Map<string, {count, sats}> → plain object for JSON
+  const txCategoriesOut = {};
+  for (const [cat, v] of dashboardState.txCategories.entries()) {
+    txCategoriesOut[cat] = { count: v.count, sats: v.sats };
+  }
+
   return {
     schema: 1,
     target: TARGET_TXS,
@@ -581,6 +685,7 @@ function computeSnapshot() {
     recentFlows: dashboardState.recentFlows,
     walletHealth: dashboardState.walletHealth,
     feederHealth: dashboardState.feederHealth,
+    txCategories: txCategoriesOut,
     lanes: LANES.map((l) => ({
       id: l.id,
       subreddit: l.subreddit,
@@ -1139,21 +1244,21 @@ function ensureBudgetTailer(lane, role) {
       const added = addTxid(lane, txid);
       if (added) {
         const slot = ensureLaneSlot(lane);
-        // Attribute the spend to the originating agent's running session
-        // total. Each budget.jsonl line has a `sats` field with the cost
-        // of the BRC-29 createAction (~200 sats per proof commitment).
         const cost = (entry && typeof entry.sats === 'number') ? entry.sats : 0;
         if (cost > 0 && slot.agents[role]) {
           slot.agents[role].sats = (slot.agents[role].sats || 0) + cost;
         }
-        // Also push into recentTxs so the live stream panel shows
-        // captain BRC-29 txs alongside worker proof_batch txids.
+        // Categorize this tx into the live txCategories map so the UI
+        // breakdown panel updates per-event, not just on 20s rescan.
+        const cat = categorizeBudgetEntry(entry);
+        bumpCategory(cat, cost);
         dashboardState.recentTxs.unshift({
           lane,
-          cycle_dir: 'budget',  // marker — these come from agent budget.jsonl
+          cycle_dir: 'budget',
           txid,
           ts: Date.now(),
           role,
+          category: cat,
         });
         if (dashboardState.recentTxs.length > RECENT_TXS_MAX) {
           dashboardState.recentTxs.length = RECENT_TXS_MAX;
@@ -1340,11 +1445,15 @@ function pollTxidStreams() {
               if (added) {
                 const laneSlot = ensureLaneSlot(lane.id);
                 laneSlot.cycle_dir = entry.name;
+                // Worker proof_batch txs are attributed to the
+                // "scrape_proofs" category (1 tx = 200 sats fixed).
+                bumpCategory('scrape_proofs', 200);
                 dashboardState.recentTxs.unshift({
                   lane: lane.id,
                   cycle_dir: entry.name,
                   txid,
                   ts: Date.now(),
+                  category: 'scrape_proofs',
                 });
                 if (dashboardState.recentTxs.length > RECENT_TXS_MAX) {
                   dashboardState.recentTxs.length = RECENT_TXS_MAX;
