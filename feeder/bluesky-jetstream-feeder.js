@@ -66,11 +66,15 @@ const BSKY_MULTI_TENANTS = (process.env.BSKY_MULTI_TENANTS || 'bsky-multi').spli
 const BSKY_JA_TENANTS    = (process.env.BSKY_JA_TENANTS    || 'bsky-ja').split(',').map(s => s.trim()).filter(Boolean);
 const BSKY_PT_TENANTS    = (process.env.BSKY_PT_TENANTS    || 'bsky-pt').split(',').map(s => s.trim()).filter(Boolean);
 
+// Order matters! Routing is FIRST-MATCH-WINS. Put specific language
+// groups (en, ja, pt) BEFORE the catch-all "multi" group, otherwise
+// the multi group steals all pt/ja/etc posts and the dedicated lanes
+// starve. multi's langs list ALSO has pt removed (pt has its own group).
 const LANE_GROUPS = [
   { groupId: 'en',    langs: new Set(['en']),                                                                tenants: BSKY_EN_TENANTS },
-  { groupId: 'multi', langs: new Set(['es', 'pt', 'pt-BR', 'pt-PT', 'it', 'fr', 'de', 'nl', 'ca']),          tenants: BSKY_MULTI_TENANTS },
   { groupId: 'ja',    langs: new Set(['ja']),                                                                tenants: BSKY_JA_TENANTS },
   { groupId: 'pt',    langs: new Set(['pt', 'pt-BR', 'pt-PT']),                                              tenants: BSKY_PT_TENANTS },
+  { groupId: 'multi', langs: new Set(['es', 'it', 'fr', 'de', 'nl', 'ca']),                                  tenants: BSKY_MULTI_TENANTS },
 ];
 
 // Flat list of every tenant lane id, used for queue dir creation +
