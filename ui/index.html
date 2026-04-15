@@ -1102,43 +1102,77 @@
 
     function handleInitHistorical(data) {
       const isRescan = state.historical.scannedAt != null;
+
+      // MONOTONIC FLOOR. The 20s rescan is racy with proof_emitted —
+      // the filesystem walk takes 30-150ms during which a worker can
+      // flush new txids that the scan either caught or missed. If we
+      // blindly zero live.txs after a scan that MISSED a just-flushed
+      // batch, the displayed lifetime total drops by N for one tick
+      // before the next rescan catches up.
+      //
+      // Instead of zeroing, compute the absorbed delta: how much did
+      // historical grow vs. the previous snapshot? Reduce live.txs by
+      // exactly that amount. The display = historical + live is thus
+      // guaranteed monotonic even across racy scans.
+      const prevHistTxs = state.historical.txs || 0;
+      const prevHistSats = state.historical.sats || 0;
+      const prevHistArticles = state.historical.articles || 0;
+      const newHistTxs = data.txs || 0;
+      const newHistSats = data.sats || 0;
+      const newHistArticles = data.articles || 0;
+
       state.historical = {
         target: data.target || 1500000,
-        txs: data.txs || 0,
-        sats: data.sats || 0,
-        articles: data.articles || 0,
+        txs: newHistTxs,
+        sats: newHistSats,
+        articles: newHistArticles,
         cycles: data.cycles || 0,
         articlesList: data.articlesList || [],
         perLane: data.perLane || {},
         scannedAt: data.scannedAt,
       };
-      // On every rescan, zero the live deltas. The server just re-walked
-      // every txids / budget / aggregate file on disk, so everything we
-      // had counted as "live" (state.live.txs/sats) is now captured inside
-      // state.historical. If we kept the live deltas, they'd double-count.
-      // Applied-cycles tracker also resets so future aggregate broadcasts
-      // re-apply cleanly on top of the new historical baseline.
+
       if (isRescan) {
-        state.live.txs = 0;
-        state.live.sats = 0;
-        state.live.articleCount = 0;
+        // Absorbed delta = how many live events got folded into historical
+        // by this rescan. Subtract exactly that from live.txs; the rest
+        // stays as "uncaptured live" so the display doesn't regress.
+        const absorbedTxs = Math.max(0, newHistTxs - prevHistTxs);
+        const absorbedSats = Math.max(0, newHistSats - prevHistSats);
+        const absorbedArticles = Math.max(0, newHistArticles - prevHistArticles);
+        state.live.txs = Math.max(0, state.live.txs - absorbedTxs);
+        state.live.sats = Math.max(0, state.live.sats - absorbedSats);
+        state.live.articleCount = Math.max(0, state.live.articleCount - absorbedArticles);
+
         // Don't clear txStream / articles lists — those are bounded and
         // the user wants to see recent activity visually.
         if (typeof appliedCyclesByPath !== 'undefined') {
           appliedCyclesByPath.clear();
         }
-        // Reset per-lane live counters too
+
+        // Per-lane: same monotonic-floor treatment. Compute the absorbed
+        // delta per lane against its prior historical snapshot, then
+        // reduce lane.totalTxs by that amount.
         for (const lane of state.lanes.values()) {
-          lane.totalTxs = 0;
-          lane.totalSats = 0;
+          const prevLaneTxs = lane.historicalTxs || 0;
+          const prevLaneSats = lane.historicalSats || 0;
+          const stats = state.historical.perLane[lane.id] || {};
+          const newLaneTxs = stats.txs || 0;
+          const newLaneSats = stats.sats || 0;
+          const absorbedLaneTxs = Math.max(0, newLaneTxs - prevLaneTxs);
+          const absorbedLaneSats = Math.max(0, newLaneSats - prevLaneSats);
+          lane.totalTxs = Math.max(0, (lane.totalTxs || 0) - absorbedLaneTxs);
+          lane.totalSats = Math.max(0, (lane.totalSats || 0) - absorbedLaneSats);
+          lane.historicalTxs = newLaneTxs;
+          lane.historicalSats = newLaneSats;
         }
-      }
-      // Seed per-lane historical totals into lane tiles
-      for (const [laneId, stats] of Object.entries(state.historical.perLane)) {
-        const lane = state.lanes.get(laneId);
-        if (lane) {
-          lane.historicalTxs = stats.txs || 0;
-          lane.historicalSats = stats.sats || 0;
+      } else {
+        // Initial load — just seed per-lane historical, no absorb logic.
+        for (const [laneId, stats] of Object.entries(state.historical.perLane)) {
+          const lane = state.lanes.get(laneId);
+          if (lane) {
+            lane.historicalTxs = stats.txs || 0;
+            lane.historicalSats = stats.sats || 0;
+          }
         }
       }
       renderTotals();
@@ -1241,6 +1275,18 @@
     }
 
     function handleProofEmitted(ev) {
+      // Replayed events (from the server's recentTxs ring buffer on SSE
+      // connect) are ALREADY counted in historical.perLane — they come
+      // from files the historical scan already walked. Don't increment
+      // live counters or the rolling rate window, or we double-count
+      // and appear to "drop" on the next rescan. But DO populate the
+      // stream panel and per-lane totals via historical, not live.
+      if (ev._replay) {
+        state.live.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
+        if (state.live.txStream.length > 100) state.live.txStream.length = 100;
+        prependTxItem(ev);
+        return;
+      }
       state.live.txs += 1;
       state.live.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
       if (state.live.txStream.length > 100) state.live.txStream.length = 100;

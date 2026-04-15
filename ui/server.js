@@ -1006,10 +1006,14 @@ function handleSse(req, res) {
   // several minutes of silence). Send OLDEST FIRST so the client's
   // prependTxItem() inserts them in chronological order — newest ends
   // up at the top, matching the normal stream ordering.
+  // Tagged with `_replay: true` so the client populates the tx stream
+  // panel without incrementing live counters — these txs are ALREADY
+  // counted in historical.perLane, so incrementing live.txs would
+  // double-count (and appear to "drop" on the next historical rescan).
   if (recentTxs.length > 0) {
     const ordered = recentTxs.slice().reverse(); // oldest first
     for (const ev of ordered) {
-      res.write(`data: ${JSON.stringify(ev)}\n\n`);
+      res.write(`data: ${JSON.stringify({ ...ev, _replay: true })}\n\n`);
     }
   }
 
