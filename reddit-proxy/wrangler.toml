@@ -1,0 +1,8 @@
+name = "dolphinsense-reddit-proxy"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# Account ID is supplied via CLOUDFLARE_ACCOUNT_ID env var at deploy time
+# (see ../secrets.md). We don't pin it here so the wrangler.toml can be
+# committed to git without leaking the account identifier.

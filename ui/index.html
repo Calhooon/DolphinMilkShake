@@ -3,177 +3,835 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>🐬 DolphinSense Mission Control</title>
+  <title>🐬 DolphinSense · Mission Control</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0e1a;
-      --surface: #131826;
-      --surface-2: #1a2033;
-      --border: #242c42;
-      --text: #e5e9f5;
-      --muted: #7a849e;
-      --accent: #4ade80;
-      --accent-2: #60a5fa;
-      --warn: #fbbf24;
-      --bad: #f87171;
-      --captain: #a78bfa;
-      --worker: #4ade80;
-      --synthesis: #60a5fa;
+      /* Core palette — deep midnight navy with a touch of violet in the shadows.
+         Surface levels step up 4-5% luminance each for clean depth hierarchy. */
+      --bg:         #070a14;
+      --bg-tint:    #0c1122;
+      --surface:    #0f1426;
+      --surface-1:  #141a30;
+      --surface-2:  #1a2138;
+      --surface-3:  #222a44;
+      --border:     #232b45;
+      --border-strong: #2e3855;
+
+      /* Text hierarchy */
+      --text:       #eef1fb;
+      --text-dim:   #b8bfd4;
+      --muted:      #7a849e;
+      --muted-soft: #5a6580;
+
+      /* Semantic — fleet grade, each tuned against #070a14 for AA contrast */
+      --accent:     #5cf2a4;     /* mint — primary live */
+      --accent-2:   #7ab7ff;     /* azure — secondary */
+      --accent-3:   #c5a3ff;     /* violet — tertiary / captain */
+      --warn:       #ffcb5c;
+      --bad:        #ff7a82;
+      --good:       #5cf2a4;
+
+      /* Role accents — harmonized hues, not clashing */
+      --captain:    #c5a3ff;
+      --worker:     #5cf2a4;
+      --synthesis:  #7ab7ff;
+
+      /* Gradients */
+      --grad-primary:   linear-gradient(135deg, #5cf2a4 0%, #7ab7ff 50%, #c5a3ff 100%);
+      --grad-progress:  linear-gradient(90deg, #5cf2a4 0%, #7ab7ff 60%, #c5a3ff 100%);
+      --grad-surface:   linear-gradient(145deg, #141a30 0%, #0f1426 100%);
+      --grad-live:      linear-gradient(90deg, rgba(92, 242, 164, 0.12), rgba(122, 183, 255, 0.04));
+
+      /* Shadows — elevation system */
+      --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+      --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.3);
+      --glow-accent: 0 0 20px rgba(92, 242, 164, 0.25);
+      --glow-captain: 0 0 16px rgba(197, 163, 255, 0.22);
+
+      /* Rhythm */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-pill: 999px;
+
+      /* Motion */
+      --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+      --ease-out-expo:  cubic-bezier(0.19, 1, 0.22, 1);
     }
+
+    /* Accessibility + sanity defaults */
     * { box-sizing: border-box; }
+    *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+    ::selection { background: rgba(92, 242, 164, 0.3); color: var(--text); }
+
+    /* Dark-mode scrollbars — subtle, thin, consistent */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); background-clip: padding-box; border: 2px solid transparent; }
+    * { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+
     html, body {
-      background: var(--bg);
+      background:
+        radial-gradient(1200px 800px at 15% -10%, rgba(92, 242, 164, 0.06) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 100% 0%, rgba(122, 183, 255, 0.05) 0%, transparent 55%),
+        radial-gradient(900px 600px at 50% 110%, rgba(197, 163, 255, 0.05) 0%, transparent 55%),
+        var(--bg);
+      background-attachment: fixed;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
       margin: 0;
       padding: 0;
       min-height: 100vh;
-      font-feature-settings: "tnum";
+      font-feature-settings: "tnum", "ss01", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
-    body { padding: 14px; display: grid; grid-template-columns: 1fr 360px; grid-template-rows: auto auto 1fr; gap: 14px; height: 100vh; overflow: hidden; }
+    /* Mission Control layout: fixed-viewport "holy grail" dashboard.
+       Top strip (title/counters + progress + feeder) is fixed height; the
+       remaining viewport is split into lanes (flexible) and sidebar (380px).
+       Body itself never scrolls — only inner panels do. */
+    body {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      grid-template-areas:
+        "header  header"
+        "progress progress"
+        "feeder  feeder"
+        "lanes   sidebar";
+      gap: 12px;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header        { grid-area: header; }
+    .progress-row { grid-area: progress; }
+    .feeder-bar   { grid-area: feeder; }
+    .lanes        { grid-area: lanes;   min-height: 0; overflow-y: auto; }
+    .right-panel  { grid-area: sidebar; min-height: 0; }
+
+    /* Ultrawide — give sidebar more breathing room */
+    @media (min-width: 1800px) {
+      body {
+        grid-template-columns: minmax(0, 1fr) 440px;
+        gap: 16px;
+        padding: 18px;
+      }
+    }
+
+    /* Tablet — stack sidebar below lanes so lanes get full width */
+    @media (max-width: 1100px) {
+      body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto minmax(320px, 1fr) minmax(260px, auto);
+        grid-template-areas:
+          "header"
+          "progress"
+          "feeder"
+          "lanes"
+          "sidebar";
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      .right-panel { flex-direction: row; }
+      .right-panel .panel { flex: 1; }
+    }
+
+    /* Mobile — tighter padding, sidebar panels stack again */
+    @media (max-width: 720px) {
+      body { padding: 10px; gap: 10px; }
+      .right-panel { flex-direction: column; }
+    }
 
     header {
       grid-column: 1 / -1;
       display: flex;
       align-items: center;
-      gap: 18px;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+      gap: 20px;
+      padding: 18px 22px;
+      background: var(--grad-surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
     }
-    header h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-    header .counters { display: flex; gap: 28px; margin-left: auto; }
-    header .counter .num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
-    header .counter .lbl { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
-    header .status-pill { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
-    header .status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
-    header .status-pill.live .dot { background: var(--accent); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-    .feeder-bar {
-      grid-column: 1 / -1;
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 12px;
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(92, 242, 164, 0.06), transparent);
+      transform: translateX(-100%);
+      animation: header-shine 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes header-shine {
+      0%, 90%, 100% { transform: translateX(-100%); }
+      45% { transform: translateX(100%); }
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.02em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
       display: flex;
       align-items: center;
+      gap: 10px;
+    }
+    header h1::before {
+      content: '🐬';
+      font-size: 28px;
+      -webkit-text-fill-color: initial;
+      filter: drop-shadow(0 0 16px rgba(92, 242, 164, 0.4));
+    }
+    header h1 .subtitle {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+      margin-left: 2px;
+      padding-left: 12px;
+      border-left: 1px solid var(--border);
+    }
+    header .counters { display: flex; gap: 32px; margin-left: auto; align-items: flex-end; }
+    header .counter { text-align: right; }
+    header .counter .num {
+      font-size: 26px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      display: block;
+    }
+    header .counter.primary .num {
+      font-size: 32px;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    header .counter .lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      margin-top: 4px;
+      display: block;
+    }
+    header .counter .lbl .delta {
+      color: var(--accent);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-left: 4px;
+    }
+
+    .progress-row { grid-column: 1 / -1; animation: fade-in-up 0.6s 0.1s var(--ease-out-expo) both; }
+    .progress-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      height: 42px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+    .progress-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      background: var(--grad-progress);
+      width: 0%;
+      transition: width 0.8s var(--ease-out-quart);
+      box-shadow: 0 0 24px rgba(92, 242, 164, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%);
+      transform: translateX(-100%);
+      animation: progress-shimmer 3s ease-in-out infinite;
+    }
+    @keyframes progress-shimmer {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+    .progress-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+      z-index: 1;
+      letter-spacing: 0.01em;
+    }
+    .progress-label .pct {
+      color: var(--bg);
+      background: rgba(255, 255, 255, 0.96);
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    header .status-pill {
+      padding: 8px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      transition: all 0.3s var(--ease-out-quart);
+    }
+    header .status-pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bad);
+      box-shadow: 0 0 8px rgba(255, 122, 130, 0.6);
+    }
+    header .status-pill.live {
+      color: var(--accent);
+      border-color: rgba(92, 242, 164, 0.35);
+      background: rgba(92, 242, 164, 0.08);
+    }
+    header .status-pill.live .dot {
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(92, 242, 164, 0.8);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.85); } }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .feeder-bar {
+      padding: 10px 16px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
       overflow-x: auto;
       white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+      animation: fade-in-up 0.6s 0.2s var(--ease-out-expo) both;
     }
-    .feeder-bar .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
-    .feeder-bar .sub { padding: 4px 10px; background: var(--surface-2); border-radius: 6px; font-variant-numeric: tabular-nums; }
-    .feeder-bar .sub .name { color: var(--accent-2); font-weight: 600; }
-    .feeder-bar .sub .rate { color: var(--muted); margin-left: 6px; }
-    .feeder-bar .sub .queued { color: var(--warn); margin-left: 6px; }
+    .feeder-bar .lbl {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 9px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .feeder-bar .sub {
+      padding: 5px 11px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      font-variant-numeric: tabular-nums;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .feeder-bar .sub:hover { border-color: var(--border-strong); background: var(--surface-3); }
+    .feeder-bar .sub .name { color: var(--accent-2); font-weight: 700; letter-spacing: 0.01em; }
+    .feeder-bar .sub .rate { color: var(--accent); font-weight: 600; }
+    .feeder-bar .sub .queued { color: var(--muted); font-weight: 500; }
+    .feeder-bar .sub .queued::before { content: 'Q '; color: var(--muted-soft); }
 
     .lanes {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-auto-rows: min-content;
       gap: 12px;
-      overflow-y: auto;
-      padding-right: 4px;
+      padding-right: 6px;
+      align-content: start;
+    }
+    /* On wide mission-control displays we lock to 5 fixed columns so lanes
+       line up visually regardless of tile content height. auto-fit falls
+       back gracefully below this breakpoint. */
+    @media (min-width: 1280px) {
+      .lanes { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .lanes { grid-template-columns: 1fr; }
     }
     .lane {
-      background: var(--surface);
+      background: var(--grad-surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
+      border-radius: var(--radius-md);
+      padding: 14px;
       display: flex;
       flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s var(--ease-out-quart),
+                  border-color 0.25s var(--ease-out-quart),
+                  box-shadow 0.25s var(--ease-out-quart);
+      box-shadow: var(--shadow-sm);
+      animation: lane-in 0.5s var(--ease-out-expo) both;
+    }
+    .lane::before {
+      /* Top accent bar — tints per source (Bluesky mint, Wikipedia azure) */
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--grad-primary);
+      opacity: 0.6;
+      transition: opacity 0.3s var(--ease-out-quart);
+    }
+    .lane:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md);
+    }
+    .lane:hover::before { opacity: 1; }
+    @keyframes lane-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .lane-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 8px;
     }
-    .lane-head { display: flex; align-items: center; justify-content: space-between; }
-    .lane-name { font-weight: 700; font-size: 14px; }
-    .lane-sub { font-size: 11px; color: var(--muted); }
-    .lane-stats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .lane-name {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .lane-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .lane-stats {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+    .lane-stats .tx-count { color: var(--accent); }
+    .lane-stats .sats-count { color: var(--muted); font-weight: 500; }
 
     .agent {
-      padding: 8px 10px;
+      padding: 8px 10px 8px 12px;
       background: var(--surface-2);
-      border-radius: 6px;
-      border-left: 3px solid var(--border);
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
+      border-radius: var(--radius-sm);
+      border-left: 2px solid var(--border);
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto;
       align-items: center;
-      gap: 8px;
-      transition: border-color 0.2s;
+      gap: 2px 10px;
+      transition: all 0.25s var(--ease-out-quart);
+      position: relative;
     }
     .agent.captain { border-left-color: var(--captain); }
     .agent.worker { border-left-color: var(--worker); }
     .agent.synthesis { border-left-color: var(--synthesis); }
-    .agent .role { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+    .agent .role {
+      grid-column: 1;
+      grid-row: 1;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .agent .role::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+      flex-shrink: 0;
+    }
     .agent .role.captain { color: var(--captain); }
     .agent .role.worker { color: var(--worker); }
     .agent .role.synthesis { color: var(--synthesis); }
-    .agent .state { color: var(--text); font-size: 11px; opacity: 0.85; text-align: right; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .agent .sats { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
-    .agent.active { background: linear-gradient(90deg, var(--surface-2) 70%, rgba(74, 222, 128, 0.08)); }
-    .agent.done { opacity: 0.7; }
-    .agent.error { border-left-color: var(--bad); }
+    .agent .state {
+      grid-column: 2;
+      grid-row: 1;
+      color: var(--text-dim);
+      font-size: 10px;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .agent .sats {
+      grid-column: 3;
+      grid-row: 1;
+      color: var(--muted);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .agent .wallet {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      color: var(--muted-soft);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      text-align: right;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+    .agent.active {
+      background: var(--grad-live);
+      border-left-width: 3px;
+    }
+    .agent.active .role::before {
+      animation: dot-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 6px currentColor; }
+      50% { box-shadow: 0 0 12px currentColor, 0 0 20px currentColor; }
+    }
+    .agent.done {
+      opacity: 0.62;
+      background: transparent;
+    }
+    .agent.done .state { color: var(--muted); }
+    .agent.error {
+      border-left-color: var(--bad);
+      background: rgba(255, 122, 130, 0.08);
+    }
+    .agent.error .state { color: var(--bad); }
+
+    /* Message-flow visualization */
+    .agent.sending {
+      animation: sending-pulse 1.4s ease-out;
+      position: relative;
+    }
+    .agent.receiving {
+      animation: receiving-pulse 1.4s ease-out;
+      position: relative;
+    }
+    @keyframes sending-pulse {
+      0%   { background: rgba(251, 191, 36, 0.28); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); }
+      40%  { background: rgba(251, 191, 36, 0.18); box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.25); }
+      100% { background: var(--surface-2); box-shadow: none; }
+    }
+    @keyframes receiving-pulse {
+      0%, 40% { background: var(--surface-2); }
+      50% { background: rgba(96, 165, 250, 0.35); box-shadow: 0 0 10px 2px rgba(96, 165, 250, 0.4); }
+      100% { background: var(--surface-2); box-shadow: none; }
+    }
+
+    /* Message banner that slides in atop a lane when delegate_task fires */
+    .msg-banner {
+      margin-top: -2px;
+      margin-bottom: 2px;
+      padding: 6px 10px;
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.15), rgba(96, 165, 250, 0.15));
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 6px;
+      font-size: 10px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      animation: banner-flash 3.5s ease-out forwards;
+      pointer-events: none;
+    }
+    .msg-banner .amt { color: var(--warn); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .msg-banner .arrow {
+      display: inline-block;
+      animation: arrow-fly 1.4s ease-out;
+    }
+    @keyframes banner-flash {
+      0%   { opacity: 0; transform: translateY(-4px); }
+      6%   { opacity: 1; transform: translateY(0); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(0); }
+    }
+    @keyframes arrow-fly {
+      0%   { transform: translateX(-12px); opacity: 0; }
+      30%  { transform: translateX(0);     opacity: 1; }
+      70%  { transform: translateX(12px);  opacity: 1; }
+      100% { transform: translateX(20px);  opacity: 0.3; }
+    }
 
     .right-panel {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      overflow: hidden;
+      min-height: 0;
     }
     .panel {
-      background: var(--surface);
+      background: var(--grad-surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius-md);
       display: flex;
       flex-direction: column;
       min-height: 0;
+      flex: 1;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      animation: fade-in-up 0.6s 0.3s var(--ease-out-expo) both;
     }
     .panel-head {
-      padding: 10px 14px;
+      padding: 11px 16px;
       border-bottom: 1px solid var(--border);
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       color: var(--muted);
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
+      font-weight: 700;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      flex-shrink: 0;
     }
-    .panel-head .count { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .panel-head .count {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .panel-head .tab-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .panel-head .tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.2s var(--ease-out-quart);
+    }
+    .panel-head .tab:hover {
+      color: var(--text-dim);
+      background: var(--surface-2);
+    }
+    .panel-head .tab.active {
+      color: var(--accent);
+      background: rgba(92, 242, 164, 0.08);
+      border-color: rgba(92, 242, 164, 0.25);
+    }
+    .all-tx-filter {
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: rgba(10, 14, 26, 0.4);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+    }
+    .all-tx-filter .chip {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .all-tx-filter .chip:hover { color: var(--text); border-color: var(--border-strong); }
+    .all-tx-filter .chip.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+    .all-tx-filter .chip .n {
+      font-variant-numeric: tabular-nums;
+      opacity: 0.7;
+      margin-left: 4px;
+    }
+    .all-tx-filter .chip.active .n { opacity: 0.9; }
     .panel-body {
-      padding: 6px 0;
+      padding: 4px 0;
       overflow-y: auto;
       flex: 1;
       min-height: 0;
     }
 
     .tx-item {
-      padding: 6px 14px;
-      font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
-      font-size: 11px;
+      padding: 7px 16px;
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", monospace;
+      font-size: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid rgba(36, 44, 66, 0.3);
-      animation: flash 1s ease-out;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      animation: tx-flash 1.2s var(--ease-out-quart);
+      transition: background 0.2s;
     }
-    @keyframes flash { 0% { background: rgba(74, 222, 128, 0.15); } 100% { background: transparent; } }
-    .tx-item .txid { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tx-item .txid a { color: var(--accent); text-decoration: none; }
-    .tx-item .lane-tag { color: var(--accent-2); font-size: 10px; background: var(--surface-2); padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
+    .tx-item:hover { background: rgba(92, 242, 164, 0.04); }
+    @keyframes tx-flash {
+      0%   { background: rgba(92, 242, 164, 0.22); transform: translateX(-4px); }
+      20%  { transform: translateX(0); }
+      100% { background: transparent; }
+    }
+    .tx-item .txid { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.02em; }
+    .tx-item .txid a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+    .tx-item .txid a:hover { color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; }
+    .tx-item .lane-tag {
+      color: var(--accent-2);
+      font-size: 9px;
+      background: var(--surface-3);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      flex-shrink: 0;
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+    }
 
+    .article-section-header {
+      padding: 10px 16px 6px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      background: rgba(26, 32, 51, 0.4);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(8px);
+      z-index: 1;
+    }
+    .article-section-header.live { color: var(--accent); }
     .article-item {
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(36, 44, 66, 0.3);
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      transition: background 0.2s;
     }
-    .article-item a { color: var(--accent); text-decoration: none; font-weight: 500; font-size: 13px; display: block; margin-bottom: 4px; }
-    .article-item a:hover { text-decoration: underline; }
-    .article-item .meta { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .article-item:hover { background: rgba(255, 255, 255, 0.02); }
+    .article-item.live {
+      border-left: 3px solid var(--accent);
+      padding-left: 13px;
+      animation: article-in 0.6s var(--ease-out-expo);
+    }
+    .article-item.historical { opacity: 0.58; }
+    .article-item.historical:hover { opacity: 0.85; }
+    @keyframes article-in {
+      from { opacity: 0; transform: translateX(-10px); background: rgba(92, 242, 164, 0.12); }
+      to   { opacity: 1; transform: translateX(0); background: transparent; }
+    }
+    .article-item a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12px;
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      transition: color 0.15s;
+    }
+    .article-item.historical a { color: var(--accent-2); }
+    .article-item a:hover { color: var(--text); }
+    .article-item .meta {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .article-item .live-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      box-shadow: 0 0 8px rgba(92, 242, 164, 0.35);
+    }
 
-    .empty { padding: 20px 14px; color: var(--muted); font-size: 11px; text-align: center; font-style: italic; }
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted-soft);
+      font-size: 11px;
+      text-align: center;
+      font-style: italic;
+      letter-spacing: 0.02em;
+    }
 
     /* scrollbar polish */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -184,14 +842,33 @@
 </head>
 <body>
   <header>
-    <h1>🐬 DolphinSense — Mission Control</h1>
+    <h1>DolphinSense <span class="subtitle">Mission Control</span></h1>
     <div class="status-pill" id="status"><span class="dot"></span><span id="status-text">connecting…</span></div>
     <div class="counters">
-      <div class="counter"><div class="num" id="total-txs">0</div><div class="lbl">On-chain TXs</div></div>
-      <div class="counter"><div class="num" id="total-sats">0</div><div class="lbl">Sats Spent</div></div>
-      <div class="counter"><div class="num" id="total-articles">0</div><div class="lbl">Articles</div></div>
+      <div class="counter primary">
+        <div class="num" id="lifetime-txs">0</div>
+        <div class="lbl">Lifetime TXs <span id="lifetime-delta" class="delta">+0</span></div>
+      </div>
+      <div class="counter">
+        <div class="num" id="lifetime-sats">0</div>
+        <div class="lbl">Sats <span id="session-sats" class="delta">+0</span></div>
+      </div>
+      <div class="counter">
+        <div class="num" id="lifetime-articles">0</div>
+        <div class="lbl">Articles <span id="session-articles" class="delta">+0</span></div>
+      </div>
     </div>
   </header>
+
+  <div class="progress-row">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+      <div class="progress-label">
+        <span id="progress-text">0 / 1,500,000</span>
+        <span id="progress-pct" class="pct">0.00%</span>
+      </div>
+    </div>
+  </div>
 
   <div class="feeder-bar" id="feeder-bar">
     <span class="lbl">Feeder:</span>
@@ -204,13 +881,25 @@
 
   <div class="right-panel">
     <div class="panel">
-      <div class="panel-head">Live TX Stream <span class="count" id="tx-count">0</span></div>
+      <div class="panel-head">
+        <div class="tab-group">
+          <button class="tab active" id="tab-live" type="button">Live TX Stream</button>
+          <button class="tab" id="tab-all" type="button">All TXs · <span id="all-tx-count">—</span></button>
+        </div>
+        <span class="count" id="tx-count">0</span>
+      </div>
       <div class="panel-body" id="tx-stream">
-        <div class="empty">no txs yet</div>
+        <div class="empty">waiting for live txs…</div>
+      </div>
+      <div class="panel-body" id="all-tx-stream" style="display: none;">
+        <div class="empty">loading all txs…</div>
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head">Latest Articles <span class="count" id="article-count">0</span></div>
+      <div class="panel-head">
+        <span>Articles</span>
+        <span class="count"><span id="live-article-count">0</span> live · <span id="hist-article-count">0</span> historical</span>
+      </div>
       <div class="panel-body" id="article-feed">
         <div class="empty">no articles yet</div>
       </div>
@@ -224,9 +913,29 @@
     const state = {
       lanes: new Map(), // laneId → {id, subreddit, agents: {captain: {state, sats, ...}, worker:..., synthesis:...}}
       feederHealth: null,
-      txStream: [], // rolling, newest first, capped at 100
-      articles: [], // newest first, capped at 20
-      totals: { txs: 0, sats: 0, articles: 0 },
+
+      // "live" = events received since this browser session opened the SSE
+      // connection. Distinct from historical data loaded from disk.
+      live: {
+        txStream: [],    // rolling, newest first, capped at 100
+        articles: [],    // newest first, capped at 20
+        txs: 0,
+        sats: 0,
+        articleCount: 0,
+      },
+
+      // "historical" = lifetime data loaded from disk at server start.
+      // Populated by init_historical event.
+      historical: {
+        target: 1500000,
+        txs: 0,
+        sats: 0,
+        articles: 0,
+        cycles: 0,
+        articlesList: [],
+        perLane: {},
+        scannedAt: null,
+      },
     };
 
     // ---------------------------------------------------------------
@@ -250,12 +959,13 @@
         id: lane.id,
         subreddit: lane.subreddit,
         agents: {
-          captain: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false },
-          worker: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false },
-          synthesis: { state: 'idle', sats: 0, url: null, cycle: null, active: false },
+          captain: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '' },
+          worker: { state: 'idle', sats: 0, proofs: 0, cycle: null, active: false, pulseClass: '' },
+          synthesis: { state: 'idle', sats: 0, url: null, cycle: null, active: false, pulseClass: '' },
         },
         totalSats: 0,
         totalTxs: 0,
+        banner: null, // {text, amt, id} — short-lived message flow banner
       });
     }
 
@@ -275,9 +985,70 @@
       renderLanes();
     }
 
+    function handleInitHistorical(data) {
+      const isRescan = state.historical.scannedAt != null;
+      state.historical = {
+        target: data.target || 1500000,
+        txs: data.txs || 0,
+        sats: data.sats || 0,
+        articles: data.articles || 0,
+        cycles: data.cycles || 0,
+        articlesList: data.articlesList || [],
+        perLane: data.perLane || {},
+        scannedAt: data.scannedAt,
+      };
+      // On every rescan, zero the live deltas. The server just re-walked
+      // every txids / budget / aggregate file on disk, so everything we
+      // had counted as "live" (state.live.txs/sats) is now captured inside
+      // state.historical. If we kept the live deltas, they'd double-count.
+      // Applied-cycles tracker also resets so future aggregate broadcasts
+      // re-apply cleanly on top of the new historical baseline.
+      if (isRescan) {
+        state.live.txs = 0;
+        state.live.sats = 0;
+        state.live.articleCount = 0;
+        // Don't clear txStream / articles lists — those are bounded and
+        // the user wants to see recent activity visually.
+        if (typeof appliedCyclesByPath !== 'undefined') {
+          appliedCyclesByPath.clear();
+        }
+        // Reset per-lane live counters too
+        for (const lane of state.lanes.values()) {
+          lane.totalTxs = 0;
+          lane.totalSats = 0;
+        }
+      }
+      // Seed per-lane historical totals into lane tiles
+      for (const [laneId, stats] of Object.entries(state.historical.perLane)) {
+        const lane = state.lanes.get(laneId);
+        if (lane) {
+          lane.historicalTxs = stats.txs || 0;
+          lane.historicalSats = stats.sats || 0;
+        }
+      }
+      renderTotals();
+      renderProgress();
+      renderArticles();
+      renderLanes();
+    }
+
     function handleFeederHealth(data) {
       state.feederHealth = data;
       renderFeeder();
+    }
+
+    // Per-agent wallet balance + UTXO count. Stored on the lane.agents[role]
+    // object and rendered by renderLanes(). Updated every ~25s.
+    function handleWalletHealth(updates) {
+      for (const u of updates) {
+        const lane = state.lanes.get(u.lane);
+        if (!lane) continue;
+        const agent = lane.agents[u.role];
+        if (!agent) continue;
+        agent.walletSats = u.sats;
+        agent.walletUtxos = u.utxos;
+      }
+      renderLanes();
     }
 
     function handleAgentEvent(laneId, role, ev) {
@@ -326,15 +1097,26 @@
           } else if (ev.name === 'file_read') agent.state = `✓ read file`;
           else agent.state = `✓ ${ev.name}`;
           break;
-        case 'session_end':
-          if (ev.error) {
-            agent.state = `✗ ${ev.error.slice(0, 40)}`;
+        case 'session_end': {
+          // Max-iterations isn't a failure for parallel-mode captains — it's
+          // the intended completion shape (iter 1 = delegate, iter 2 = wrap).
+          // Same for workers and synthesis agents that run to their declared
+          // ceiling. Detect the iteration-limit signal and display it as a
+          // successful "cycle complete" so the UI doesn't look like an error.
+          const errStr = String(ev.error || '');
+          const isIterLimit = /iter|iteration/i.test(errStr)
+            && /max|limit|reached|exceed/i.test(errStr);
+          if (ev.error && !isIterLimit) {
+            agent.state = `✗ ${errStr.slice(0, 40)}`;
+          } else if (isIterLimit) {
+            agent.state = `✓ cycle complete`;
           } else {
-            agent.state = `✓ done (${fmt(ev.sats_spent || 0)} sats)`;
+            agent.state = `✓ cycle complete`;
           }
           agent.sats = ev.sats_spent || agent.sats;
           agent.active = false;
           break;
+        }
         case 'error':
           agent.state = `✗ ${(ev.error || '').slice(0, 40)}`;
           agent.active = false;
@@ -344,36 +1126,59 @@
     }
 
     function handleProofEmitted(ev) {
-      state.totals.txs += 1;
-      state.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
-      if (state.txStream.length > 100) state.txStream.length = 100;
+      state.live.txs += 1;
+      state.live.txStream.unshift({ txid: ev.txid, lane: ev.lane, ts: Date.now() / 1000 });
+      if (state.live.txStream.length > 100) state.live.txStream.length = 100;
       const lane = state.lanes.get(ev.lane);
       if (lane) lane.totalTxs += 1;
       renderTotals();
+      renderProgress();
       renderTxStream();
       renderLanes();
     }
 
+    // Tracks which cycle indices we've already applied per aggregate source.
+    // Key is `${lane}:${cycle_dir}`, value is Set of cycleIdx that have been
+    // counted. This makes handleCycleAggregate idempotent — incremental
+    // aggregate.json writes (which now happen after every cycle, not only
+    // at end-of-run) re-broadcast the same cycles[] array growing over time,
+    // and we must only apply NEW cycles[i], not re-apply everything.
+    const appliedCyclesByPath = new Map();
+
     function handleCycleAggregate(ev) {
       const lane = state.lanes.get(ev.lane);
       if (!lane) return;
-      const cycle = (ev.data && ev.data.cycles && ev.data.cycles[0]) || {};
-      lane.totalSats += cycle.totalSats || 0;
-      state.totals.sats += cycle.totalSats || 0;
-      if (cycle.nanostoreUrl) {
-        state.articles.unshift({
-          lane: ev.lane,
-          url: cycle.nanostoreUrl,
-          txidsUrl: cycle.txidsUrl,
-          proofs: cycle.proofsCreated || 0,
-          ts: Date.now() / 1000,
-        });
-        if (state.articles.length > 20) state.articles.length = 20;
-        state.totals.articles += 1;
+      const cycles = (ev.data && ev.data.cycles) || [];
+      if (cycles.length === 0) return;
+      const key = `${ev.lane}:${ev.cycle_dir}`;
+      let applied = appliedCyclesByPath.get(key);
+      if (!applied) { applied = new Set(); appliedCyclesByPath.set(key, applied); }
+      let newArticleCount = 0;
+      for (const cycle of cycles) {
+        if (cycle.error) continue;
+        const idx = cycle.cycleIdx != null ? cycle.cycleIdx : cycles.indexOf(cycle);
+        if (applied.has(idx)) continue; // already counted
+        applied.add(idx);
+        lane.totalSats += cycle.totalSats || 0;
+        state.live.sats += cycle.totalSats || 0;
+        if (cycle.nanostoreUrl) {
+          state.live.articles.unshift({
+            lane: ev.lane,
+            url: cycle.nanostoreUrl,
+            txidsUrl: cycle.txidsUrl,
+            proofs: cycle.proofsCreated || 0,
+            cycleIdx: idx,
+            ts: Date.now() / 1000,
+          });
+          if (state.live.articles.length > 20) state.live.articles.length = 20;
+          state.live.articleCount += 1;
+          newArticleCount += 1;
+        }
       }
       renderTotals();
+      renderProgress();
       renderLanes();
-      renderArticles();
+      if (newArticleCount > 0) renderArticles();
     }
 
     function handleFeederEvent(ev) {
@@ -381,51 +1186,166 @@
       // via the periodic health.json snapshot, so this is mostly a no-op.
     }
 
-    // ---------------------------------------------------------------
-    // Rendering
-    // ---------------------------------------------------------------
-    function renderTotals() {
-      document.getElementById('total-txs').textContent = fmt(state.totals.txs);
-      document.getElementById('total-sats').textContent = fmt(state.totals.sats);
-      document.getElementById('total-articles').textContent = fmt(state.totals.articles);
+    // Inter-agent message visualization. `phase` is 'sending' (captain
+    // fired delegate_task), 'confirmed' (captain got commission_id back),
+    // or 'received' (worker's session started — picked up the commission).
+    function handleMessageFlow(ev) {
+      const lane = state.lanes.get(ev.lane);
+      if (!lane) return;
+
+      if (ev.phase === 'sending') {
+        // Pulse the captain strip "sending" orange
+        lane.agents.captain.pulseClass = 'sending';
+        // Drop a short banner on top of the lane tile
+        lane.banner = {
+          text: `${ev.from} → ${ev.to}`,
+          tool: ev.tool,
+          amt: null,
+          id: Date.now(),
+        };
+        // Clear the pulse after animation ends
+        setTimeout(() => {
+          const l = state.lanes.get(ev.lane);
+          if (l) { l.agents.captain.pulseClass = ''; renderLanes(); }
+        }, 1500);
+      } else if (ev.phase === 'confirmed') {
+        // Enrich the banner with commission amount
+        if (lane.banner && ev.amount_sats) {
+          lane.banner.amt = ev.amount_sats;
+          lane.banner.commission_id = ev.commission_id;
+        }
+      } else if (ev.phase === 'received') {
+        // Pulse the worker strip "receiving" blue
+        lane.agents.worker.pulseClass = 'receiving';
+        // Banner drops off after 3.5s via CSS, but refresh the id so the
+        // animation restarts if another banner arrives quickly
+        setTimeout(() => {
+          const l = state.lanes.get(ev.lane);
+          if (l) { l.agents.worker.pulseClass = ''; renderLanes(); }
+        }, 1500);
+        // Auto-clear the banner after its full animation
+        setTimeout(() => {
+          const l = state.lanes.get(ev.lane);
+          if (l) { l.banner = null; renderLanes(); }
+        }, 3500);
+      }
+      renderLanes();
     }
 
-    function renderLanes() {
+    // ---------------------------------------------------------------
+    // Rendering — RAF-batched so bursts of events coalesce into one
+    // re-render per animation frame. Without this, a stream of
+    // proof_emitted events at 15+/sec calls renderLanes() on every
+    // event which re-sets grid.innerHTML, tearing down/rebuilding 15
+    // agent tiles. The teardown interrupts in-flight CSS animations
+    // and looks like a full-screen flicker.
+    // ---------------------------------------------------------------
+    const renderDirty = {
+      totals: false, progress: false, lanes: false,
+      txStream: false, articles: false, feeder: false,
+    };
+    let rafPending = 0;
+    function scheduleRender() {
+      if (rafPending) return;
+      rafPending = requestAnimationFrame(() => {
+        rafPending = 0;
+        if (renderDirty.totals)   { renderDirty.totals   = false; doRenderTotals(); }
+        if (renderDirty.progress) { renderDirty.progress = false; doRenderProgress(); }
+        if (renderDirty.lanes)    { renderDirty.lanes    = false; doRenderLanes(); }
+        if (renderDirty.txStream) { renderDirty.txStream = false; doRenderTxStream(); }
+        if (renderDirty.articles) { renderDirty.articles = false; doRenderArticles(); }
+        if (renderDirty.feeder)   { renderDirty.feeder   = false; doRenderFeeder(); }
+      });
+    }
+    function renderTotals()   { renderDirty.totals   = true; scheduleRender(); }
+    function renderProgress() { renderDirty.progress = true; scheduleRender(); }
+    function renderLanes()    { renderDirty.lanes    = true; scheduleRender(); }
+    function renderTxStream() { renderDirty.txStream = true; scheduleRender(); }
+    function renderArticles() { renderDirty.articles = true; scheduleRender(); }
+    function renderFeeder()   { renderDirty.feeder   = true; scheduleRender(); }
+
+    function doRenderTotals() {
+      const lifetimeTxs = state.historical.txs + state.live.txs;
+      const lifetimeSats = state.historical.sats + state.live.sats;
+      const lifetimeArticles = state.historical.articles + state.live.articleCount;
+      document.getElementById('lifetime-txs').textContent = fmt(lifetimeTxs);
+      document.getElementById('lifetime-sats').textContent = fmt(lifetimeSats);
+      document.getElementById('lifetime-articles').textContent = fmt(lifetimeArticles);
+      document.getElementById('lifetime-delta').textContent = state.live.txs > 0 ? `+${fmt(state.live.txs)} live` : '+0';
+      document.getElementById('session-sats').textContent = state.live.sats > 0 ? `+${fmt(state.live.sats)} live` : '+0';
+      document.getElementById('session-articles').textContent = state.live.articleCount > 0 ? `+${fmt(state.live.articleCount)} live` : '+0';
+    }
+
+    function doRenderProgress() {
+      const lifetimeTxs = state.historical.txs + state.live.txs;
+      const target = state.historical.target || 1500000;
+      const pct = Math.min(100, (lifetimeTxs / target) * 100);
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-text').textContent = `${fmt(lifetimeTxs)} / ${fmt(target)}`;
+      document.getElementById('progress-pct').textContent = pct.toFixed(pct < 1 ? 3 : 2) + '%';
+    }
+
+    function doRenderLanes() {
       const grid = document.getElementById('lanes-grid');
       const lanes = Array.from(state.lanes.values());
       if (lanes.length === 0) {
         grid.innerHTML = '<div class="empty">waiting for lanes…</div>';
         return;
       }
-      grid.innerHTML = lanes.map((lane) => `
-        <div class="lane">
-          <div class="lane-head">
-            <div>
-              <div class="lane-name">${lane.id}</div>
-              <div class="lane-sub">r/${lane.subreddit}</div>
-            </div>
-            <div class="lane-stats">
-              ${lane.totalTxs} txs · ${fmt(lane.totalSats)} sats
-            </div>
+      grid.innerHTML = lanes.map((lane) => {
+        const bannerHtml = lane.banner ? `
+          <div class="msg-banner" data-banner-id="${lane.banner.id}">
+            📨 <strong>${lane.banner.text}</strong>
+            <span class="arrow">→</span>
+            ${lane.banner.tool || ''}
+            ${lane.banner.amt ? `<span class="amt">${fmt(lane.banner.amt)} sats</span>` : ''}
           </div>
-          ${['captain', 'worker', 'synthesis'].map((role) => {
-            const a = lane.agents[role];
-            const cls = `agent ${role}${a.active ? ' active' : ''}${a.state && a.state.startsWith('✗') ? ' error' : ''}${a.state && a.state.startsWith('✓ done') ? ' done' : ''}`;
-            return `
-              <div class="${cls}">
-                <div>
-                  <span class="role ${role}">${role}</span>
-                </div>
-                <div class="state">${a.state || 'idle'}</div>
-                <div class="sats">${a.sats ? fmt(a.sats) : ''}</div>
+        ` : '';
+        // Per-lane lifetime = historical (from scan) + session (live)
+        const laneLifetimeTxs = (lane.historicalTxs || 0) + (lane.totalTxs || 0);
+        const laneLifetimeSats = (lane.historicalSats || 0) + (lane.totalSats || 0);
+        const livePart = lane.totalTxs > 0 ? `<span style="color:var(--accent)">+${lane.totalTxs}</span>` : '';
+        return `
+          <div class="lane">
+            <div class="lane-head">
+              <div>
+                <div class="lane-name">${lane.id}</div>
+                <div class="lane-sub">${lane.display_prefix || (lane.source === 'reddit' ? 'r/' : '')}${lane.subreddit}</div>
               </div>
-            `;
-          }).join('')}
-        </div>
-      `).join('');
+              <div class="lane-stats">
+                <div><span class="tx-count">${fmt(laneLifetimeTxs)}</span> tx ${livePart}</div>
+                <div class="sats-count">${fmt(laneLifetimeSats)} sats</div>
+              </div>
+            </div>
+            ${bannerHtml}
+            ${['captain', 'worker', 'synthesis'].map((role) => {
+              const a = lane.agents[role];
+              const cls = [
+                'agent',
+                role,
+                a.active ? 'active' : '',
+                a.state && a.state.startsWith('✗') ? 'error' : '',
+                a.state && a.state.startsWith('✓ done') ? 'done' : '',
+                a.pulseClass || '',
+              ].filter(Boolean).join(' ');
+              const walletInfo = (a.walletSats != null)
+                ? `<div class="wallet" title="wallet balance · utxo count">💰 ${fmt(a.walletSats)} · ${a.walletUtxos || 0}u</div>`
+                : '';
+              return `
+                <div class="${cls}">
+                  <div><span class="role ${role}">${role}</span></div>
+                  <div class="state">${a.state || 'idle'}</div>
+                  <div class="sats">${a.sats ? fmt(a.sats) : ''}</div>
+                  ${walletInfo}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
     }
 
-    function renderFeeder() {
+    function doRenderFeeder() {
       const bar = document.getElementById('feeder-bar');
       const h = state.feederHealth;
       if (!h || !h.perSub) {
@@ -437,7 +1357,7 @@
         <span class="lbl">Feeder (${h.uptimeSec || 0}s):</span>
         ${subs.map(([name, s]) => `
           <span class="sub">
-            <span class="name">r/${name}</span>
+            <span class="name">${name}</span>
             <span class="rate">${s.ratePerMin != null ? s.ratePerMin.toFixed(1) : '?'}/min</span>
             <span class="queued">Q ${s.totalQueued || 0}</span>
           </span>
@@ -445,14 +1365,14 @@
       `;
     }
 
-    function renderTxStream() {
+    function doRenderTxStream() {
       const el = document.getElementById('tx-stream');
-      document.getElementById('tx-count').textContent = fmt(state.totals.txs);
-      if (state.txStream.length === 0) {
-        el.innerHTML = '<div class="empty">no txs yet</div>';
+      document.getElementById('tx-count').textContent = fmt(state.live.txs);
+      if (state.live.txStream.length === 0) {
+        el.innerHTML = '<div class="empty">waiting for live txs…</div>';
         return;
       }
-      el.innerHTML = state.txStream.map((tx) => `
+      el.innerHTML = state.live.txStream.map((tx) => `
         <div class="tx-item">
           <span class="txid"><a href="https://whatsonchain.com/tx/${tx.txid}" target="_blank" rel="noopener">${tx.txid.slice(0, 16)}…</a></span>
           <span class="lane-tag">${tx.lane}</span>
@@ -460,19 +1380,151 @@
       `).join('');
     }
 
-    function renderArticles() {
+    function doRenderArticles() {
       const el = document.getElementById('article-feed');
-      document.getElementById('article-count').textContent = fmt(state.articles.length);
-      if (state.articles.length === 0) {
+      document.getElementById('live-article-count').textContent = fmt(state.live.articleCount);
+      document.getElementById('hist-article-count').textContent = fmt(state.historical.articles);
+
+      const live = state.live.articles;
+      const historical = state.historical.articlesList || [];
+
+      if (live.length === 0 && historical.length === 0) {
         el.innerHTML = '<div class="empty">no articles yet</div>';
         return;
       }
-      el.innerHTML = state.articles.map((a) => `
-        <div class="article-item">
-          <a href="${a.url}" target="_blank" rel="noopener">📰 ${a.lane} — ${a.proofs} proofs cited</a>
-          <div class="meta">${ago(a.ts)} · <a href="${a.txidsUrl || '#'}" target="_blank" style="color:var(--muted);">txids manifest</a></div>
-        </div>
-      `).join('');
+
+      const liveHtml = live.length > 0 ? `
+        <div class="article-section-header live">🟢 Live (this session)</div>
+        ${live.map((a) => `
+          <div class="article-item live">
+            <a href="${a.url}" target="_blank" rel="noopener"><span class="live-badge">LIVE</span>📰 ${a.lane} — ${a.proofs} proofs cited</a>
+            <div class="meta">${ago(a.ts)} · <a href="${a.txidsUrl || '#'}" target="_blank" style="color:var(--muted);">txids manifest</a></div>
+          </div>
+        `).join('')}
+      ` : '';
+
+      const histHtml = historical.length > 0 ? `
+        <div class="article-section-header">📚 Historical (${historical.length})</div>
+        ${historical.slice(0, 50).map((a) => `
+          <div class="article-item historical">
+            <a href="${a.url}" target="_blank" rel="noopener">📰 ${a.lane} — ${a.proofs} proofs cited</a>
+            <div class="meta">${a.cycleDir ? a.cycleDir.replace('cycle-', '') : 'historical'} · <a href="${a.txidsUrl || '#'}" target="_blank" style="color:var(--muted);">txids manifest</a></div>
+          </div>
+        `).join('')}
+      ` : '';
+
+      el.innerHTML = liveHtml + histHtml;
+    }
+
+    // ---------------------------------------------------------------
+    // "All TXs" view — fetches /api/txs and renders a scrollable list
+    // with per-lane filter chips. Paginated to 500 per fetch. Tabs
+    // swap the visible panel-body inside the Live TX Stream panel.
+    // ---------------------------------------------------------------
+    const allTxView = {
+      loaded: false,
+      selectedLane: null,     // null = all lanes
+      offset: 0,
+      pageSize: 500,
+      total: 0,
+      byLaneCounts: {},
+      rows: [],
+      loading: false,
+    };
+
+    async function fetchAllTxs(reset = false) {
+      if (allTxView.loading) return;
+      allTxView.loading = true;
+      if (reset) {
+        allTxView.offset = 0;
+        allTxView.rows = [];
+      }
+      const params = new URLSearchParams();
+      if (allTxView.selectedLane) params.set('lane', allTxView.selectedLane);
+      params.set('offset', String(allTxView.offset));
+      params.set('limit', String(allTxView.pageSize));
+      try {
+        const r = await fetch('/api/txs?' + params.toString());
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        allTxView.total = j.total;
+        allTxView.byLaneCounts = j.byLaneCounts || {};
+        for (const entry of (j.txs || [])) allTxView.rows.push(entry);
+        allTxView.offset += (j.txs || []).length;
+        allTxView.loaded = true;
+        renderAllTxsView();
+      } catch (e) {
+        const el = document.getElementById('all-tx-stream');
+        el.innerHTML = `<div class="empty">error: ${e.message}</div>`;
+      } finally {
+        allTxView.loading = false;
+      }
+    }
+
+    function renderAllTxsView() {
+      const el = document.getElementById('all-tx-stream');
+      // Update the tab counter badge
+      const total = Object.values(allTxView.byLaneCounts).reduce((a, b) => a + b, 0);
+      document.getElementById('all-tx-count').textContent = fmt(total);
+      // Build filter chips
+      const lanes = Object.keys(allTxView.byLaneCounts).sort();
+      const chips = [
+        `<button class="chip ${!allTxView.selectedLane ? 'active' : ''}" data-lane="">all<span class="n">${fmt(total)}</span></button>`,
+        ...lanes.map((lid) => `
+          <button class="chip ${allTxView.selectedLane === lid ? 'active' : ''}" data-lane="${lid}">
+            ${lid}<span class="n">${fmt(allTxView.byLaneCounts[lid])}</span>
+          </button>
+        `),
+      ].join('');
+      const shown = allTxView.rows.length;
+      const moreHint = shown < allTxView.total
+        ? `<div class="empty" id="load-more-row" style="cursor:pointer;padding:14px;">▾ load next 500 (${fmt(allTxView.total - shown)} remaining)</div>`
+        : (allTxView.total === 0
+            ? '<div class="empty">no txs on disk yet</div>'
+            : `<div class="empty">— end of list (${fmt(shown)}/${fmt(allTxView.total)}) —</div>`);
+      el.innerHTML = `
+        <div class="all-tx-filter">${chips}</div>
+        ${allTxView.rows.map((e) => `
+          <div class="tx-item">
+            <span class="lane-tag">${e.lane}</span>
+            <span class="txid"><a href="https://whatsonchain.com/tx/${e.txid}" target="_blank" rel="noopener">${e.txid.slice(0, 10)}…${e.txid.slice(-8)}</a></span>
+          </div>
+        `).join('')}
+        ${moreHint}
+      `;
+      // Wire up chip click handlers
+      for (const chip of el.querySelectorAll('.chip')) {
+        chip.addEventListener('click', () => {
+          const lane = chip.getAttribute('data-lane');
+          allTxView.selectedLane = lane || null;
+          fetchAllTxs(true);
+        });
+      }
+      const more = document.getElementById('load-more-row');
+      if (more) more.addEventListener('click', () => fetchAllTxs(false));
+    }
+
+    function setupTabs() {
+      const tabLive = document.getElementById('tab-live');
+      const tabAll = document.getElementById('tab-all');
+      const liveBody = document.getElementById('tx-stream');
+      const allBody = document.getElementById('all-tx-stream');
+      const txCount = document.getElementById('tx-count');
+      tabLive.addEventListener('click', () => {
+        tabLive.classList.add('active');
+        tabAll.classList.remove('active');
+        liveBody.style.display = '';
+        allBody.style.display = 'none';
+        txCount.style.display = '';
+      });
+      tabAll.addEventListener('click', () => {
+        tabAll.classList.add('active');
+        tabLive.classList.remove('active');
+        liveBody.style.display = 'none';
+        allBody.style.display = '';
+        txCount.style.display = 'none';
+        if (!allTxView.loaded) fetchAllTxs(true);
+      });
     }
 
     // ---------------------------------------------------------------
@@ -498,6 +1550,9 @@
           case 'init':
             handleInit(msg);
             break;
+          case 'init_historical':
+            handleInitHistorical(msg);
+            break;
           case 'feeder_health':
             handleFeederHealth(msg.data);
             break;
@@ -510,8 +1565,14 @@
           case 'cycle_aggregate':
             handleCycleAggregate(msg);
             break;
+          case 'wallet_health':
+            handleWalletHealth(msg.updates || []);
+            break;
           case 'feeder':
             handleFeederEvent(msg.ev);
+            break;
+          case 'message_flow':
+            handleMessageFlow(msg);
             break;
         }
       };
@@ -525,6 +1586,7 @@
     }
 
     // Kick off
+    setupTabs();
     connect();
   </script>
 </body>

@@ -2,7 +2,7 @@
 run nonce: {{run_nonce}}
 
 The scraping worker just hashed and proof-batched {{proofs_created}} records
-from r/{{subreddit}} and pinned an OP_RETURN tx for each one. Your job is
+from a public content firehose ({{subreddit}}) and pinned an OP_RETURN tx for each one. Your job is
 to read the annotated records (one line per record, each line carries
 both the original record AND its on-chain txid), upload the txid list
 to NanoStore, write a cited HTML analysis article, and upload it too.
@@ -20,9 +20,11 @@ This file has ONE JSON object per line, shape:
 
   {"txid":"<64-char hex>","record":{...original record fields...}}
 
-Each line is a real Reddit post or comment whose content hash is pinned
-to BSV via the `txid` field. Read all of it. The `record` sub-object
-has fields like body, author, score, id, title, permalink.
+Each line is a real public record (e.g. a Bluesky post, Wikipedia edit,
+or similar firehose item) whose content hash is pinned to BSV via the
+`txid` field. Read all of it. The `record` sub-object has fields like
+body, author, score, id, title, permalink, and an optional `_source`
+tag indicating origin.
 Expected proofs: {{proofs_created}}. Manifest sha256: {{manifest_sha_prefix}}…
 
 STEP 2 (REQUIRED): upload_to_nanostore — txid manifest from FILE

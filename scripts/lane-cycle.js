@@ -566,11 +566,15 @@ function buildCaptainTask(workerTaskText, workerCapabilities, runNonce) {
     '',
     '=== STEP 2: delegate_task ===',
     '',
-    '  recipient       = <identity_key from STEP 1>',
-    `  capabilities    = ${JSON.stringify(workerCapabilities)}`,
-    '  budget_cap_sats = 1200000',
-    '  expires_in_secs = 600',
-    '  task            = (the verbatim opaque string between the markers below)',
+    '  recipient                   = <identity_key from STEP 1>',
+    `  capabilities                = ${JSON.stringify(workerCapabilities)}`,
+    '  budget_cap_sats             = 600000',
+    '  expires_in_secs             = 600',
+    '  payment_amount_per_unit     = 50000',
+    '  payment_unit                = "commission"',
+    '  payment_max_total           = 50000',
+    '  payment_derivation_invoice  = ""',
+    '  task                        = (the verbatim opaque string between the markers below)',
     '',
     '=== RULE: the task ARGUMENT IS OPAQUE ===',
     '',
@@ -634,11 +638,15 @@ function buildSkinnyCaptainTask(workerTaskText, workerCapabilities, runNonce, wo
     '   (liveness check — the result is not used for routing)',
     '',
     '2) delegate_task',
-    `     recipient       = "${workerIdentityKey}"`,
-    `     capabilities    = ${JSON.stringify(workerCapabilities)}`,
-    '     budget_cap_sats = 1200000',
-    '     expires_in_secs = 600',
-    '     task            = (the opaque string between the markers below)',
+    `     recipient                   = "${workerIdentityKey}"`,
+    `     capabilities                = ${JSON.stringify(workerCapabilities)}`,
+    '     budget_cap_sats             = 600000',
+    '     expires_in_secs             = 600',
+    '     payment_amount_per_unit     = 50000',
+    '     payment_unit                = "commission"',
+    '     payment_max_total           = 50000',
+    '     payment_derivation_invoice  = ""',
+    '     task                        = (the opaque string between the markers below)',
     '',
     '===WORKER_TASK_BEGIN===',
     workerTaskText,
@@ -656,7 +664,7 @@ function buildSynthesisTask(absAnnotatedPath, absTxidsPath, runNonce, proofsCrea
     `run nonce: ${runNonce}`,
     '',
     `The scraping worker just hashed and proof-batched ${proofsCreated} records`,
-    'from r/technology and pinned an OP_RETURN tx for each one. Your job is',
+    'from a public content firehose and pinned an OP_RETURN tx for each one. Your job is',
     'to read the annotated records (one line per record, each line carries',
     'both the original record AND its on-chain txid), upload the txid list',
     'to NanoStore, write a cited HTML analysis article, and upload it too.',
@@ -674,9 +682,11 @@ function buildSynthesisTask(absAnnotatedPath, absTxidsPath, runNonce, proofsCrea
     '',
     '  {"txid":"<64-char hex>","record":{...original record fields...}}',
     '',
-    'Each line is a real Reddit post or comment whose content hash is pinned',
-    'to BSV via the `txid` field. Read all of it. The `record` sub-object',
-    'has fields like body, author, score, id, title, permalink.',
+    'Each line is a real public record (e.g. a Bluesky post, Wikipedia edit,',
+    'or similar firehose item) whose content hash is pinned to BSV via the',
+    '`txid` field. Read all of it. The `record` sub-object has fields like',
+    'body, author, score, id, title, permalink, and an optional `_source`',
+    'tag indicating origin. Quote the body text verbatim in citations.',
     `Expected proofs: ${proofsCreated}. Manifest sha256: ${manifestSha.slice(0, 16)}…`,
     '',
     'STEP 2 (REQUIRED): upload_to_nanostore — txid manifest from FILE',
@@ -1230,6 +1240,9 @@ async function main() {
     },
     outputDir: OUTPUT_DIR,
     agents,
+    // SUPERVISE=1 in env enables cluster.js auto-restart of crashed agents.
+    // Max 3 restarts/60s with exponential backoff (2s→4s→8s). For 24h runs.
+    supervise: process.env.SUPERVISE === '1',
   });
 
   for (const [name, ag] of handle.agents) {
@@ -1238,6 +1251,48 @@ async function main() {
 
   const cycleSummaries = [];
   let fatalError = null;
+
+  // Build the aggregate object from current state. Called both
+  // incrementally after each cycle (so the UI can see partial progress)
+  // and once at the end. The UI's handleCycleAggregate reads cycles[],
+  // so incremental writes with a growing cycles[] array give live visibility.
+  function buildAggregate() {
+    const successCyclesLocal = cycleSummaries.filter((s) => !s.error);
+    const totalSatsAll = successCyclesLocal.reduce((acc, s) => acc + (s.totalSats || 0), 0);
+    const totalProofsAll = successCyclesLocal.reduce((acc, s) => acc + (s.proofsCreated || 0), 0);
+    const totalWallSecLocal = Math.round((Date.now() - tStart) / 1000);
+    return {
+      runNonce: RUN_NONCE,
+      mode: POSTS_ONLY ? 'POSTS_ONLY' : 'post+comments',
+      batchCap: BATCH_CAP,
+      soakCycles: SOAK_CYCLES,
+      successCycles: successCyclesLocal.length,
+      completedCycles: cycleSummaries.length,
+      inProgress: cycleSummaries.length < SOAK_CYCLES,
+      synthesisEnabled: ENABLE_SYNTHESIS,
+      totalSats: totalSatsAll,
+      totalProofs: totalProofsAll,
+      satsPerProofAvg: totalProofsAll > 0 ? Math.round(totalSatsAll / totalProofsAll) : null,
+      avgCycleSats: successCyclesLocal.length > 0 ? Math.round(totalSatsAll / successCyclesLocal.length) : null,
+      avgCycleWallSec: successCyclesLocal.length > 0
+        ? Math.round(successCyclesLocal.reduce((acc, s) => acc + (s.cycleWallMs || 0), 0) / successCyclesLocal.length / 1000)
+        : null,
+      totalWallSec: totalWallSecLocal,
+      fatalError: fatalError ? String(fatalError.message) : null,
+      cycles: cycleSummaries,
+    };
+  }
+
+  function writeAggregateIncremental() {
+    try {
+      const aggregatePath = path.join(OUTPUT_DIR, 'aggregate.json');
+      const tmp = `${aggregatePath}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(buildAggregate(), null, 2));
+      fs.renameSync(tmp, aggregatePath);
+    } catch (e) {
+      log(`warn: incremental aggregate write failed: ${e.message}`);
+    }
+  }
 
   try {
     for (let i = 0; i < SOAK_CYCLES; i++) {
@@ -1249,34 +1304,19 @@ async function main() {
         cycleSummaries.push({ cycleIdx: i, error: String(e.message) });
         // Continue to next cycle so we still get partial soak data
       }
+      // Write aggregate.json after every cycle (success or fail) so the
+      // UI can see articles + tx counts incrementally, not just at end-of-run.
+      writeAggregateIncremental();
     }
   } catch (e) {
     fatalError = e;
     log(`FATAL outside cycle loop: ${e.message}`);
   } finally {
-    // Aggregate
+    // Final aggregate (one more definitive write after loop exits, so
+    // `inProgress: false` is captured even on fatal errors).
+    const aggregate = buildAggregate();
+    aggregate.inProgress = false;
     const successCycles = cycleSummaries.filter((s) => !s.error);
-    const totalSatsAll = successCycles.reduce((acc, s) => acc + (s.totalSats || 0), 0);
-    const totalProofsAll = successCycles.reduce((acc, s) => acc + (s.proofsCreated || 0), 0);
-    const totalWallSec = Math.round((Date.now() - tStart) / 1000);
-    const aggregate = {
-      runNonce: RUN_NONCE,
-      mode: POSTS_ONLY ? 'POSTS_ONLY' : 'post+comments',
-      batchCap: BATCH_CAP,
-      soakCycles: SOAK_CYCLES,
-      successCycles: successCycles.length,
-      synthesisEnabled: ENABLE_SYNTHESIS,
-      totalSats: totalSatsAll,
-      totalProofs: totalProofsAll,
-      satsPerProofAvg: totalProofsAll > 0 ? Math.round(totalSatsAll / totalProofsAll) : null,
-      avgCycleSats: successCycles.length > 0 ? Math.round(totalSatsAll / successCycles.length) : null,
-      avgCycleWallSec: successCycles.length > 0
-        ? Math.round(successCycles.reduce((acc, s) => acc + (s.cycleWallMs || 0), 0) / successCycles.length / 1000)
-        : null,
-      totalWallSec,
-      fatalError: fatalError ? String(fatalError.message) : null,
-      cycles: cycleSummaries,
-    };
 
     log('='.repeat(70));
     log('AGGREGATE SOAK SUMMARY');
