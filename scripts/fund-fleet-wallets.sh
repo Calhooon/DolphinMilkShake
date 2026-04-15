@@ -33,10 +33,16 @@ BIN="${BIN:-$HOME/bsv/bsv-wallet-cli/target/release/bsv-wallet}"
 DRY_RUN=0
 ONLY_NAME=""
 
-# Role sizing (sats, split_count)
-CAPTAIN_SATS=10000000  ; CAPTAIN_SPLIT=10
-WORKER_SATS=5000000    ; WORKER_SPLIT=20
-SYNTHESIS_SATS=3000000 ; SYNTHESIS_SPLIT=10
+# Role sizing (sats, split_count). Env-var overrides allow tuning per run
+# without editing the script. Defaults tuned for E21-1 post-fix soak:
+#   - Captain new model: 150k sats/cycle × 15 = 2.25M needed + 250k headroom.
+#     50 × 50k UTXOs prevents lock starvation under concurrent x402 load.
+#   - Worker: receives commissions, spends ~17k/cycle on proof batch.
+#     5M × 20 UTXOs is comfortable.
+#   - Synthesis: 350k × 3 synthesis cycles = 1.05M + 2M headroom.
+CAPTAIN_SATS="${CAPTAIN_SATS:-2500000}"  ; CAPTAIN_SPLIT="${CAPTAIN_SPLIT:-50}"
+WORKER_SATS="${WORKER_SATS:-5000000}"    ; WORKER_SPLIT="${WORKER_SPLIT:-20}"
+SYNTHESIS_SATS="${SYNTHESIS_SATS:-3000000}" ; SYNTHESIS_SPLIT="${SYNTHESIS_SPLIT:-10}"
 
 while [ $# -gt 0 ]; do
     case "$1" in
