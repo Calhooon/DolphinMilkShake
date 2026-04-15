@@ -33,24 +33,71 @@ Throughput math:
 
 Both well above the ~0.5/sec needed for 17-cycle wall time. Zero starvation risk.
 
-## Funding budget
+## Funding budget — LINEAR SIZING MODEL (with 30% safety margin)
+
+Measured live during E21-3 + the 17-cycle soak (2026-04-15):
 
 ```
-Per-wallet sizing (17-cycle test runs):
-  captain   2.5M sats / 30 split (~83k per UTXO)
-  worker    5.0M sats / 20 split
-  synthesis 2.5M sats / 10 split
+Captain burn per cycle (worst observed × 1.3 safety margin):
+  measured worst: 107,984 sats/cycle (wiki-en captain)
+  with 30% margin: 140,379 sats/cycle  ← use this for sizing
 
+Worker burn per cycle: ~17k sats/cycle × 1.3 = 22k
+Synthesis: ~700k sats per active cycle × 1.3 = 910k
+            (synthesis fires every 15 cycles by default)
+```
+
+Per-lane sizing for any run length:
+
+| Run length | cycles/lane | captain | worker | synth | per-lane | fleet 5 | fleet 10 | fleet 15 | $ @ $30/BSV (15) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 17-cycle (current) | 17 | 2.39M | 0.37M | 0.91M | **3.67M** | 18.4M | 36.7M | 55.1M | **$17** |
+| 1 hour (~13 cycles) | 13 | 1.82M | 0.29M | 0.91M | **3.02M** | 15.1M | 30.2M | 45.3M | **$14** |
+| 4 hours (~50 cycles) | 50 | 7.02M | 1.10M | 2.73M | **10.85M** | 54.2M | 108.5M | 162.7M | **$49** |
+| 17 hours (~200 cycles) | 200 | 28.08M | 4.40M | 11.83M | **44.31M** | 221.5M | 443.1M | 664.6M | **$199** |
+| 24 hours (~288 cycles) | 288 | 40.43M | 6.34M | 17.29M | **64.06M** | 320.3M | 640.6M | 960.8M | **$288** ⚠️ |
+| 48 hours (~576 cycles) | 576 | 80.86M | 12.67M | 34.58M | **128.11M** | 640.6M | 1281.1M | 1921.7M | **$576** ⚠️ |
+
+⚠️ **24h and 48h runs at 15 lanes EXCEED the $100-200 budget.** To hit 1.5M txs in 24-48h within budget we need either:
+- Smaller captain prompts / cheaper LLM (cut burn rate ~50%)
+- Higher records/cycle (200 instead of 100, halving cycle count)
+- Fewer lanes with longer wall (10 lanes × 48h fits but caps proofs at ~580k)
+
+**For phased provisioning** (sizing per-lane to be safe through the entire run):
+
+```
+17-cycle / 1-hour test:
+  CAPTAIN_SATS=2_500_000  CAPTAIN_SPLIT=30   (~83k per UTXO)
+  WORKER_SATS=5_000_000   WORKER_SPLIT=20    (~250k)
+  SYNTHESIS_SATS=2_500_000 SYNTHESIS_SPLIT=10 (~250k)
+
+4-hour test:
+  CAPTAIN_SATS=8_000_000  CAPTAIN_SPLIT=80   (~100k)
+  WORKER_SATS=5_000_000   WORKER_SPLIT=20
+  SYNTHESIS_SATS=4_000_000 SYNTHESIS_SPLIT=12
+
+17-hour run:
+  CAPTAIN_SATS=30_000_000 CAPTAIN_SPLIT=300  (~100k each)
+  WORKER_SATS=8_000_000   WORKER_SPLIT=40
+  SYNTHESIS_SATS=15_000_000 SYNTHESIS_SPLIT=20
+
+24-hour run (over budget at 15 lanes — flag before firing):
+  CAPTAIN_SATS=45_000_000 CAPTAIN_SPLIT=400
+  WORKER_SATS=10_000_000  WORKER_SPLIT=50
+  SYNTHESIS_SATS=20_000_000 SYNTHESIS_SPLIT=25
+```
+
+For the 10-lane 17-cycle test specifically (5 NEW wallets to provision):
+
+```
 Per new lane: 10M sats (~$3.00)
 5 new lanes:  50M sats (~$15.00)
 
-Master wallet: ~227,737,006 sats
-After 10-lane provisioning: ~177,737,006 sats (~$53)
+Master wallet (after 6 mid-soak topups today): ~219M sats
+After 10-lane provisioning: ~169M sats (~$51)
 
-10-lane 17-cycle run estimated burn: ~10-15M sats (~$3-5)
-After 10-lane run: ~165-170M sats (~$50)
-
-Plenty of headroom for 15-lane next + the 24h big-daddy run.
+10-lane 17-cycle run estimated burn: ~$8-12
+After 10-lane run: ~157-162M sats (~$47)
 ```
 
 ## Code change 1: bluesky-jetstream-feeder.js — fanout
