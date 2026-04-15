@@ -611,6 +611,16 @@ function broadcastSnapshot() {
   }
 }
 
+// Heartbeat broadcast: ALWAYS push a fresh snapshot every 1 second, even if
+// no event has fired. This keeps client-side "X seconds ago" timestamps and
+// any derived rates ticking, and gives the user the perception of a truly
+// live dashboard. Snapshot payload is ~5-15KB so 1Hz × N clients is trivial.
+const HEARTBEAT_BROADCAST_MS = parseInt(process.env.HEARTBEAT_BROADCAST_MS || '1000', 10);
+setInterval(() => {
+  if (clients.size === 0) return;
+  broadcastSnapshot();
+}, HEARTBEAT_BROADCAST_MS);
+
 // Best-effort parse of a cycle dir name like "cycle-2026-04-14T20-57-49-XXXXX"
 // into a Unix timestamp (seconds). Returns 0 on failure.
 function parseCycleDirTs(dirName) {
