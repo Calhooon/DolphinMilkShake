@@ -126,6 +126,12 @@ const SUBREDDIT = process.env.SUBREDDIT || laneConfig.subreddit;
 const COMMENT_LIMIT = parseInt(process.env.COMMENT_LIMIT || '100', 10);
 const SOAK_CYCLES = parseInt(process.env.SOAK_CYCLES || '1', 10);
 const ENABLE_SYNTHESIS = process.env.ENABLE_SYNTHESIS !== '0';
+// SKIP_NANOSTORE_UPLOAD=1: temporary escape hatch when NanoStore is
+// unhealthy. Synthesis agent still runs (LLM analysis still happens) but
+// does NOT call upload_to_nanostore. Aggregate reports nanostoreUrl=null
+// for these cycles. Set via env; unset to re-enable. Added 2026-04-15
+// after the 30-lane smoke test showed 13/16 nanostore uploads failing.
+const SKIP_NANOSTORE_UPLOAD = process.env.SKIP_NANOSTORE_UPLOAD === '1';
 // SYNTHESIS_EVERY_N: amortization schedule. Synthesis runs only when
 // (cycleIdx % SYNTHESIS_EVERY_N === 0). Default 25 per PLAN-C-SCALE.md
 // (1-in-25 cycles). Value 1 means "every cycle" (pre-amortization behavior).
@@ -666,6 +672,35 @@ function buildSkinnyCaptainTask(workerTaskText, workerCapabilities, runNonce, wo
 }
 
 function buildSynthesisTask(absAnnotatedPath, absTxidsPath, runNonce, proofsCreated, manifestSha) {
+  // SKIP_NANOSTORE_UPLOAD=1: temporary minimal task. Synthesis agent reads
+  // the annotated records, produces a brief plaintext summary in its final
+  // message, and ends the session. No HTML, no upload_to_nanostore calls.
+  // Used when NanoStore is unhealthy so cycles aren't wedged by failing
+  // uploads. Re-enable by unsetting the env var.
+  if (SKIP_NANOSTORE_UPLOAD) {
+    return [
+      '=== SYNTHESIS AGENT TASK (no-upload mode) ===',
+      `run nonce: ${runNonce}`,
+      '',
+      `The scraping worker proof-batched ${proofsCreated} records. Your job`,
+      'is to read the annotated records file and produce a ~200-word plaintext',
+      'summary of the content themes.',
+      '',
+      'TEMPORARY: NanoStore upload is disabled for this run. Do NOT call',
+      'upload_to_nanostore — it is intentionally unavailable. The article',
+      'will not be published. Do not produce HTML.',
+      '',
+      'You will make EXACTLY ONE tool call:',
+      `  1. file_read — read ${absAnnotatedPath}`,
+      '',
+      'Then end your session with a brief plaintext summary (~200 words)',
+      'of the dominant themes, sentiment, and any notable entities or',
+      'discussions observed across the records. No markdown, no HTML, no',
+      'citations, no txids. No other tools — especially NOT upload_to_nanostore.',
+      '',
+      `Expected proofs: ${proofsCreated}. Manifest sha256: ${manifestSha.slice(0, 16)}…`,
+    ].join('\n');
+  }
   return [
     '=== SYNTHESIS AGENT TASK (dolphinsense valuable read) ===',
     `run nonce: ${runNonce}`,
