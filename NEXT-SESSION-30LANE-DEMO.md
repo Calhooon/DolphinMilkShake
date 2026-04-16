@@ -85,17 +85,25 @@ SOAK_CYCLES=17 SKINNY_CAPTAIN_MODE=parallel SYNTHESIS_EVERY_N=15 \
   ./scripts/fleet-cycle.sh
 ```
 
-### 7. Make the UI beautiful for the demo
-The current single-page dashboard is overwhelming at 30 lanes and the cards are stuck in stale red state. Needs:
+### 7. Make the UI beautiful for the demo (ORCHESTRATE + PARALLELIZE)
+The current single-page dashboard is overwhelming at 30 lanes and the cards are stuck in stale red state. Split into multiple pages. Judges will see this.
 
-- **Dashboard cleanup**: clear stale error states, show live tx counter prominently
-- **Transaction Explorer page**: searchable table of all 1.5M+ txids, click to open on WoC, filter by lane/time
-- **Articles page**: dedicated view of all synthesis articles with NanoStore links, timestamps, proof counts
-- **Wallet Overview page**: all 90 wallets with balances, health status, role badges
-- **Lane Detail**: click a lane card → full history, cycle log, wallet balances, latest article
+**Pages needed:**
+- **Dashboard** (home): 30-lane overview grid, live tx counter (1.5M+), tx/sec rate, total sats spent, uptime
+- **Transaction Explorer**: searchable/filterable table of all 1.5M+ txids, click any txid → opens WoC, filter by lane/time/source. Pagination. This is what judges click to verify.
+- **Articles**: gallery of all synthesis articles with NanoStore links, thumbnails/previews, proof counts, timestamps. Click → opens the live HTML article.
+- **Fleet / Wallets**: all 90 wallets with balances, health, role (captain/worker/synthesis), port, lane assignment. Show funded vs drained. This page proves the fleet is real.
+- **Lane Detail**: click a lane card → cycle history, per-cycle sats breakdown, wallet balances for that lane's 3 agents, latest article, error log
 - **Responsive**: must look good at 1440/1920/2560 viewports for demo screen
 
-Apply /beautiful standards: Steve Jobs minimal, Bob Ross harmonious, Van Gogh detail.
+**The fleet/wallet config should also be visible in the git repo** — judges will look at:
+- `fleet/lanes.json` (30 lanes, all config visible)
+- `~/bsv/wallets/fleet/INVENTORY.json` (90 wallets, ports, addresses)
+- The scripts (`fleet-cycle.sh`, `proof-chain.js`, `wallet-watchdog.js`, `keep-alive.sh`)
+
+**CRITICAL**: UI changes must NOT touch `/tmp/dolphinsense-shared/` txid files. The UI READS from them, never writes or deletes. All 1.5M txids must remain intact.
+
+Apply /beautiful standards: Steve Jobs minimal, Bob Ross harmonious, Van Gogh detail. Multiple parallel agents can work on different pages simultaneously.
 
 ### 8. Background services
 ```bash
