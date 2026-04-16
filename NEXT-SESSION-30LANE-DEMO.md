@@ -85,7 +85,19 @@ SOAK_CYCLES=17 SKINNY_CAPTAIN_MODE=parallel SYNTHESIS_EVERY_N=15 \
   ./scripts/fleet-cycle.sh
 ```
 
-### 7. Background services
+### 7. Make the UI beautiful for the demo
+The current single-page dashboard is overwhelming at 30 lanes and the cards are stuck in stale red state. Needs:
+
+- **Dashboard cleanup**: clear stale error states, show live tx counter prominently
+- **Transaction Explorer page**: searchable table of all 1.5M+ txids, click to open on WoC, filter by lane/time
+- **Articles page**: dedicated view of all synthesis articles with NanoStore links, timestamps, proof counts
+- **Wallet Overview page**: all 90 wallets with balances, health status, role badges
+- **Lane Detail**: click a lane card → full history, cycle log, wallet balances, latest article
+- **Responsive**: must look good at 1440/1920/2560 viewports for demo screen
+
+Apply /beautiful standards: Steve Jobs minimal, Bob Ross harmonious, Van Gogh detail.
+
+### 8. Background services
 ```bash
 # Wallet watchdog (auto-topup captains/synthesis under 1M)
 # NOTE: update wallet-watchdog.js source to use the correct funded wallet DB
