@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DolphinSense · Fleet &amp; Wallets</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    /* ---- Fleet page layout ----------------------------------------------
+       Consumes the shared shell (nav, footer, tokens, panel primitive).
+       All inventory data comes from GET /api/state — the server exposes
+       lanes[{id, agents:[{role, name, server_port}]}] plus a
+       walletHealth map keyed by `${lane}:${role}` → {sats, utxos}.
+       Address + wallet_port + identity_key are NOT currently exposed
+       server-side (see report); this page derives wallet_port from the
+       server_port offset (3400 + server_port - 8100 matches INVENTORY
+       for all 90 wallets) and renders an "n/a" badge for address with
+       a link to the scout-spec for follow-up. -----------------------*/
+    body {
+      padding: 18px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 100vh;
+    }
+
+    .fleet-header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: fade-in-up 0.5s var(--ease-out-expo) both;
+    }
+    .fleet-header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .fleet-header .sub {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      max-width: 760px;
+    }
+
+    /* --- Summary row: 5 KPI tiles ------------------------------------ */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+    .kpi {
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi .kpi-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .kpi .kpi-value {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+    .kpi .kpi-value.good   { color: var(--good); }
+    .kpi .kpi-value.warn   { color: var(--warn); }
+    .kpi .kpi-value.bad    { color: var(--bad); }
+    .kpi .kpi-value.azure  { color: var(--accent-2); }
+    .kpi .kpi-sub {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* --- Warning banner ---------------------------------------------- */
+    .banner {
+      padding: 12px 16px;
+      background: rgba(255, 203, 92, 0.08);
+      border: 1px solid rgba(255, 203, 92, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--warn);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .banner.hidden { display: none; }
+    .banner .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 8px rgba(255, 203, 92, 0.6);
+      flex-shrink: 0;
+    }
+
+    /* --- Toolbar: group-by, filters, sort, search -------------------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .toolbar .group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .toolbar .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 700;
+      padding-right: 4px;
+    }
+    .toolbar select,
+    .toolbar input[type="search"] {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      transition: all 0.18s var(--ease-out-quart);
+      min-width: 0;
+    }
+    .toolbar select:hover,
+    .toolbar input[type="search"]:hover {
+      border-color: var(--border-strong);
+    }
+    .toolbar input[type="search"] {
+      min-width: 220px;
+      flex: 1;
+      max-width: 380px;
+      font-family: var(--mono);
+    }
+    .toolbar .spacer { flex: 1; }
+    .toolbar .result-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .toolbar .result-count strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* --- Group containers -------------------------------------------- */
+    #fleet-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: fade-in-up 0.6s 0.1s var(--ease-out-expo) both;
+    }
+
+    /* Lane-mode: 30 lane cards, each holding 3 agents */
+    .lane-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+    .lane-card {
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .lane-card:hover {
+      border-color: var(--border-strong);
+    }
+    .lane-card .lane-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    }
+    .lane-card .lane-head a.lane-link {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .lane-card .lane-head a.lane-link:hover { color: var(--accent); text-decoration: none; }
+    .lane-card .lane-head .lane-source {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .lane-card .lane-head .spacer { flex: 1; }
+    .lane-card .lane-head .lane-bal {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .lane-card .agent-rows {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Role-mode: 3 large sections, each a dense grid of 30 cards */
+    .role-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .role-section .role-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 2px;
+    }
+    .role-section .role-head h2 {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text);
+    }
+    .role-section .role-head .count-chip {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .role-section .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+    .wallet-card-solo {
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    /* --- Wallet row (used both inside lane cards and in role grids) -- */
+    .wallet-row {
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 4px 10px;
+      align-items: center;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      font-size: 11px;
+      min-height: 64px;
+    }
+    .wallet-row:last-child { border-bottom: none; }
+    .wallet-row:hover { background: rgba(92, 242, 164, 0.03); }
+
+    .wallet-row .health-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      grid-row: span 2;
+      background: var(--muted-soft);
+      box-shadow: 0 0 6px rgba(122, 132, 158, 0.4);
+      flex-shrink: 0;
+    }
+    .wallet-row .health-dot.green {
+      background: var(--good);
+      box-shadow: 0 0 8px rgba(92, 242, 164, 0.6);
+    }
+    .wallet-row .health-dot.yellow {
+      background: var(--warn);
+      box-shadow: 0 0 8px rgba(255, 203, 92, 0.6);
+    }
+    .wallet-row .health-dot.red {
+      background: var(--bad);
+      box-shadow: 0 0 8px rgba(255, 122, 130, 0.6);
+    }
+    .wallet-row .health-dot.gray {
+      background: var(--muted-soft);
+      box-shadow: none;
+      opacity: 0.5;
+    }
+
+    .wallet-row .wallet-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .wallet-row .wallet-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .role-chip {
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      flex-shrink: 0;
+    }
+    .role-chip.captain {
+      background: rgba(197, 163, 255, 0.12);
+      color: var(--captain);
+      border: 1px solid rgba(197, 163, 255, 0.28);
+    }
+    .role-chip.worker {
+      background: rgba(92, 242, 164, 0.1);
+      color: var(--worker);
+      border: 1px solid rgba(92, 242, 164, 0.28);
+    }
+    .role-chip.synthesis {
+      background: rgba(122, 183, 255, 0.1);
+      color: var(--synthesis);
+      border: 1px solid rgba(122, 183, 255, 0.28);
+    }
+
+    .wallet-row .wallet-bal {
+      text-align: right;
+      grid-row: 1;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .wallet-row .wallet-bal.na { color: var(--muted-soft); font-weight: 500; }
+    .wallet-row .wallet-bal .usd {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+
+    .wallet-row .wallet-meta {
+      grid-column: 2 / 4;
+      grid-row: 2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: var(--muted);
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .wallet-row .wallet-meta .lane-tag {
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+    .wallet-row .wallet-meta .lane-tag:hover { color: var(--accent); text-decoration: none; }
+    .wallet-row .wallet-meta .port {
+      font-family: var(--mono);
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .wallet-row .wallet-meta .utxos {
+      font-family: var(--mono);
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .wallet-row .wallet-meta .addr-stub {
+      font-family: var(--mono);
+      color: var(--muted-soft);
+      font-style: italic;
+      font-size: 9px;
+    }
+    .wallet-row .wallet-meta .addr {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: all;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .wallet-row .wallet-meta .addr:hover { color: var(--accent); }
+    .wallet-row .wallet-meta .addr .ext {
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 1px 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      color: var(--accent-2);
+    }
+    .wallet-row .wallet-meta .addr .ext:hover {
+      background: rgba(122, 183, 255, 0.08);
+      color: var(--accent);
+      border-color: rgba(122, 183, 255, 0.3);
+    }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: var(--accent);
+      color: var(--bg);
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s var(--ease-out-quart);
+      z-index: 1000;
+    }
+    .copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted-soft);
+      font-style: italic;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  {{NAV}}
+  <main>
+    <section class="fleet-header">
+      <h1>Fleet &amp; Wallets</h1>
+      <div class="sub">
+        Complete inventory of every BSV wallet powering the 30-lane fleet: 30 captains, 30 workers, 30 synthesis agents — 90 wallets total.
+        Balance, UTXO count, daemon health, and role all stream live from <code>/api/state</code>.
+      </div>
+    </section>
+
+    <section id="banner" class="banner hidden">
+      <span class="dot"></span>
+      <span id="banner-text"></span>
+    </section>
+
+    <section class="summary-row">
+      <div class="kpi">
+        <div class="kpi-label">Wallets</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-sub">30 lanes × 3 agents</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Total balance</div>
+        <div class="kpi-value good" id="kpi-total-sats">—</div>
+        <div class="kpi-sub" id="kpi-total-usd">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Funded</div>
+        <div class="kpi-value good" id="kpi-funded">—</div>
+        <div class="kpi-sub" id="kpi-funded-sub">&gt; 100k sats</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Low / drained</div>
+        <div class="kpi-value warn" id="kpi-drained">—</div>
+        <div class="kpi-sub">≤ 100k or zero</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Daemons up</div>
+        <div class="kpi-value azure" id="kpi-daemons">—</div>
+        <div class="kpi-sub" id="kpi-daemons-sub">reporting health</div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="group">
+        <span class="label">Group</span>
+        <select id="group-select" aria-label="Group by">
+          <option value="lane">By lane (30)</option>
+          <option value="role">By role (3)</option>
+        </select>
+      </div>
+      <div class="group">
+        <span class="label">Role</span>
+        <select id="role-filter" aria-label="Filter by role">
+          <option value="all">All roles</option>
+          <option value="captain">Captain</option>
+          <option value="worker">Worker</option>
+          <option value="synthesis">Synthesis</option>
+        </select>
+      </div>
+      <div class="group">
+        <span class="label">Lane</span>
+        <select id="lane-filter" aria-label="Filter by lane">
+          <option value="all">All lanes</option>
+        </select>
+      </div>
+      <div class="group">
+        <span class="label">Health</span>
+        <select id="health-filter" aria-label="Filter by health">
+          <option value="all">All</option>
+          <option value="green">Healthy</option>
+          <option value="yellow">Low balance</option>
+          <option value="red">Drained / down</option>
+          <option value="gray">Unknown</option>
+        </select>
+      </div>
+      <div class="group">
+        <span class="label">Sort</span>
+        <select id="sort-select" aria-label="Sort">
+          <option value="lane">By lane</option>
+          <option value="balance-desc">Balance ↓</option>
+          <option value="balance-asc">Balance ↑</option>
+          <option value="port">Port ↑</option>
+          <option value="name">Name A→Z</option>
+        </select>
+      </div>
+      <input type="search" id="search-input" placeholder="Search name, lane, port, address…" aria-label="Search wallets">
+      <span class="spacer"></span>
+      <span class="result-count"><strong id="visible-count">0</strong> / <span id="total-count">0</span></span>
+    </section>
+
+    <section id="fleet-body">
+      <div class="empty-state">Loading fleet inventory…</div>
+    </section>
+
+    <div class="copy-toast" id="copy-toast">Copied</div>
+  </main>
+  {{FOOTER}}
+
+  <script>
+  (function () {
+    'use strict';
+
+    // -------------------------------------------------------------------
+    // Constants — consumed by every render. BSV/USD rate is a conservative
+    // demo-time estimate; if we ever expose /api/rates server-side we'll
+    // consume that instead. Source: task spec (~$0.00006/sat ≈ $60/BSV).
+    // -------------------------------------------------------------------
+    const BSV_USD_PER_SAT = 0.00006;
+    const LOW_BALANCE_THRESHOLD = 100000; // sats — below = yellow, 0 = red
+    const WOC_ADDR_URL = (addr) => `https://whatsonchain.com/address/${encodeURIComponent(addr)}`;
+
+    // -------------------------------------------------------------------
+    // State — fleet[] is the flattened list of 90 wallet entries built
+    // once from the first /api/state snapshot. walletHealth is a live
+    // map mutated on every SSE snapshot/wallet_health event.
+    // -------------------------------------------------------------------
+    const state = {
+      fleet: [],                 // [{ name, role, laneId, subreddit, source, prefix, serverPort, walletPort }]
+      walletHealth: {},          // "laneId:role" -> { sats, utxos, updatedAt }
+      agentState: {},            // "laneId:role" -> { phase, active, ... }  — used for daemon-up inference
+      lanesIndex: {},            // laneId -> lane info (for filter dropdown)
+      addressesAvailable: false, // true only if /api/state ever exposes addresses
+    };
+
+    // Filters (reactive)
+    const filters = {
+      group: 'lane',
+      role: 'all',
+      lane: 'all',
+      health: 'all',
+      sort: 'lane',
+      search: '',
+    };
+
+    // -------------------------------------------------------------------
+    // Number formatting — separator every 3 digits, no decimals for sats.
+    // -------------------------------------------------------------------
+    function fmtSats(n) {
+      if (n == null || Number.isNaN(n)) return '—';
+      return n.toLocaleString('en-US');
+    }
+    function fmtUsd(sats) {
+      if (sats == null || Number.isNaN(sats)) return '—';
+      const usd = sats * BSV_USD_PER_SAT;
+      if (usd >= 100) return '$' + usd.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      if (usd >= 1)   return '$' + usd.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      return '$' + usd.toLocaleString('en-US', { maximumFractionDigits: 4 });
+    }
+    function shortAddr(addr) {
+      if (!addr || addr.length < 14) return addr || '';
+      return addr.slice(0, 6) + '…' + addr.slice(-6);
+    }
+
+    // -------------------------------------------------------------------
+    // Health classification — green / yellow / red / gray.
+    //   green  = daemon reporting + sats > threshold
+    //   yellow = daemon reporting + 0 < sats <= threshold
+    //   red    = daemon reporting but sats === 0 (drained)
+    //   gray   = daemon not reporting (unknown / down)
+    // -------------------------------------------------------------------
+    function healthFor(entry) {
+      const wh = state.walletHealth[`${entry.laneId}:${entry.role}`];
+      if (!wh || wh.sats == null) return 'gray';
+      if (wh.sats <= 0) return 'red';
+      if (wh.sats < LOW_BALANCE_THRESHOLD) return 'yellow';
+      return 'green';
+    }
+
+    function healthLabel(h) {
+      return { green: 'healthy', yellow: 'low balance', red: 'drained', gray: 'no data' }[h] || h;
+    }
+
+    // -------------------------------------------------------------------
+    // Build fleet[] from the server snapshot's lanes[]. The server does
+    // NOT expose address, wallet_port, or identity_key (they live in
+    // INVENTORY.json which is loaded at server boot but not routed).
+    // wallet_port is derived deterministically from server_port because
+    // the INVENTORY allocates wallet 3400 alongside server 8100, 3401
+    // alongside 8101, etc. (verified across all 90 entries offline).
+    // Address is marked unavailable until the server exposes it.
+    // -------------------------------------------------------------------
+    function buildFleet(lanes) {
+      const fleet = [];
+      const lanesIndex = {};
+      for (const lane of lanes || []) {
+        lanesIndex[lane.id] = lane;
+        for (const agent of lane.agents || []) {
+          const serverPort = agent.server_port;
+          const walletPort = serverPort ? (3400 + (serverPort - 8100)) : null;
+          fleet.push({
+            name: agent.name,
+            role: agent.role,
+            laneId: lane.id,
+            subreddit: lane.subreddit,
+            source: lane.source || 'reddit',
+            prefix: lane.display_prefix || '',
+            serverPort,
+            walletPort,
+            address: agent.address || null,       // populated only if server later adds it
+            identityKey: agent.identity_key || null,
+          });
+        }
+      }
+      state.fleet = fleet;
+      state.lanesIndex = lanesIndex;
+      state.addressesAvailable = fleet.some((e) => !!e.address);
+    }
+
+    // -------------------------------------------------------------------
+    // Populate the lane filter <select> once, alphabetical.
+    // -------------------------------------------------------------------
+    function populateLaneFilter() {
+      const sel = document.getElementById('lane-filter');
+      // Drop all options after "All lanes"
+      while (sel.options.length > 1) sel.remove(1);
+      const ids = Object.keys(state.lanesIndex).sort();
+      for (const id of ids) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = id;
+        sel.appendChild(opt);
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // Summary KPIs — computed every render.
+    // -------------------------------------------------------------------
+    function renderSummary(visibleFleet) {
+      document.getElementById('kpi-total').textContent = state.fleet.length;
+
+      let totalSats = 0;
+      let funded = 0;
+      let drained = 0;
+      let daemonsUp = 0;
+      const roleMissing = { captain: 0, worker: 0, synthesis: 0 };
+
+      for (const e of state.fleet) {
+        const wh = state.walletHealth[`${e.laneId}:${e.role}`];
+        if (wh && wh.sats != null) {
+          daemonsUp += 1;
+          totalSats += wh.sats;
+          if (wh.sats > LOW_BALANCE_THRESHOLD) funded += 1;
+          else drained += 1;
+          if (wh.sats < LOW_BALANCE_THRESHOLD) roleMissing[e.role] += 1;
+        } else {
+          drained += 1; // treat unknown as "not confirmed funded"
+        }
+      }
+
+      document.getElementById('kpi-total-sats').textContent = fmtSats(totalSats);
+      document.getElementById('kpi-total-usd').textContent = fmtUsd(totalSats);
+      document.getElementById('kpi-funded').textContent = funded;
+      document.getElementById('kpi-drained').textContent = drained;
+      document.getElementById('kpi-daemons').textContent = daemonsUp;
+      document.getElementById('kpi-daemons-sub').textContent =
+        daemonsUp === 90 ? 'all reporting' :
+        daemonsUp === 0  ? 'no data yet' :
+                           `${90 - daemonsUp} not reporting`;
+
+      // Warning banner — set of reasons that should be flagged to judges.
+      const banner = document.getElementById('banner');
+      const bannerText = document.getElementById('banner-text');
+      const reasons = [];
+      if (daemonsUp === 0) {
+        reasons.push('Wallet daemons not reporting balances (poll failing).');
+      } else if (daemonsUp < 90) {
+        reasons.push(`${90 - daemonsUp} wallet daemon(s) not responding.`);
+      }
+      for (const [role, cnt] of Object.entries(roleMissing)) {
+        if (cnt >= 5) reasons.push(`${cnt} ${role}s underfunded (< ${fmtSats(LOW_BALANCE_THRESHOLD)} sats).`);
+      }
+      if (!state.addressesAvailable) {
+        reasons.push('Addresses not exposed by server — only name/role/port visible.');
+      }
+      if (reasons.length > 0) {
+        banner.classList.remove('hidden');
+        bannerText.textContent = reasons.join(' ');
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // Visible count (updated per render after filtering)
+      document.getElementById('visible-count').textContent = visibleFleet.length;
+      document.getElementById('total-count').textContent = state.fleet.length;
+    }
+
+    // -------------------------------------------------------------------
+    // Filter + sort. Returns a new array.
+    // -------------------------------------------------------------------
+    function applyFilters() {
+      const q = filters.search.trim().toLowerCase();
+      let out = state.fleet.filter((e) => {
+        if (filters.role !== 'all' && e.role !== filters.role) return false;
+        if (filters.lane !== 'all' && e.laneId !== filters.lane) return false;
+        if (filters.health !== 'all' && healthFor(e) !== filters.health) return false;
+        if (q) {
+          const hay = [
+            e.name, e.laneId, e.subreddit, e.source, e.role,
+            String(e.serverPort || ''), String(e.walletPort || ''),
+            e.address || '',
+          ].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const balOf = (e) => {
+        const wh = state.walletHealth[`${e.laneId}:${e.role}`];
+        return (wh && wh.sats != null) ? wh.sats : -1;
+      };
+      switch (filters.sort) {
+        case 'balance-desc': out.sort((a, b) => balOf(b) - balOf(a)); break;
+        case 'balance-asc':  out.sort((a, b) => balOf(a) - balOf(b)); break;
+        case 'port':         out.sort((a, b) => (a.serverPort || 0) - (b.serverPort || 0)); break;
+        case 'name':         out.sort((a, b) => a.name.localeCompare(b.name)); break;
+        case 'lane':
+        default:
+          // By lane, then role order captain → worker → synthesis
+          const roleOrder = { captain: 0, worker: 1, synthesis: 2 };
+          out.sort((a, b) => {
+            if (a.laneId !== b.laneId) return a.laneId.localeCompare(b.laneId);
+            return (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9);
+          });
+      }
+      return out;
+    }
+
+    // -------------------------------------------------------------------
+    // Render one wallet row. Used both in lane cards and in role grids.
+    // Keeps markup identical so CSS stays simple.
+    // -------------------------------------------------------------------
+    function renderWalletRow(entry) {
+      const wh = state.walletHealth[`${entry.laneId}:${entry.role}`];
+      const sats = wh && wh.sats != null ? wh.sats : null;
+      const utxos = wh ? wh.utxos : null;
+      const health = healthFor(entry);
+
+      const row = document.createElement('div');
+      row.className = 'wallet-row';
+      row.dataset.key = `${entry.laneId}:${entry.role}`;
+
+      // 1. Health dot
+      const dot = document.createElement('span');
+      dot.className = `health-dot ${health}`;
+      dot.title = `${healthLabel(health)} — ${sats == null ? 'no balance data' : fmtSats(sats) + ' sats'}`;
+      row.appendChild(dot);
+
+      // 2. Main cell: name + role chip
+      const main = document.createElement('div');
+      main.className = 'wallet-main';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'wallet-name';
+      nameEl.textContent = entry.name;
+      nameEl.title = entry.name;
+      main.appendChild(nameEl);
+      const roleChip = document.createElement('span');
+      roleChip.className = `role-chip ${entry.role}`;
+      roleChip.textContent = entry.role;
+      main.appendChild(roleChip);
+      row.appendChild(main);
+
+      // 3. Balance (top-right)
+      const bal = document.createElement('div');
+      bal.className = 'wallet-bal' + (sats == null ? ' na' : '');
+      if (sats == null) {
+        bal.textContent = 'no data';
+      } else {
+        bal.innerHTML = `${fmtSats(sats)} sats<span class="usd">${fmtUsd(sats)}</span>`;
+      }
+      row.appendChild(bal);
+
+      // 4. Meta row (full bottom): lane / port / utxos / addr
+      const meta = document.createElement('div');
+      meta.className = 'wallet-meta';
+
+      // Lane tag (clickable)
+      const laneTag = document.createElement('a');
+      laneTag.className = 'lane-tag';
+      laneTag.href = `/lane/${encodeURIComponent(entry.laneId)}`;
+      laneTag.textContent = `${entry.prefix || ''} ${entry.laneId}`.trim();
+      laneTag.title = `Lane detail — ${entry.laneId} (${entry.source})`;
+      meta.appendChild(laneTag);
+
+      meta.appendChild(sep());
+
+      // Server port
+      const port = document.createElement('span');
+      port.className = 'port';
+      port.textContent = `:${entry.serverPort || '?'}`;
+      port.title = `Agent server port. Wallet daemon at :${entry.walletPort || '?'}.`;
+      meta.appendChild(port);
+
+      // UTXOs
+      if (utxos != null) {
+        meta.appendChild(sep());
+        const ux = document.createElement('span');
+        ux.className = 'utxos';
+        ux.textContent = `${utxos} utxo${utxos === 1 ? '' : 's'}`;
+        meta.appendChild(ux);
+      }
+
+      // Address — clickable copy + WoC link. When address is unavailable,
+      // show a stub that explains the gap without breaking layout.
+      meta.appendChild(sep());
+      if (entry.address) {
+        const addrWrap = document.createElement('span');
+        addrWrap.className = 'addr';
+        addrWrap.title = 'Click to copy address';
+        addrWrap.textContent = shortAddr(entry.address);
+        addrWrap.addEventListener('click', (e) => {
+          e.preventDefault();
+          copyToClipboard(entry.address);
+        });
+        meta.appendChild(addrWrap);
+
+        const ext = document.createElement('a');
+        ext.className = 'ext';
+        ext.href = WOC_ADDR_URL(entry.address);
+        ext.target = '_blank';
+        ext.rel = 'noopener';
+        ext.textContent = 'WoC';
+        ext.title = 'Open on WhatsOnChain';
+        meta.appendChild(ext);
+      } else {
+        const stub = document.createElement('span');
+        stub.className = 'addr-stub';
+        stub.textContent = 'address: server-side pending';
+        stub.title = 'INVENTORY.json has addresses but server /api/state does not expose them yet.';
+        meta.appendChild(stub);
+      }
+
+      row.appendChild(meta);
+      return row;
+    }
+
+    function sep() {
+      const s = document.createElement('span');
+      s.style.color = 'var(--muted-soft)';
+      s.style.opacity = '0.6';
+      s.textContent = '·';
+      return s;
+    }
+
+    // -------------------------------------------------------------------
+    // Render the fleet body. Two modes: by-lane (30 cards) or by-role
+    // (3 sections). Filtering applies to both modes.
+    // -------------------------------------------------------------------
+    function renderBody() {
+      const visible = applyFilters();
+      renderSummary(visible);
+
+      const body = document.getElementById('fleet-body');
+      body.innerHTML = '';
+
+      if (visible.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'No wallets match the current filters.';
+        body.appendChild(empty);
+        return;
+      }
+
+      if (filters.group === 'role') {
+        renderByRole(visible, body);
+      } else {
+        renderByLane(visible, body);
+      }
+    }
+
+    function renderByLane(visible, body) {
+      const grid = document.createElement('div');
+      grid.className = 'lane-grid';
+
+      // Group visible wallets by lane, preserve sort order within each lane.
+      const byLane = new Map();
+      for (const e of visible) {
+        if (!byLane.has(e.laneId)) byLane.set(e.laneId, []);
+        byLane.get(e.laneId).push(e);
+      }
+
+      // Lane iteration order = sorted lane ids for stability
+      const laneIds = Array.from(byLane.keys()).sort();
+      for (const laneId of laneIds) {
+        const agents = byLane.get(laneId);
+        const lane = state.lanesIndex[laneId] || { id: laneId, source: '?', display_prefix: '' };
+
+        const card = document.createElement('div');
+        card.className = 'lane-card';
+
+        const head = document.createElement('div');
+        head.className = 'lane-head';
+        const laneLink = document.createElement('a');
+        laneLink.className = 'lane-link';
+        laneLink.href = `/lane/${encodeURIComponent(laneId)}`;
+        laneLink.textContent = `${lane.display_prefix || ''} ${laneId}`.trim();
+        head.appendChild(laneLink);
+        const source = document.createElement('span');
+        source.className = 'lane-source';
+        source.textContent = lane.source || '';
+        head.appendChild(source);
+        head.appendChild(spacer());
+
+        // Lane total balance
+        let laneTotal = 0;
+        let laneHasData = false;
+        for (const e of agents) {
+          const wh = state.walletHealth[`${e.laneId}:${e.role}`];
+          if (wh && wh.sats != null) { laneTotal += wh.sats; laneHasData = true; }
+        }
+        const laneBal = document.createElement('span');
+        laneBal.className = 'lane-bal';
+        laneBal.textContent = laneHasData ? `${fmtSats(laneTotal)} sats` : 'no data';
+        if (!laneHasData) laneBal.style.color = 'var(--muted-soft)';
+        head.appendChild(laneBal);
+
+        card.appendChild(head);
+
+        const rows = document.createElement('div');
+        rows.className = 'agent-rows';
+        for (const e of agents) rows.appendChild(renderWalletRow(e));
+        card.appendChild(rows);
+
+        grid.appendChild(card);
+      }
+      body.appendChild(grid);
+    }
+
+    function renderByRole(visible, body) {
+      const roles = ['captain', 'worker', 'synthesis'];
+      const byRole = { captain: [], worker: [], synthesis: [] };
+      for (const e of visible) {
+        if (byRole[e.role]) byRole[e.role].push(e);
+      }
+
+      for (const role of roles) {
+        if (byRole[role].length === 0) continue;
+        const section = document.createElement('div');
+        section.className = 'role-section';
+
+        const head = document.createElement('div');
+        head.className = 'role-head';
+        const title = document.createElement('h2');
+        const chipSpan = document.createElement('span');
+        chipSpan.className = `role-chip ${role}`;
+        chipSpan.textContent = role;
+        title.appendChild(chipSpan);
+        head.appendChild(title);
+        const countChip = document.createElement('span');
+        countChip.className = 'count-chip';
+        countChip.textContent = `${byRole[role].length} wallet${byRole[role].length === 1 ? '' : 's'}`;
+        head.appendChild(countChip);
+        section.appendChild(head);
+
+        const grid = document.createElement('div');
+        grid.className = 'role-grid';
+        for (const e of byRole[role]) {
+          const wrap = document.createElement('div');
+          wrap.className = 'wallet-card-solo';
+          wrap.appendChild(renderWalletRow(e));
+          grid.appendChild(wrap);
+        }
+        section.appendChild(grid);
+
+        body.appendChild(section);
+      }
+    }
+
+    function spacer() {
+      const s = document.createElement('div');
+      s.className = 'spacer';
+      return s;
+    }
+
+    // -------------------------------------------------------------------
+    // Copy-to-clipboard with a tiny bottom toast.
+    // -------------------------------------------------------------------
+    function copyToClipboard(text) {
+      const done = () => {
+        const toast = document.getElementById('copy-toast');
+        toast.textContent = 'Copied ' + text.slice(0, 10) + '…';
+        toast.classList.add('show');
+        clearTimeout(copyToClipboard._t);
+        copyToClipboard._t = setTimeout(() => toast.classList.remove('show'), 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+      } else {
+        fallbackCopy(text, done);
+      }
+    }
+    function fallbackCopy(text, done) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch {}
+      document.body.removeChild(ta);
+    }
+
+    // -------------------------------------------------------------------
+    // Toolbar wiring — every control calls renderBody() with debounce on
+    // the search input so typing stays smooth with 90 rows.
+    // -------------------------------------------------------------------
+    function wireToolbar() {
+      document.getElementById('group-select').addEventListener('change', (e) => {
+        filters.group = e.target.value;
+        renderBody();
+      });
+      document.getElementById('role-filter').addEventListener('change', (e) => {
+        filters.role = e.target.value;
+        renderBody();
+      });
+      document.getElementById('lane-filter').addEventListener('change', (e) => {
+        filters.lane = e.target.value;
+        renderBody();
+      });
+      document.getElementById('health-filter').addEventListener('change', (e) => {
+        filters.health = e.target.value;
+        renderBody();
+      });
+      document.getElementById('sort-select').addEventListener('change', (e) => {
+        filters.sort = e.target.value;
+        renderBody();
+      });
+      const searchEl = document.getElementById('search-input');
+      let searchTimer = null;
+      searchEl.addEventListener('input', (e) => {
+        const v = e.target.value;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          filters.search = v;
+          renderBody();
+        }, 120);
+      });
+    }
+
+    // -------------------------------------------------------------------
+    // Initial data load — one-shot GET /api/state to build the fleet[].
+    // SSE picks up from there for live wallet_health and snapshot events.
+    // -------------------------------------------------------------------
+    async function loadInitialState() {
+      try {
+        const res = await fetch('/api/state', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const snap = await res.json();
+        ingestSnapshot(snap);
+        populateLaneFilter();
+        renderBody();
+      } catch (e) {
+        const body = document.getElementById('fleet-body');
+        body.innerHTML = `<div class="empty-state">Failed to load /api/state: ${e.message}</div>`;
+      }
+    }
+
+    function ingestSnapshot(snap) {
+      if (!snap) return;
+      if (snap.lanes && state.fleet.length === 0) {
+        buildFleet(snap.lanes);
+      }
+      if (snap.walletHealth) {
+        // Merge; don't replace, in case upstream sends partial payloads.
+        Object.assign(state.walletHealth, snap.walletHealth);
+      }
+      if (snap.perLane) {
+        for (const [laneId, lane] of Object.entries(snap.perLane)) {
+          if (lane.agents) {
+            for (const [role, ag] of Object.entries(lane.agents)) {
+              state.agentState[`${laneId}:${role}`] = ag;
+            }
+          }
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // SSE — live updates for wallet_health, agent, snapshot.
+    // -------------------------------------------------------------------
+    function openSse() {
+      let es;
+      try {
+        es = new EventSource('/events');
+      } catch (e) {
+        console.warn('[fleet] SSE unavailable:', e);
+        return;
+      }
+      es.onopen = () => {
+        if (window.__dmSetNavStatus) window.__dmSetNavStatus('live', 'connected');
+      };
+      es.onerror = () => {
+        if (window.__dmSetNavStatus) window.__dmSetNavStatus('down', 'reconnecting…');
+      };
+      let scheduled = false;
+      function scheduleRender() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          renderBody();
+        });
+      }
+      es.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        switch (msg.kind) {
+          case 'init':
+            if (msg.lanes && state.fleet.length === 0) {
+              buildFleet(msg.lanes);
+              populateLaneFilter();
+              scheduleRender();
+            }
+            break;
+          case 'wallet_health':
+            if (Array.isArray(msg.updates)) {
+              const now = Date.now();
+              for (const u of msg.updates) {
+                state.walletHealth[`${u.lane}:${u.role}`] = {
+                  sats: u.sats, utxos: u.utxos, updatedAt: now,
+                };
+              }
+              scheduleRender();
+            }
+            break;
+          case 'snapshot':
+            if (msg.state) {
+              ingestSnapshot(msg.state);
+              scheduleRender();
+            }
+            break;
+          case 'agent':
+            if (msg.lane && msg.role && msg.ev) {
+              state.agentState[`${msg.lane}:${msg.role}`] = msg.ev;
+              // Agent state changes don't affect render directly here,
+              // but a future "last active" column could hook in.
+            }
+            break;
+          default: /* ignored on this page */ break;
+        }
+      };
+    }
+
+    // -------------------------------------------------------------------
+    // Boot.
+    // -------------------------------------------------------------------
+    wireToolbar();
+    loadInitialState().then(openSse);
+  })();
+  </script>
+</body>
+</html>

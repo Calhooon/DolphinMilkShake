@@ -1668,6 +1668,80 @@ function serveFile(req, res, filePath, contentType) {
   });
 }
 
+// ---- shell rendering (nav + footer injection) ----------------------------
+// The 5 pages share a top nav + footer. We read the partial HTML from disk
+// on each request (cheap: <2KB files, OS page cache covers it) and do a
+// simple `{{TOKEN}}` string-replace to inject them into the page body.
+// This keeps the zero-build, vanilla-Node posture of the original UI while
+// giving downstream page agents a drop-in shared shell.
+const SERVER_START_MS = Date.now();
+const SERVER_START_SEC = Math.floor(SERVER_START_MS / 1000);
+const SERVER_START_ISO = new Date(SERVER_START_MS).toISOString();
+
+// git SHA resolved once at boot. Falls back to "?" if the dir isn't a git
+// checkout (e.g. running from a tarball).
+let GIT_SHA = '?';
+try {
+  const headFile = path.join(REPO_ROOT, '.git', 'HEAD');
+  const head = fs.readFileSync(headFile, 'utf8').trim();
+  if (head.startsWith('ref: ')) {
+    const refPath = path.join(REPO_ROOT, '.git', head.slice(5));
+    GIT_SHA = fs.readFileSync(refPath, 'utf8').trim().slice(0, 7);
+  } else {
+    GIT_SHA = head.slice(0, 7);
+  }
+} catch { /* not a git repo — leave "?" */ }
+
+// Resolve a default lane id for the "Lane" nav link. Uses the first lane in
+// lanes.json; falls back to a sentinel if the file is somehow empty.
+const DEFAULT_LANE = (LANES[0] && LANES[0].id) || 'unknown';
+
+function readPartial(name) {
+  try {
+    return fs.readFileSync(path.join(UI_DIR, 'shared', name), 'utf8');
+  } catch (e) {
+    console.error(`[ui] partial ${name} missing:`, e.message);
+    return `<!-- ${name} missing -->`;
+  }
+}
+
+// Build the nav HTML for a given active page id. Active ids:
+//   dashboard | tx | articles | fleet | lane
+function renderNav(activePage) {
+  return readPartial('nav.html')
+    .replace(/\{\{ACTIVE\}\}/g, activePage)
+    .replace(/\{\{DEFAULT_LANE\}\}/g, DEFAULT_LANE);
+}
+
+function renderFooter() {
+  const uptimeSec = Math.floor((Date.now() - SERVER_START_MS) / 1000);
+  return readPartial('footer.html')
+    .replace(/\{\{GIT_SHA\}\}/g, GIT_SHA)
+    .replace(/\{\{UPTIME_SEC\}\}/g, String(uptimeSec))
+    .replace(/\{\{START_ISO\}\}/g, SERVER_START_ISO);
+}
+
+// Serve an HTML file with {{NAV}} / {{FOOTER}} / {{LANE_ID}} tokens
+// substituted. `activePage` marks the active nav link, `laneId` (optional)
+// is substituted into {{LANE_ID}} for the lane-detail stub.
+function servePage(req, res, filePath, activePage, extraVars = {}) {
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('page not found');
+      return;
+    }
+    let html = data
+      .replace(/\{\{NAV\}\}/g, renderNav(activePage))
+      .replace(/\{\{FOOTER\}\}/g, renderFooter());
+    for (const [k, v] of Object.entries(extraVars)) {
+      html = html.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v));
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(html);
+  });
+}
+
 function handleSse(req, res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -1796,10 +1870,57 @@ const server = http.createServer((req, res) => {
     handleSse(req, res);
     return;
   }
-  if (pathname === '/' || pathname === '/index.html') {
-    serveFile(req, res, path.join(UI_DIR, 'index.html'), 'text/html; charset=utf-8');
+  // Shared shell assets. /shared.css is linked by every page; /shared/*.html
+  // is only served for debugging/inspection — normally the nav/footer are
+  // inlined server-side via servePage().
+  if (pathname === '/shared.css') {
+    serveFile(req, res, path.join(UI_DIR, 'shared.css'), 'text/css; charset=utf-8');
     return;
   }
+  if (pathname.startsWith('/shared/') && pathname.endsWith('.html')) {
+    const name = path.basename(pathname);
+    serveFile(req, res, path.join(UI_DIR, 'shared', name), 'text/html; charset=utf-8');
+    return;
+  }
+
+  // Dashboard — existing page, now wrapped with the shared shell.
+  if (pathname === '/' || pathname === '/index.html') {
+    servePage(req, res, path.join(UI_DIR, 'index.html'), 'dashboard');
+    return;
+  }
+  // TX Explorer stub — page agent will fill in.
+  if (pathname === '/tx' || pathname === '/tx/') {
+    servePage(req, res, path.join(UI_DIR, 'pages', 'tx-explorer.html'), 'tx');
+    return;
+  }
+  // Articles gallery stub.
+  if (pathname === '/articles' || pathname === '/articles/') {
+    servePage(req, res, path.join(UI_DIR, 'pages', 'articles.html'), 'articles');
+    return;
+  }
+  // Fleet/Wallets stub.
+  if (pathname === '/fleet' || pathname === '/fleet/') {
+    servePage(req, res, path.join(UI_DIR, 'pages', 'fleet.html'), 'fleet');
+    return;
+  }
+  // Lane detail stub. Matches /lane/<id> — the lane id is everything after
+  // the second slash. We only sanity-check that it's non-empty; the page
+  // agent will validate against dashboardState.perLane.
+  if (pathname.startsWith('/lane/')) {
+    const laneId = decodeURIComponent(pathname.slice('/lane/'.length).replace(/\/$/, ''));
+    if (laneId) {
+      servePage(req, res, path.join(UI_DIR, 'pages', 'lane-detail.html'), 'lane', { LANE_ID: laneId });
+      return;
+    }
+  }
+  if (pathname === '/lane' || pathname === '/lane/') {
+    // Redirect to the default lane so the nav link always resolves to
+    // something renderable.
+    res.writeHead(302, { Location: `/lane/${encodeURIComponent(DEFAULT_LANE)}` });
+    res.end();
+    return;
+  }
+
   if (pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, lanes: LANES.length, clients: clients.size }));

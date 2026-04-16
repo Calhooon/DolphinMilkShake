@@ -1,0 +1,34 @@
+<!--
+  DolphinSense footer — shared across all 5 pages.
+  {{GIT_SHA}} / {{UPTIME_SEC}} / {{START_ISO}} are injected by server.js at
+  request time. If any token fails to resolve, it's rendered as "?" so the
+  layout never breaks.
+-->
+<footer class="site-footer">
+  <span>DolphinSense Mission Control</span>
+  <span class="sha" title="git HEAD at server start">{{GIT_SHA}}</span>
+  <span title="server uptime">uptime <span id="footer-uptime" data-start-iso="{{START_ISO}}" data-start-sec="{{UPTIME_SEC}}">{{UPTIME_SEC}}s</span></span>
+  <span class="spacer"></span>
+  <a href="https://github.com/Calgooon/DolphinMilkShake" target="_blank" rel="noopener">github.com/DolphinMilkShake</a>
+</footer>
+<script>
+  // Tick the uptime counter every second. Uses the server-supplied start
+  // epoch (seconds) so drift between client+server is only the initial
+  // request latency, not cumulative.
+  (function () {
+    var el = document.getElementById('footer-uptime');
+    if (!el) return;
+    var startSec = parseInt(el.dataset.startSec || '0', 10);
+    var shownAtMs = Date.now();
+    function fmt(sec) {
+      if (sec < 60) return sec + 's';
+      if (sec < 3600) return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+      if (sec < 86400) return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
+      return Math.floor(sec / 86400) + 'd ' + Math.floor((sec % 86400) / 3600) + 'h';
+    }
+    setInterval(function () {
+      var delta = Math.floor((Date.now() - shownAtMs) / 1000);
+      el.textContent = fmt(startSec + delta);
+    }, 1000);
+  })();
+</script>

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🐬 DolphinSense · Articles</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    /* ---- Articles gallery page -------------------------------------------
+       Judge-critical: judges will browse here and click into real synthesis
+       articles. Layout is hero header → filter bar → responsive card grid.
+       All tokens and primitives come from /shared.css — this block just
+       glues the gallery layout together.
+       -------------------------------------------------------------------- */
+    body {
+      padding: 18px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 100vh;
+    }
+
+    /* ---- Hero header with the four lifetime counters ------------------- */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 22px 24px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 720px;
+    }
+    .hero .sub code {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 10.5px;
+      color: var(--text-dim);
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 760px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat .num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+    .stat.mint .num { color: var(--accent); }
+    .stat.azure .num { color: var(--accent-2); }
+    .stat.violet .num { color: var(--accent-3); }
+    .stat.warn .num { color: var(--warn); }
+    .stat .lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    /* ---- Filter bar ---------------------------------------------------- */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      animation: fade-in-up 0.6s 0.1s var(--ease-out-expo) both;
+    }
+    .filter-bar .seg {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-bar label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .filter-bar select,
+    .filter-bar input[type="text"] {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 7px 12px;
+      border-radius: var(--radius-pill);
+      min-width: 160px;
+      transition: border-color 0.15s;
+    }
+    .filter-bar select:hover,
+    .filter-bar input[type="text"]:hover {
+      border-color: var(--border-strong);
+    }
+    .filter-bar select:focus-visible,
+    .filter-bar input[type="text"]:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .filter-bar .spacer { flex: 1; }
+    .filter-bar .result-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .filter-bar .result-count b {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ---- Gallery grid -------------------------------------------------- */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      animation: fade-in-up 0.6s 0.2s var(--ease-out-expo) both;
+    }
+    @media (min-width: 1440px) {
+      .gallery { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+    }
+    @media (min-width: 1920px) {
+      .gallery { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+    }
+
+    /* ---- Article card -------------------------------------------------- */
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.22s var(--ease-out-quart),
+                  border-color 0.22s var(--ease-out-quart),
+                  box-shadow 0.22s var(--ease-out-quart);
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(92, 242, 164, 0.35);
+      box-shadow: var(--shadow-md), var(--glow-accent);
+    }
+    .card .thumb {
+      height: 120px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .card .thumb::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(600px 200px at 10% 0%, rgba(255,255,255,0.18), transparent 60%),
+        radial-gradient(400px 150px at 100% 100%, rgba(0,0,0,0.35), transparent 70%);
+      pointer-events: none;
+    }
+    .card .thumb .mono {
+      position: relative;
+      z-index: 1;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.88;
+      padding: 2px 10px;
+      background: rgba(7, 10, 20, 0.35);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(4px);
+    }
+    .card .thumb .big {
+      position: relative;
+      z-index: 1;
+      line-height: 1;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    }
+    .card .body {
+      padding: 14px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .card .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.35;
+      letter-spacing: -0.005em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 36px;
+    }
+    .card .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .card .chip-lane {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.02em;
+    }
+    .card .chip-lane .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .card .chip-ts {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .card .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 2px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(35, 43, 69, 0.7);
+    }
+    .card .meta .cell {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .card .meta .cell .k {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .card .meta .cell .v {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .card .meta .cell .v.mint { color: var(--accent); }
+    .card .meta .cell .v.azure { color: var(--accent-2); }
+    .card .actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(7, 10, 20, 0.35);
+    }
+    .card .actions .btn {
+      flex: 1;
+      font-size: 10.5px;
+      padding: 7px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-dim);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: all 0.18s var(--ease-out-quart);
+    }
+    .card .actions .btn:hover {
+      background: var(--surface-3);
+      color: var(--text);
+      border-color: var(--border-strong);
+      text-decoration: none;
+    }
+    .card .actions .btn.primary {
+      background: rgba(92, 242, 164, 0.1);
+      color: var(--accent);
+      border-color: rgba(92, 242, 164, 0.35);
+    }
+    .card .actions .btn.primary:hover {
+      background: rgba(92, 242, 164, 0.2);
+      color: var(--accent);
+    }
+    .card .actions .btn .ico {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    /* ---- Expandable proofs panel --------------------------------------- */
+    .card .proofs-pane {
+      padding: 0 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s var(--ease-out-quart),
+                  padding 0.25s var(--ease-out-quart);
+    }
+    .card.open .proofs-pane {
+      max-height: 220px;
+      padding: 10px 16px 12px;
+      overflow-y: auto;
+    }
+    .card .proofs-pane .p-head {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .card .proofs-pane .p-head a {
+      font-size: 9px;
+      color: var(--accent-2);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+    .card .proofs-pane .p-note {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+    .card .proofs-pane .p-note code {
+      font-size: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+      color: var(--accent);
+    }
+
+    /* ---- Empty state --------------------------------------------------- */
+    .empty-hero {
+      padding: 48px 24px;
+      text-align: center;
+      background: var(--grad-surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fade-in-up 0.6s 0.2s var(--ease-out-expo) both;
+    }
+    .empty-hero .big-emoji {
+      font-size: 48px;
+      line-height: 1;
+      filter: drop-shadow(0 4px 16px rgba(122, 183, 255, 0.3));
+    }
+    .empty-hero h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .empty-hero p {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.6;
+    }
+    .empty-hero code {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    /* ---- No-matches state (filter returned zero results) --------------- */
+    .no-matches {
+      padding: 36px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-md);
+      background: rgba(12, 17, 34, 0.4);
+    }
+    .no-matches .btn {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  {{NAV}}
+  <main style="display:flex; flex-direction:column; gap:18px;">
+    <!-- ======= Header ====================================================== -->
+    <section class="hero">
+      <h1>Synthesis Articles Gallery</h1>
+      <div class="sub">
+        Every card below is a synthesis article the fleet wrote and pinned to
+        NanoStore. Click <b>Open Article</b> to view the live HTML, or
+        <b>View Proofs</b> to see the <code>records.jsonl.txids</code> manifest
+        backing each citation. Each article is the output of one cycle: dozens
+        of on-chain proofs, one agent-authored essay, one immutable URL.
+      </div>
+      <div class="stat-row">
+        <div class="stat mint">
+          <div class="num" id="stat-articles">—</div>
+          <div class="lbl">Total Articles</div>
+        </div>
+        <div class="stat azure">
+          <div class="num" id="stat-proofs">—</div>
+          <div class="lbl">Proof Citations</div>
+        </div>
+        <div class="stat violet">
+          <div class="num" id="stat-sats">—</div>
+          <div class="lbl">Synthesis Sats</div>
+        </div>
+        <div class="stat warn">
+          <div class="num" id="stat-lanes">—</div>
+          <div class="lbl">Producing Lanes</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= Filter bar ================================================== -->
+    <section class="filter-bar" id="filter-bar" hidden>
+      <div class="seg">
+        <label for="f-lane">Lane</label>
+        <select id="f-lane">
+          <option value="">all lanes</option>
+        </select>
+      </div>
+      <div class="seg">
+        <label for="f-date">Date</label>
+        <select id="f-date">
+          <option value="all">all time</option>
+          <option value="week">last 7 days</option>
+          <option value="day">last 24 hours</option>
+        </select>
+      </div>
+      <div class="seg" style="flex:1; min-width:200px;">
+        <label for="f-q">Search</label>
+        <input type="text" id="f-q" placeholder="lane id, txid, cycle id…" style="width:100%;">
+      </div>
+      <div class="spacer"></div>
+      <div class="result-count"><b id="f-showing">0</b> / <span id="f-total">0</span></div>
+    </section>
+
+    <!-- ======= Gallery ===================================================== -->
+    <section id="gallery-root">
+      <!-- populated by JS; either .gallery grid, .empty-hero, or .no-matches -->
+    </section>
+  </main>
+  {{FOOTER}}
+
+  <script>
+    // =======================================================================
+    // Articles page — renders from the server snapshot. No direct FS access.
+    // Data source: /events (SSE snapshot.state.articles) with /api/state fall-
+    // back. Shape per entry: {lane, url, txidsUrl, proofs, cycleId, cycleDir,
+    // ts}. The server caps the list at 200 newest-first — plenty for the demo.
+    // =======================================================================
+    const state = {
+      articles: [],      // newest-first, full list from the server
+      lanes: [],         // lane config, for lane-color chip + dropdown options
+      totals: null,      // {txs, sats, articles, cycles}
+      perLane: {},       // from snapshot — for producing-lane count
+      totalSynthSats: 0, // sum of per-lane sats for lanes that have articles
+      filters: { lane: '', date: 'all', q: '' },
+      lastRenderedKey: '',
+    };
+
+    // ---- Utilities ------------------------------------------------------
+    function fmtNum(n) {
+      if (n == null || !isFinite(n)) return '—';
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+      return String(n);
+    }
+    function fmtFull(n) {
+      if (n == null || !isFinite(n)) return '—';
+      return Math.floor(n).toLocaleString();
+    }
+    function ago(tsSec) {
+      if (!tsSec) return 'unknown';
+      const nowSec = Math.floor(Date.now() / 1000);
+      const d = Math.max(0, nowSec - tsSec);
+      if (d < 60) return d + 's ago';
+      if (d < 3600) return Math.floor(d / 60) + 'm ago';
+      if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+      if (d < 86400 * 30) return Math.floor(d / 86400) + 'd ago';
+      return Math.floor(d / (86400 * 30)) + 'mo ago';
+    }
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+    // Deterministic lane → gradient. Same lane id always maps to same hue.
+    // Hashes the lane name into [0, 360) then picks two anchors for a gradient.
+    function hashLaneHue(lane) {
+      let h = 0;
+      const s = String(lane || '');
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+      return Math.abs(h) % 360;
+    }
+    function laneGradient(lane) {
+      const hue = hashLaneHue(lane);
+      const hue2 = (hue + 38) % 360;
+      return `linear-gradient(135deg, hsl(${hue} 55% 24%) 0%, hsl(${hue2} 55% 34%) 100%)`;
+    }
+    function laneDotColor(lane) {
+      const hue = hashLaneHue(lane);
+      return `hsl(${hue} 65% 62%)`;
+    }
+    // Take the NanoStore hash id at the tail of the URL for display.
+    function shortUhrp(url) {
+      if (!url) return '';
+      const m = String(url).match(/\/([^/]+)$/);
+      return m ? m[1] : url;
+    }
+    // Pull a compact cycle label out of a cycleDir name.
+    function cycleLabel(cycleDir) {
+      if (!cycleDir) return 'cycle';
+      return String(cycleDir).replace(/^cycle-/, '').slice(0, 16);
+    }
+
+    // ---- Data ingress ---------------------------------------------------
+    function applySnapshot(snap) {
+      if (!snap) return;
+      if (Array.isArray(snap.articles)) state.articles = snap.articles;
+      if (Array.isArray(snap.lanes)) state.lanes = snap.lanes;
+      if (snap.totals) state.totals = snap.totals;
+      if (snap.perLane && typeof snap.perLane === 'object') {
+        state.perLane = snap.perLane;
+        // Synthesis sats: sum of sats for lanes that actually produced articles.
+        // This is our best proxy for "what it cost the fleet to produce this
+        // gallery" — it includes cycle LLM + upload + proof costs for those
+        // lanes. Lanes that never synthesized are excluded.
+        let sats = 0;
+        for (const [, v] of Object.entries(snap.perLane)) {
+          if ((v.articles || 0) > 0) sats += v.sats || 0;
+        }
+        state.totalSynthSats = sats;
+      }
+      renderHeader();
+      rebuildLaneDropdown();
+      renderGallery();
+    }
+
+    // SSE connection — listen for init_historical + snapshot events.
+    function openStream() {
+      let es;
+      try {
+        es = new EventSource('/events');
+      } catch (e) {
+        console.warn('[articles] EventSource unavailable', e);
+        return;
+      }
+      es.onopen = () => {
+        if (window.__dmSetNavStatus) window.__dmSetNavStatus('live', 'connected');
+      };
+      es.onerror = () => {
+        if (window.__dmSetNavStatus) window.__dmSetNavStatus('down', 'reconnecting');
+      };
+      es.onmessage = (ev) => {
+        let data;
+        try { data = JSON.parse(ev.data); } catch { return; }
+        if (data.kind === 'init' && Array.isArray(data.lanes)) {
+          state.lanes = data.lanes;
+          rebuildLaneDropdown();
+        } else if (data.kind === 'init_historical') {
+          // Seed the list before the first snapshot arrives so judges see
+          // content instantly on cold reload. Snapshot will overwrite this.
+          if (Array.isArray(data.articlesList) && state.articles.length === 0) {
+            state.articles = data.articlesList;
+            renderHeader();
+            renderGallery();
+          }
+        } else if (data.kind === 'snapshot' && data.state) {
+          applySnapshot(data.state);
+        }
+      };
+    }
+
+    // Fallback for the first paint — if SSE is slow, grab /api/state.
+    async function fetchInitial() {
+      try {
+        const r = await fetch('/api/state', { cache: 'no-store' });
+        if (r.ok) applySnapshot(await r.json());
+      } catch (e) { /* SSE will catch up */ }
+    }
+
+    // ---- Rendering: header ---------------------------------------------
+    function renderHeader() {
+      const arts = state.articles || [];
+      document.getElementById('stat-articles').textContent = fmtFull(arts.length);
+
+      const proofTotal = arts.reduce((a, b) => a + (b.proofs || 0), 0);
+      document.getElementById('stat-proofs').textContent = fmtFull(proofTotal);
+
+      document.getElementById('stat-sats').textContent = fmtFull(state.totalSynthSats);
+
+      const laneSet = new Set(arts.map((a) => a.lane).filter(Boolean));
+      document.getElementById('stat-lanes').textContent = String(laneSet.size);
+    }
+
+    // ---- Rendering: lane dropdown --------------------------------------
+    function rebuildLaneDropdown() {
+      const sel = document.getElementById('f-lane');
+      if (!sel) return;
+      const prior = sel.value;
+      // Build a union of lanes from the article list + lane config so
+      // historical-only lanes still appear.
+      const laneSet = new Set();
+      for (const a of state.articles || []) if (a.lane) laneSet.add(a.lane);
+      for (const l of state.lanes || []) if (l && l.id) laneSet.add(l.id);
+      const sorted = Array.from(laneSet).sort();
+      sel.innerHTML = '<option value="">all lanes</option>' +
+        sorted.map((lid) => `<option value="${escapeHtml(lid)}">${escapeHtml(lid)}</option>`).join('');
+      sel.value = prior;
+    }
+
+    // ---- Filtering ------------------------------------------------------
+    function filteredArticles() {
+      const f = state.filters;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const cutoff = f.date === 'day' ? nowSec - 86400
+                    : f.date === 'week' ? nowSec - 86400 * 7
+                    : 0;
+      const q = f.q.trim().toLowerCase();
+      return (state.articles || []).filter((a) => {
+        if (f.lane && a.lane !== f.lane) return false;
+        if (cutoff && (a.ts || 0) < cutoff) return false;
+        if (q) {
+          const hay = [
+            a.lane || '', a.cycleId || '', a.cycleDir || '',
+            a.url || '', a.txidsUrl || '',
+          ].join(' ').toLowerCase();
+          if (hay.indexOf(q) === -1) return false;
+        }
+        return true;
+      });
+    }
+
+    // ---- Rendering: gallery --------------------------------------------
+    function renderGallery() {
+      const root = document.getElementById('gallery-root');
+      const bar = document.getElementById('filter-bar');
+      const total = (state.articles || []).length;
+
+      // Empty (no articles on disk at all) — friendly hero message.
+      if (total === 0) {
+        bar.hidden = true;
+        root.innerHTML = `
+          <div class="empty-hero">
+            <div class="big-emoji">📚</div>
+            <h3>No articles yet — the fleet hasn't run synthesis here.</h3>
+            <p>
+              Synthesis articles appear here once a lane closes a cycle. To see
+              one fast, set <code>SYNTHESIS_EVERY_N=1</code> in your fleet env and
+              launch a lane — the first cycle will publish an article and it
+              will land on this page within seconds.
+            </p>
+            <p style="opacity:0.75;">
+              Each card links to the live NanoStore HTML plus the on-chain
+              <code>records.jsonl.txids</code> manifest that backs every citation.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      bar.hidden = false;
+      const matches = filteredArticles();
+      document.getElementById('f-total').textContent = fmtFull(total);
+      document.getElementById('f-showing').textContent = fmtFull(matches.length);
+
+      if (matches.length === 0) {
+        root.innerHTML = `
+          <div class="no-matches">
+            No articles match the current filters.
+            <div><button class="btn" id="reset-filters">reset filters</button></div>
+          </div>
+        `;
+        const btn = document.getElementById('reset-filters');
+        if (btn) btn.addEventListener('click', resetFilters);
+        return;
+      }
+
+      // Cheap render guard — skip re-rendering if neither data nor filters
+      // changed. Computed from (list length + first/last ts + filter string).
+      const first = matches[0] || {};
+      const last = matches[matches.length - 1] || {};
+      const key = `${matches.length}:${first.ts || 0}:${last.ts || 0}:${JSON.stringify(state.filters)}`;
+      if (key === state.lastRenderedKey) return;
+      state.lastRenderedKey = key;
+
+      // Ensure grid container exists.
+      let grid = root.querySelector('.gallery');
+      if (!grid) {
+        root.innerHTML = '<div class="gallery" id="gallery"></div>';
+        grid = root.querySelector('.gallery');
+      }
+
+      grid.innerHTML = matches.map(cardHtml).join('');
+
+      // Wire expand buttons (delegated on the grid root).
+      grid.onclick = (e) => {
+        const btn = e.target.closest('[data-action="toggle-proofs"]');
+        if (!btn) return;
+        e.preventDefault();
+        const card = btn.closest('.card');
+        if (card) card.classList.toggle('open');
+      };
+    }
+
+    function cardHtml(a) {
+      const lane = a.lane || 'unknown';
+      const grad = laneGradient(lane);
+      const dot = laneDotColor(lane);
+      const title = `${lane} synthesis · cycle ${a.cycleId || cycleLabel(a.cycleDir)}`;
+      const urlSafe = escapeHtml(a.url || '#');
+      const txidsSafe = escapeHtml(a.txidsUrl || '');
+      const shortId = shortUhrp(a.url);
+      const bigGlyph = lane.startsWith('wiki') ? '📖'
+                     : lane.startsWith('bsky') ? '🦋'
+                     : (['movies','gaming','politics','worldnews'].includes(lane) ? '📰' : '📰');
+
+      return `
+        <article class="card" data-lane="${escapeHtml(lane)}">
+          <div class="thumb" style="background:${grad};">
+            <div class="big">${bigGlyph}</div>
+            <div class="mono" style="position:absolute; left:10px; bottom:10px;">${escapeHtml(shortId)}</div>
+          </div>
+          <div class="body">
+            <div class="title">${escapeHtml(title)}</div>
+            <div class="chips">
+              <span class="chip-lane"><span class="dot" style="background:${dot};"></span>${escapeHtml(lane)}</span>
+              <span class="chip-ts" title="${a.ts ? new Date(a.ts * 1000).toISOString() : ''}">${ago(a.ts)}</span>
+            </div>
+            <div class="meta">
+              <div class="cell">
+                <div class="k">Proofs Cited</div>
+                <div class="v mint">${fmtFull(a.proofs || 0)}</div>
+              </div>
+              <div class="cell">
+                <div class="k">Cycle</div>
+                <div class="v azure" title="${escapeHtml(a.cycleDir || '')}">${escapeHtml(cycleLabel(a.cycleDir))}</div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn primary" href="${urlSafe}" target="_blank" rel="noopener" title="Open the live NanoStore HTML in a new tab">
+              <span class="ico">🔗</span> Open Article
+            </a>
+            <button class="btn" type="button" data-action="toggle-proofs" aria-expanded="false" title="Show proof manifest + txids link">
+              <span class="ico">📜</span> View Proofs
+            </button>
+          </div>
+          <div class="proofs-pane">
+            <div class="p-head">
+              <span>Proof Citations · ${fmtFull(a.proofs || 0)} txids</span>
+              ${txidsSafe ? `<a href="${txidsSafe}" target="_blank" rel="noopener">open txids manifest ↗</a>` : ''}
+            </div>
+            <div class="p-note">
+              This article cites <code>${fmtFull(a.proofs || 0)}</code> on-chain
+              BRC-18 proofs. The manifest above links to the
+              <code>records.jsonl.txids</code> file on NanoStore — every line is
+              a 64-char BSV txid you can paste into WhatsOnChain to verify the
+              quote was pinned before the article was written.
+              ${a.cycleDir ? `<br><br><span style="opacity:0.7;">Cycle dir: <code style="color:var(--text-dim);">${escapeHtml(a.cycleDir)}</code></span>` : ''}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function resetFilters() {
+      state.filters = { lane: '', date: 'all', q: '' };
+      document.getElementById('f-lane').value = '';
+      document.getElementById('f-date').value = 'all';
+      document.getElementById('f-q').value = '';
+      state.lastRenderedKey = '';
+      renderGallery();
+    }
+
+    // ---- Filter wiring --------------------------------------------------
+    function wireFilters() {
+      const lane = document.getElementById('f-lane');
+      const date = document.getElementById('f-date');
+      const q = document.getElementById('f-q');
+      lane.addEventListener('change', () => {
+        state.filters.lane = lane.value;
+        state.lastRenderedKey = '';
+        renderGallery();
+      });
+      date.addEventListener('change', () => {
+        state.filters.date = date.value;
+        state.lastRenderedKey = '';
+        renderGallery();
+      });
+      let qt = null;
+      q.addEventListener('input', () => {
+        if (qt) clearTimeout(qt);
+        qt = setTimeout(() => {
+          state.filters.q = q.value;
+          state.lastRenderedKey = '';
+          renderGallery();
+        }, 120);
+      });
+    }
+
+    // ---- Boot -----------------------------------------------------------
+    wireFilters();
+    fetchInitial();
+    openStream();
+  </script>
+</body>
+</html>

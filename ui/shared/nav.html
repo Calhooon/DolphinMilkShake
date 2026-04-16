@@ -1,0 +1,45 @@
+<!--
+  DolphinSense top nav — shared across all 5 pages.
+  Active page is marked by the server setting data-active="<id>" on <nav>.
+  The inline <script> at the end of this partial matches the id and adds
+  `.active` to the corresponding link. Vanilla, no framework.
+  Link ids: dashboard | tx | articles | fleet | lane
+-->
+<nav class="site-nav" data-active="{{ACTIVE}}">
+  <a class="brand" href="/" aria-label="DolphinSense home">DolphinSense</a>
+  <div class="links">
+    <a class="nav-link" data-page="dashboard" href="/">Dashboard</a>
+    <a class="nav-link" data-page="tx"        href="/tx">TX Explorer</a>
+    <a class="nav-link" data-page="articles"  href="/articles">Articles</a>
+    <a class="nav-link" data-page="fleet"     href="/fleet">Fleet</a>
+    <a class="nav-link" data-page="lane"      href="/lane/{{DEFAULT_LANE}}">Lane</a>
+  </div>
+  <div class="nav-aux">
+    <span class="status-pill" id="nav-status" title="SSE connection status">
+      <span class="dot"></span><span id="nav-status-text">connecting…</span>
+    </span>
+  </div>
+</nav>
+<script>
+  // Tiny shared-nav helper — marks the active link and keeps the status-pill
+  // in sync with the /events SSE stream if the page has one. Safe to run
+  // multiple times (each page embeds this inline).
+  (function () {
+    var nav = document.querySelector('.site-nav');
+    if (!nav) return;
+    var active = nav.dataset.active || '';
+    var links = nav.querySelectorAll('.nav-link');
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].dataset.page === active) links[i].classList.add('active');
+    }
+    // Optional — if a page later adds its own SSE, it can call
+    // window.__dmSetNavStatus('live'|'down', 'label') to update the pill.
+    window.__dmSetNavStatus = function (state, label) {
+      var pill = document.getElementById('nav-status');
+      var txt = document.getElementById('nav-status-text');
+      if (!pill || !txt) return;
+      pill.classList.toggle('live', state === 'live');
+      txt.textContent = label || state;
+    };
+  })();
+</script>

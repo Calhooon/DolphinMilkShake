@@ -3,134 +3,134 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>🐬 DolphinSense · Mission Control</title>
+  <title>DolphinSense · Dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Shared shell (tokens, resets, nav/footer chrome, panel + tx-item + empty primitives).
+       Loaded FIRST so page-specific styles below can override safely. Extracted 2026-04-16. -->
+  <link rel="stylesheet" href="/shared.css">
   <style>
-    :root {
-      /* Core palette — deep midnight navy with a touch of violet in the shadows.
-         Surface levels step up 4-5% luminance each for clean depth hierarchy. */
-      --bg:         #070a14;
-      --bg-tint:    #0c1122;
-      --surface:    #0f1426;
-      --surface-1:  #141a30;
-      --surface-2:  #1a2138;
-      --surface-3:  #222a44;
-      --border:     #232b45;
-      --border-strong: #2e3855;
-
-      /* Text hierarchy */
-      --text:       #eef1fb;
-      --text-dim:   #b8bfd4;
-      --muted:      #7a849e;
-      --muted-soft: #5a6580;
-
-      /* Semantic — fleet grade, each tuned against #070a14 for AA contrast */
-      --accent:     #5cf2a4;     /* mint — primary live */
-      --accent-2:   #7ab7ff;     /* azure — secondary */
-      --accent-3:   #c5a3ff;     /* violet — tertiary / captain */
-      --warn:       #ffcb5c;
-      --bad:        #ff7a82;
-      --good:       #5cf2a4;
-
-      /* Role accents — harmonized hues, not clashing */
-      --captain:    #c5a3ff;
-      --worker:     #5cf2a4;
-      --synthesis:  #7ab7ff;
-
-      /* Gradients */
-      --grad-primary:   linear-gradient(135deg, #5cf2a4 0%, #7ab7ff 50%, #c5a3ff 100%);
-      --grad-progress:  linear-gradient(90deg, #5cf2a4 0%, #7ab7ff 60%, #c5a3ff 100%);
-      --grad-surface:   linear-gradient(145deg, #141a30 0%, #0f1426 100%);
-      --grad-live:      linear-gradient(90deg, rgba(92, 242, 164, 0.12), rgba(122, 183, 255, 0.04));
-
-      /* Shadows — elevation system */
-      --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.4);
-      --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
-      --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.3);
-      --glow-accent: 0 0 20px rgba(92, 242, 164, 0.25);
-      --glow-captain: 0 0 16px rgba(197, 163, 255, 0.22);
-
-      /* Rhythm */
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --radius-pill: 999px;
-
-      /* Motion */
-      --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
-      --ease-out-expo:  cubic-bezier(0.19, 1, 0.22, 1);
-    }
-
-    /* Accessibility + sanity defaults */
-    * { box-sizing: border-box; }
-    *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
-    ::selection { background: rgba(92, 242, 164, 0.3); color: var(--text); }
-
-    /* Dark-mode scrollbars — subtle, thin, consistent */
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); background-clip: padding-box; border: 2px solid transparent; }
-    * { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
-
-    html, body {
-      background:
-        radial-gradient(1200px 800px at 15% -10%, rgba(92, 242, 164, 0.06) 0%, transparent 60%),
-        radial-gradient(1000px 700px at 100% 0%, rgba(122, 183, 255, 0.05) 0%, transparent 55%),
-        radial-gradient(900px 600px at 50% 110%, rgba(197, 163, 255, 0.05) 0%, transparent 55%),
-        var(--bg);
-      background-attachment: fixed;
-      color: var(--text);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      font-feature-settings: "tnum", "ss01", "cv11";
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-    }
-    /* Mission Control layout: fixed-viewport "holy grail" dashboard.
-       Top strip (title/counters + progress + feeder) is fixed height; the
-       The dashboard SCROLLS vertically. The header is sticky so the totals
-       stay visible. The lane grid auto-wraps based on available width so 5,
-       10, or 15 lanes all look beautiful. Sidebar panels live in a 2×2 grid
-       BELOW the lanes so they get real room (~700px wide × ~360h each)
-       instead of being squeezed into a 380px right column.
-       This is the redesigned "scroll, breathe, all elements get room" model
-       — replaces the previous fixed-viewport layout that left tiles at
-       193px wide and panels at 118px tall (unreadable). */
+    /* ---- Page-specific styles ------------------------------------------
+       Tokens + global resets + shared component classes (.panel, .panel-head,
+       .panel-body, .empty, .tx-item, .status-pill, scrollbars, keyframes
+       fade-in-up/pulse) now live in /shared.css. This block contains only
+       dashboard-specific layout (lane grid, agent tiles, feeder bar,
+       right-panel grid, msg-banner, cycle-phase, tx-breakdown). */
+    /* Dashboard — 30-lane "judges go wow" overview. The shared site-nav
+       (z:200, sticky) is the ONLY sticky chrome on this page. The old
+       inline <header> was dropped; its brand is redundant with the nav
+       and its z:100 sticky fought the nav. The hero strip below scrolls
+       naturally with the rest of the page. */
     body {
-      /* Generous bottom padding so the last panel (Articles) has breathing
-         room and the user can scroll past it cleanly. The 80px bottom
-         padding gives a clear "end of page" feel rather than the last
-         panel being slammed against the viewport edge. */
-      padding: 18px 24px 80px;
+      padding: 0 24px 80px;
       display: flex;
       flex-direction: column;
       gap: 18px;
       min-height: 100vh;
-      /* No height/overflow constraints — let content drive scroll */
     }
 
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    /* --- Hero strip: the "1.6M txs on-chain" bragging rights row -------- */
+    .hero {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      padding: 18px 18px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+    }
+    .hero::before {
+      /* Slow shine across the strip — a ~8s pulse that announces the
+         page is very much alive without being a disco. */
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(92, 242, 164, 0.05), transparent);
+      transform: translateX(-100%);
+      animation: hero-shine 10s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes hero-shine {
+      0%, 92%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+    .hero-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 14px;
+      border-left: 1px solid var(--border);
+      min-width: 0;
+    }
+    .hero-metric:first-child { border-left: none; padding-left: 4px; }
+    .hero-metric .lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .hero-metric .num {
+      font-size: 34px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      /* Subtle "breathe on change" — driven by JS toggling .bump */
+      transition: color 0.35s var(--ease-out-quart);
+    }
+    .hero-metric .num .unit {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 4px;
+      letter-spacing: 0;
+    }
+    .hero-metric.primary .num {
+      font-size: 42px;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 12px rgba(92, 242, 164, 0.18));
+    }
+    .hero-metric .sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      min-height: 13px;
+    }
+    .hero-metric .sub .delta { color: var(--accent); font-weight: 700; }
+    @keyframes num-bump {
+      0%   { transform: translateY(0);     filter: brightness(1); }
+      35%  { transform: translateY(-2px);  filter: brightness(1.25); }
+      100% { transform: translateY(0);     filter: brightness(1); }
+    }
+    .hero-metric .num.bump { animation: num-bump 0.45s var(--ease-out-quart); }
+
+    @media (max-width: 1200px) {
+      .hero { grid-template-columns: repeat(3, 1fr); }
+      .hero-metric:nth-child(4) { border-left: none; padding-left: 4px; }
+    }
+    @media (max-width: 720px) {
+      .hero { grid-template-columns: repeat(2, 1fr); }
+      .hero-metric { border-left: none !important; padding-left: 4px; }
     }
 
-    .progress-row {
-      /* Sit just under header */
-    }
-
-    .feeder-bar {
-      /* Above lanes */
-    }
+    .progress-row { /* Sits under hero */ }
+    .feeder-bar   { /* Sits under progress */ }
 
     /* The lane grid now spans full width and auto-wraps. minmax(280px, 1fr)
        gives each tile a comfortable minimum of 280px (vs the old 193px)
@@ -217,104 +217,10 @@
     }
     .right-panel .panel-body { position: relative; }
 
-    header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      padding: 18px 22px;
-      background: var(--grad-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      position: relative;
-      overflow: hidden;
-      animation: fade-in-up 0.6s var(--ease-out-expo) both;
-    }
-    header::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(92, 242, 164, 0.06), transparent);
-      transform: translateX(-100%);
-      animation: header-shine 8s ease-in-out infinite;
-      pointer-events: none;
-    }
-    @keyframes header-shine {
-      0%, 90%, 100% { transform: translateX(-100%); }
-      45% { transform: translateX(100%); }
-    }
-    header h1 {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.02em;
-      background: var(--grad-primary);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    header h1::before {
-      content: '🐬';
-      font-size: 28px;
-      -webkit-text-fill-color: initial;
-      filter: drop-shadow(0 0 16px rgba(92, 242, 164, 0.4));
-    }
-    header h1 .subtitle {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      -webkit-text-fill-color: var(--muted);
-      margin-left: 2px;
-      padding-left: 12px;
-      border-left: 1px solid var(--border);
-    }
-    header .counters { display: flex; gap: 32px; margin-left: auto; align-items: flex-end; }
-    header .counter { text-align: right; }
-    header .counter .num {
-      font-size: 26px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      color: var(--text);
-      line-height: 1;
-      letter-spacing: -0.01em;
-      display: block;
-    }
-    header .counter .num .unit {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--muted);
-      margin-left: 3px;
-    }
-    header .counter.primary .num {
-      font-size: 32px;
-      background: var(--grad-primary);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    header .counter .lbl {
-      font-size: 10px;
-      text-transform: uppercase;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      font-weight: 600;
-      margin-top: 4px;
-      display: block;
-    }
-    header .counter .lbl .delta {
-      color: var(--accent);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      text-transform: none;
-      letter-spacing: 0;
-      margin-left: 4px;
-    }
+    /* Old inline-<header> styles removed — the shell's .site-nav owns the
+       brand + SSE status pill now. The hero strip above fills the role of
+       "hey judges, look at these numbers" without fighting the nav for
+       z-index or duplicating .status-pill. */
 
     .progress-row { grid-column: 1 / -1; animation: fade-in-up 0.6s 0.1s var(--ease-out-expo) both; }
     .progress-bar {
@@ -374,44 +280,9 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
-    header .status-pill {
-      padding: 8px 14px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-pill);
-      font-size: 11px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      transition: all 0.3s var(--ease-out-quart);
-    }
-    header .status-pill .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--bad);
-      box-shadow: 0 0 8px rgba(255, 122, 130, 0.6);
-    }
-    header .status-pill.live {
-      color: var(--accent);
-      border-color: rgba(92, 242, 164, 0.35);
-      background: rgba(92, 242, 164, 0.08);
-    }
-    header .status-pill.live .dot {
-      background: var(--accent);
-      box-shadow: 0 0 12px rgba(92, 242, 164, 0.8);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.85); } }
-
-    @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    /* .status-pill + @keyframes pulse + @keyframes fade-in-up are all
+       declared in /shared.css. The old dashboard-local overrides were an
+       exact copy — deleted to avoid drift. */
 
     .feeder-bar {
       padding: 10px 16px;
@@ -912,69 +783,8 @@
     }
 
     /* Layout for .right-panel is defined in the body layout block (2x2
-       grid by default, single col on tablet, 4-col on ultrawide). This
-       block is intentionally empty — the old flex-column layout is
-       superseded. */
-    .panel {
-      background: var(--grad-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      flex: 1;
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-      animation: fade-in-up 0.6s 0.3s var(--ease-out-expo) both;
-    }
-    .panel-head {
-      padding: 11px 16px;
-      border-bottom: 1px solid var(--border);
-      font-size: 10px;
-      text-transform: uppercase;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
-      flex-shrink: 0;
-    }
-    .panel-head .count {
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-      font-size: 11px;
-    }
-    .panel-head .tab-group {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-    .panel-head .tab {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 4px 10px;
-      border-radius: var(--radius-pill);
-      cursor: pointer;
-      transition: all 0.2s var(--ease-out-quart);
-    }
-    .panel-head .tab:hover {
-      color: var(--text-dim);
-      background: var(--surface-2);
-    }
-    .panel-head .tab.active {
-      color: var(--accent);
-      background: rgba(92, 242, 164, 0.08);
-      border-color: rgba(92, 242, 164, 0.25);
-    }
+       grid by default, single col on tablet, 4-col on ultrawide). .panel /
+       .panel-head / .panel-body primitives live in /shared.css now. */
     .all-tx-filter {
       padding: 10px 16px 8px;
       border-bottom: 1px solid var(--border);
@@ -1014,47 +824,18 @@
       margin-left: 4px;
     }
     .all-tx-filter .chip.active .n { opacity: 0.9; }
-    .panel-body {
-      padding: 4px 0;
-      overflow-y: auto;
-      flex: 1;
-      min-height: 0;
-    }
+    /* .panel-body lives in /shared.css. */
 
-    .tx-item {
-      padding: 7px 16px;
-      font-family: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", monospace;
-      font-size: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
-      animation: tx-flash 0.8s var(--ease-out-quart);
-    }
+    /* .tx-item base lives in /shared.css. Dashboard adds a flash animation
+       when new rows stream in — that's page-specific. */
+    .tx-item { animation: tx-flash 0.8s var(--ease-out-quart); }
     .tx-item.no-flash { animation: none; }
-    .tx-item:hover { background: rgba(92, 242, 164, 0.04); }
     /* Gentle flash — subtle left accent bar fade instead of full-row green.
        Row background stays transparent to prevent the "strobe light" effect
        when many items arrive in quick succession. */
     @keyframes tx-flash {
       0%   { border-left: 2px solid var(--accent); padding-left: 14px; }
       100% { border-left: 2px solid transparent;  padding-left: 16px; }
-    }
-    .tx-item .txid { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.02em; }
-    .tx-item .txid a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
-    .tx-item .txid a:hover { color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; }
-    .tx-item .lane-tag {
-      color: var(--accent-2);
-      font-size: 9px;
-      background: var(--surface-3);
-      padding: 2px 8px;
-      border-radius: var(--radius-pill);
-      flex-shrink: 0;
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      text-transform: lowercase;
     }
 
     .article-section-header {
@@ -1124,14 +905,7 @@
       box-shadow: 0 0 8px rgba(92, 242, 164, 0.35);
     }
 
-    .empty {
-      padding: 28px 16px;
-      color: var(--muted-soft);
-      font-size: 11px;
-      text-align: center;
-      font-style: italic;
-      letter-spacing: 0.02em;
-    }
+    /* .empty placeholder lives in /shared.css. */
 
     /* TX Breakdown panel — categorized tx counts with horizontal bars */
     #tx-breakdown {
@@ -1207,36 +981,144 @@
     .tx-cat[data-cat="capability_proof"] .bar-fill { background: #f97316; }
     .tx-cat[data-cat="other"]            .bar-fill { background: #94a3b8; }
 
-    /* scrollbar polish */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+    /* Scrollbars live in /shared.css. */
+
+    /* --- Live event ticker (right-side strip) ---------------------------
+       A vertical, auto-scrolling feed of "something just happened on chain"
+       events. Fed by the same SSE snapshot that powers the lane grid, but
+       with heuristic-derived event rows (new txs, new articles, handoffs).
+       Color-coded by type so the eye can sort at a glance. */
+    .ticker-strip {
+      position: sticky;
+      top: 60px; /* just under the nav */
+      align-self: start;
+      max-height: calc(100vh - 84px);
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 1280px) {
+      /* On narrower screens the ticker lives below the lanes instead of
+         hogging screen real estate alongside them. */
+      .dashboard-split { display: block !important; }
+      .ticker-strip { position: static; max-height: 420px; margin-top: 18px; }
+    }
+    .dashboard-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: start;
+    }
+    .dashboard-split > .lanes { margin: 0; }
+
+    .ticker-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ticker-row {
+      display: grid;
+      grid-template-columns: 16px auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      font-size: 10.5px;
+      border-left: 2px solid transparent;
+      animation: ticker-in 0.5s var(--ease-out-expo);
+      min-width: 0;
+    }
+    @keyframes ticker-in {
+      from { opacity: 0; transform: translateX(12px); background: rgba(92, 242, 164, 0.12); }
+      to   { opacity: 1; transform: translateX(0);    background: transparent; }
+    }
+    .ticker-row .ic {
+      font-size: 12px;
+      line-height: 1;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .ticker-row .tag {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent-2);
+      background: var(--surface-3);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .ticker-row .msg {
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .ticker-row .msg a { color: var(--accent); text-decoration: none; }
+    .ticker-row .msg a:hover { color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; }
+    .ticker-row .ago {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted-soft);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    /* Color-coded by event kind */
+    .ticker-row[data-kind="tx"]       { border-left-color: var(--accent); }
+    .ticker-row[data-kind="tx"]      .ic { color: var(--accent); }
+    .ticker-row[data-kind="article"]  { border-left-color: var(--accent-2); }
+    .ticker-row[data-kind="article"]  .ic { color: var(--accent-2); }
+    .ticker-row[data-kind="handoff"]  { border-left-color: var(--captain); }
+    .ticker-row[data-kind="handoff"]  .ic { color: var(--captain); }
+    .ticker-row[data-kind="cycle"]    { border-left-color: var(--warn); }
+    .ticker-row[data-kind="cycle"]    .ic { color: var(--warn); }
   </style>
 </head>
 <body>
-  <header>
-    <h1>DolphinSense <span class="subtitle">Mission Control</span></h1>
-    <div class="status-pill" id="status"><span class="dot"></span><span id="status-text">connecting…</span></div>
-    <div class="counters">
-      <div class="counter primary">
-        <div class="num" id="lifetime-txs">0</div>
-        <div class="lbl">Lifetime TXs <span id="lifetime-delta" class="delta">+0</span></div>
-      </div>
-      <div class="counter">
-        <div class="num"><span id="tx-rate">0</span><span class="unit">/s</span></div>
-        <div class="lbl">Tx Rate <span class="delta" style="opacity:0.5;">30s avg</span></div>
-      </div>
-      <div class="counter">
-        <div class="num" id="lifetime-sats">0</div>
-        <div class="lbl">Sats <span id="session-sats" class="delta">+0</span></div>
-      </div>
-      <div class="counter">
-        <div class="num" id="lifetime-articles">0</div>
-        <div class="lbl">Articles <span id="session-articles" class="delta">+0</span></div>
-      </div>
+  {{NAV}}
+
+  <!-- Hero strip: the "holy crap it's real" number row. 5 metrics:
+       lifetime TXs, tx/sec rate, lifetime sats spent, uptime, active lanes.
+       Each number breathes when it changes (via .bump). Legacy id names
+       kept (lifetime-txs, lifetime-sats, tx-rate) so the render code
+       doesn't need to change. `#status` is kept as a no-op sink for the
+       handful of legacy call sites; the visible SSE status lives in the
+       shared nav (#nav-status) and we drive it via __dmSetNavStatus. -->
+  <section class="hero" aria-label="Fleet live totals">
+    <div class="hero-metric primary">
+      <span class="lbl">Lifetime TXs</span>
+      <span class="num" id="lifetime-txs">0</span>
+      <span class="sub"><span class="delta" id="lifetime-delta">+0</span> live this session</span>
     </div>
-  </header>
+    <div class="hero-metric">
+      <span class="lbl">TX / sec</span>
+      <span class="num"><span id="tx-rate">0</span><span class="unit">tx/s</span></span>
+      <span class="sub">rolling 30-second average</span>
+    </div>
+    <div class="hero-metric">
+      <span class="lbl">Sats Spent</span>
+      <span class="num" id="lifetime-sats">0</span>
+      <span class="sub"><span class="delta" id="session-sats">+0</span> live this session</span>
+    </div>
+    <div class="hero-metric">
+      <span class="lbl">Uptime</span>
+      <span class="num" id="hero-uptime">0s</span>
+      <span class="sub" id="hero-articles">0 articles · 0 cycles</span>
+    </div>
+    <div class="hero-metric">
+      <span class="lbl">Lanes Active</span>
+      <span class="num"><span id="lanes-active">0</span><span class="unit">/ <span id="lanes-total">0</span></span></span>
+      <span class="sub"><span id="lanes-running">0</span> running · <span id="lanes-error">0</span> errored</span>
+    </div>
+    <!-- Hidden sink for legacy code paths that set #status.classList. The
+         visible SSE status pill lives in the shared nav. -->
+    <span id="status" style="display:none;"><span id="status-text"></span></span>
+    <span id="session-articles" style="display:none;"></span>
+    <span id="lifetime-articles" style="display:none;"></span>
+  </section>
 
   <div class="progress-row">
     <div class="progress-bar">
@@ -1253,8 +1135,22 @@
     <span class="empty" style="padding:0;">waiting for feeder…</span>
   </div>
 
-  <div class="lanes" id="lanes-grid">
-    <div class="empty">waiting for lanes…</div>
+  <!-- Main split: 30-lane grid on the left, live event ticker on the
+       right. On screens narrower than 1280px the ticker collapses below
+       the grid via the @media rule in .dashboard-split CSS. -->
+  <div class="dashboard-split">
+    <div class="lanes" id="lanes-grid">
+      <div class="empty">waiting for lanes…</div>
+    </div>
+    <aside class="panel ticker-strip" aria-label="Live event ticker">
+      <div class="panel-head">
+        <span>Live Events</span>
+        <span class="count" id="ticker-count">0</span>
+      </div>
+      <div class="panel-body ticker-feed" id="event-ticker">
+        <div class="empty">waiting for events…</div>
+      </div>
+    </aside>
   </div>
 
   <div class="right-panel">
@@ -1832,14 +1728,40 @@
     function renderArticles() { renderDirty.articles = true; scheduleRender(); }
     function renderFeeder()   { renderDirty.feeder   = true; scheduleRender(); }
 
+    // Track prior values per element so we only "bump" numbers that actually
+    // changed. Without this, every RAF tick would re-trigger the breathe
+    // animation and the whole hero strip would throb continuously.
+    const _priorText = new Map();
+    function setHeroNum(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const str = typeof value === 'string' ? value : fmt(value);
+      if (_priorText.get(id) === str) return;
+      _priorText.set(id, str);
+      el.textContent = str;
+      // Trigger the breathing animation on the closest `.num` ancestor
+      // (which may be the element itself, or the parent when the id'd
+      // element is a nested span inside a composite num like "42 tx/s").
+      const numEl = el.classList.contains('num') ? el : el.closest('.num');
+      if (numEl) {
+        numEl.classList.remove('bump');
+        // eslint-disable-next-line no-unused-expressions
+        void numEl.offsetWidth; // force reflow so the re-add restarts the animation
+        numEl.classList.add('bump');
+      }
+    }
+    function setText2(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (_priorText.get(id) === value) return;
+      _priorText.set(id, value);
+      el.textContent = value;
+    }
+
     function doRenderTotals() {
       // SNAPSHOT-MODE FIX: state.historical.txs already IS the full
-      // lifetime total (set directly from snap.totals.txs in applySnapshot).
-      // state.live.txs is now a "since-reload delta" computed against a
-      // baseline. Adding them together literally double-counts every tx
-      // since the page loaded. Use historical.* DIRECTLY for the display
-      // total. The "+N live" indicator below still uses state.live.* as
-      // the since-reload delta, which is correct for that purpose.
+      // lifetime total. state.live.* is the since-reload delta. Legacy
+      // (non-snapshot) mode keeps the sum-both behavior as a fallback.
       const lifetimeTxs = USE_SNAPSHOT_MODE
         ? state.historical.txs
         : state.historical.txs + state.live.txs;
@@ -1849,27 +1771,69 @@
       const lifetimeArticles = USE_SNAPSHOT_MODE
         ? state.historical.articles
         : state.historical.articles + state.live.articleCount;
-      document.getElementById('lifetime-txs').textContent = fmt(lifetimeTxs);
-      document.getElementById('lifetime-sats').textContent = fmt(lifetimeSats);
-      document.getElementById('lifetime-articles').textContent = fmt(lifetimeArticles);
-      document.getElementById('lifetime-delta').textContent = state.live.txs > 0 ? `+${fmt(state.live.txs)} live` : '+0';
-      document.getElementById('session-sats').textContent = state.live.sats > 0 ? `+${fmt(state.live.sats)} live` : '+0';
+
+      // Hero numbers — breathe on change via setHeroNum().
+      setHeroNum('lifetime-txs', lifetimeTxs);
+      setHeroNum('lifetime-sats', lifetimeSats);
+
+      // Hidden legacy sinks kept for any external instrumentation
+      setText2('lifetime-articles', String(lifetimeArticles));
+      setText2('lifetime-delta', state.live.txs > 0 ? `+${fmt(state.live.txs)}` : '+0');
+      setText2('session-sats',  state.live.sats > 0 ? `+${fmt(state.live.sats)}` : '+0');
+      setText2('session-articles', state.live.articleCount > 0 ? `+${fmt(state.live.articleCount)} live` : '+0');
+
       // Tx/s — rolling 30s window. Prune stale timestamps before computing.
       const now = Date.now();
       const cutoff = now - 30_000;
       while (state.live.txTimestamps.length > 0 && state.live.txTimestamps[0] < cutoff) {
         state.live.txTimestamps.shift();
       }
-      const rateEl = document.getElementById('tx-rate');
-      if (rateEl) {
-        const windowMs = state.live.txTimestamps.length > 1
-          ? Math.min(30_000, now - state.live.txTimestamps[0]) : 1;
-        const rate = state.live.txTimestamps.length > 0
-          ? (state.live.txTimestamps.length / (windowMs / 1000)) : 0;
-        rateEl.textContent = rate >= 10 ? rate.toFixed(0) : rate.toFixed(1);
+      const windowMs = state.live.txTimestamps.length > 1
+        ? Math.min(30_000, now - state.live.txTimestamps[0]) : 1;
+      const rate = state.live.txTimestamps.length > 0
+        ? (state.live.txTimestamps.length / (windowMs / 1000)) : 0;
+      setHeroNum('tx-rate', rate >= 10 ? rate.toFixed(0) : rate.toFixed(1));
+
+      // Uptime — derived from state.live.sessionStartMs (set at first snapshot)
+      if (_sessionStartMs) {
+        const elapsed = Math.floor((now - _sessionStartMs) / 1000);
+        setHeroNum('hero-uptime', formatUptime(elapsed));
       }
-      document.getElementById('session-articles').textContent = state.live.articleCount > 0 ? `+${fmt(state.live.articleCount)} live` : '+0';
+
+      // Side-label on the uptime card
+      setText2('hero-articles', `${fmt(lifetimeArticles)} articles · ${fmt(state.historical.cycles || 0)} cycles`);
+
+      // Lane counts — derive from state.lanes
+      let running = 0, errored = 0;
+      for (const lane of state.lanes.values()) {
+        const agents = lane.agents || {};
+        let laneHasActive = false, laneHasError = false;
+        for (const role of ['captain', 'worker', 'synthesis']) {
+          const a = agents[role];
+          if (!a) continue;
+          if (a.active) laneHasActive = true;
+          if (a.state && a.state.startsWith('✗')) laneHasError = true;
+        }
+        if (laneHasActive) running += 1;
+        if (laneHasError) errored += 1;
+      }
+      const total = state.lanes.size;
+      setHeroNum('lanes-active', running);
+      setText2('lanes-total', String(total));
+      setText2('lanes-running', String(running));
+      setText2('lanes-error', String(errored));
     }
+
+    function formatUptime(sec) {
+      if (sec < 60) return sec + 's';
+      if (sec < 3600) return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+      if (sec < 86400) return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
+      return Math.floor(sec / 86400) + 'd ' + Math.floor((sec % 86400) / 3600) + 'h';
+    }
+    // Captured on the first snapshot for the hero "uptime" counter.
+    // Uses the footer's server start time when present so we show a true
+    // server uptime rather than a per-tab stopwatch.
+    let _sessionStartMs = null;
 
     function doRenderProgress() {
       // Same fix as doRenderTotals — historical.txs is already the full
@@ -2031,23 +1995,33 @@
       });
 
       // Per-agent updates
+      const STALE_MS = 30 * 60 * 1000; // 30 minutes
+      const nowMs = Date.now();
       for (const role of ['captain', 'worker', 'synthesis']) {
         const a = lane.agents[role];
         const agentEl = tile.querySelector(`.agent[data-role="${role}"]`);
         if (!agentEl || !a) continue;
+        // Stale-state detection: agents with no fresh events show "idle"
+        // instead of persisted error text from a past run.
+        const isStale = a.lastEventTs && (nowMs - a.lastEventTs > STALE_MS);
+        let displayState = isStale ? '○ idle' : (a.state || 'idle');
+        // Keep tile text one line — truncate if server sent a multi-clause error.
+        if (!isStale && displayState.length > 36) {
+          displayState = displayState.slice(0, 36) + '…';
+        }
         // Class transitions — only touch classList if membership changed.
-        toggleClass(agentEl, 'active', !!a.active);
-        toggleClass(agentEl, 'error',  !!(a.state && a.state.startsWith('✗')));
-        toggleClass(agentEl, 'done',   !!(a.state && a.state.startsWith('✓ done')));
-        toggleClass(agentEl, 'sending',   a.pulseClass === 'sending');
-        toggleClass(agentEl, 'receiving', a.pulseClass === 'receiving');
+        toggleClass(agentEl, 'active', !!a.active && !isStale);
+        toggleClass(agentEl, 'error',  !isStale && !!(a.state && a.state.startsWith('✗')));
+        toggleClass(agentEl, 'done',   !isStale && !!(a.state && a.state.startsWith('✓ done')));
+        toggleClass(agentEl, 'sending',   a.pulseClass === 'sending' && !isStale);
+        toggleClass(agentEl, 'receiving', a.pulseClass === 'receiving' && !isStale);
         // data-phase attribute drives color-by-phase styling
-        const phase = a.phase || 'idle';
+        const phase = isStale ? 'idle' : (a.phase || 'idle');
         if (agentEl.getAttribute('data-phase') !== phase) {
           agentEl.setAttribute('data-phase', phase);
         }
         // Text content — only change if different.
-        setText(agentEl, 'state', a.state || 'idle');
+        setText(agentEl, 'state', displayState);
         // Iter count — show "i2" compact style next to role
         const iterText = (typeof a.iter === 'number' && a.iter > 0) ? `i${a.iter}` : '';
         setText(agentEl, 'iter', iterText);
@@ -2382,6 +2356,27 @@
         _baselineTxs = snap.totals.txs;
         _baselineSats = snap.totals.sats;
         _baselineArticles = snap.totals.articles;
+        // Seed the event ticker from the snapshot's recent-events arrays so
+        // the panel isn't empty on first paint. Oldest first — we prepend,
+        // so newest ends up on top. Capped at 20 seed rows to keep the
+        // initial paint light (live events will fill in the rest).
+        const recentTxs = (snap.recentTxs || []).slice(0, 10).reverse();
+        for (const t of recentTxs) {
+          pushTickerFromEvent({ kind: 'proof_emitted', lane: t.lane, txid: t.txid, ts: t.ts });
+        }
+        const recentFlows = (snap.recentFlows || []).slice(0, 5).reverse();
+        for (const f of recentFlows) {
+          pushTickerFromEvent({ kind: 'message_flow', lane: f.lane, phase: f.phase, from: f.from, to: f.to, from_name: f.from_name, to_name: f.to_name, amount_sats: f.amount_sats, ts: f.ts });
+        }
+        const recentArticles = (snap.articles || []).slice(0, 5).reverse();
+        for (const a of recentArticles) {
+          pushTickerFromEvent({
+            kind: 'cycle_aggregate',
+            lane: a.lane,
+            cycle_dir: a.cycleDir || 'article',
+            data: { cycles: [{ cycleIdx: a.cycleId || 0, nanostoreUrl: a.url, proofsCreated: a.proofs || 0, endTs: (a.ts || 0) * 1000 }] },
+          });
+        }
       }
       // state.live.* now represents the delta since reload — driven by
       // baseline subtraction, not per-event accumulation. Negative deltas
@@ -2416,6 +2411,7 @@
             dstAgent.lastToolAt = srcAgent.lastToolAt || null;
             dstAgent.sats = srcAgent.sats || 0;
             dstAgent.sessionStart = srcAgent.sessionStart || null;
+            dstAgent.lastEventTs = srcAgent.lastEventTs || null;
             dstAgent.taskId = srcAgent.taskId || null;
             // recentEvents kept for future detail panel
             dstAgent.recentEvents = srcAgent.recentEvents || [];
@@ -2571,22 +2567,35 @@
     // ---------------------------------------------------------------
     // SSE connection
     // ---------------------------------------------------------------
-    function connect() {
+    function setNavStatus(state, label) {
+      if (typeof window.__dmSetNavStatus === 'function') {
+        window.__dmSetNavStatus(state, label);
+      }
+      // Legacy sink — preserved for any external probe that reads #status.
       const status = document.getElementById('status');
       const statusText = document.getElementById('status-text');
-      statusText.textContent = 'connecting…';
-      status.classList.remove('live');
+      if (status && statusText) {
+        statusText.textContent = label || state;
+        status.classList.toggle('live', state === 'live');
+      }
+    }
+
+    function connect() {
+      setNavStatus('down', 'connecting…');
 
       const src = new EventSource('/events');
 
       src.onopen = () => {
-        statusText.textContent = 'live';
-        status.classList.add('live');
+        setNavStatus('live', 'live');
       };
 
       src.onmessage = (e) => {
         let msg;
         try { msg = JSON.parse(e.data); } catch { return; }
+
+        // Ticker: every page mode feeds the event ticker with the same
+        // handful of kinds. Cheap — just a push + render.
+        pushTickerFromEvent(msg);
 
         // Snapshot mode: ONLY listen for kind:'snapshot'. Ignore all
         // legacy delta events. The server is the single source of truth.
@@ -2627,11 +2636,147 @@
       };
 
       src.onerror = () => {
-        statusText.textContent = 'reconnecting…';
-        status.classList.remove('live');
+        setNavStatus('down', 'reconnecting…');
         src.close();
         setTimeout(connect, 2000);
       };
+    }
+
+    // ---------------------------------------------------------------
+    // Live event ticker — right-side scrolling feed of "something
+    // happened" rows. Fed from every SSE event kind. Capped at 60 items,
+    // oldest drop off the bottom. Events come in "deltas" not snapshots,
+    // so a proof_emitted that fires during a snapshot tick still feeds
+    // the ticker correctly. Surgical prepend (not full rebuild) so the
+    // top row's entry animation doesn't restart for older rows.
+    // ---------------------------------------------------------------
+    const TICKER_MAX = 60;
+    let _tickerCount = 0;
+    // Dedup key: short signature per event so repeated snapshots don't
+    // spam the ticker. Keyed by composite of kind + txid/lane/phase/url.
+    const _tickerSeen = new Set();
+
+    function _tickerKey(msg) {
+      if (msg.kind === 'proof_emitted') return `tx:${msg.txid}`;
+      if (msg.kind === 'cycle_aggregate') {
+        const cycles = msg.data && msg.data.cycles;
+        const last = cycles && cycles.length ? cycles[cycles.length - 1] : null;
+        return last ? `cyc:${msg.lane}:${msg.cycle_dir}:${last.cycleIdx || 0}` : `cyc:${msg.lane}:${msg.cycle_dir}`;
+      }
+      if (msg.kind === 'message_flow') {
+        return `flow:${msg.lane}:${msg.phase}:${msg.ts || 0}:${msg.from || ''}:${msg.to || ''}`;
+      }
+      if (msg.kind === 'agent') return `agent:${msg.lane}:${msg.role}:${msg.ev?.type}:${msg.ev?.iter || 0}`;
+      return null;
+    }
+
+    function pushTickerFromEvent(msg) {
+      if (!msg || !msg.kind) return;
+      // Filter out snapshot — it's not a "new thing happened" event, it's
+      // a state-replace message. The ticker shows individual events only.
+      if (msg.kind === 'snapshot' || msg.kind === 'init' || msg.kind === 'init_historical'
+          || msg.kind === 'wallet_health' || msg.kind === 'feeder_health' || msg.kind === 'feeder') {
+        return;
+      }
+      const key = _tickerKey(msg);
+      if (key && _tickerSeen.has(key)) return;
+      if (key) {
+        _tickerSeen.add(key);
+        // Bound the dedup set — on a long session it would otherwise grow
+        // unbounded. 2000 keys is enough to keep recent dedup effective.
+        if (_tickerSeen.size > 2000) {
+          // Clear half. Cheap and correct enough for dedup horizon.
+          const drop = [..._tickerSeen].slice(0, 1000);
+          for (const k of drop) _tickerSeen.delete(k);
+        }
+      }
+      let row = null;
+      if (msg.kind === 'proof_emitted') {
+        row = {
+          kind: 'tx',
+          icon: '⛓',
+          lane: msg.lane || '—',
+          html: `<a href="https://whatsonchain.com/tx/${msg.txid}" target="_blank" rel="noopener" class="mono-txid">${String(msg.txid || '').slice(0, 10)}…${String(msg.txid || '').slice(-8)}</a> broadcast`,
+          ts: (msg.ts || Date.now()),
+        };
+      } else if (msg.kind === 'cycle_aggregate') {
+        const cycles = msg.data && msg.data.cycles;
+        const last = cycles && cycles.length ? cycles[cycles.length - 1] : null;
+        if (!last) return;
+        if (last.nanostoreUrl) {
+          row = {
+            kind: 'article',
+            icon: '📰',
+            lane: msg.lane || '—',
+            html: `<a href="${last.nanostoreUrl}" target="_blank" rel="noopener">article published</a> · ${last.proofsCreated || 0} proofs cited`,
+            ts: (last.endTs || Date.now()),
+          };
+        } else {
+          row = {
+            kind: 'cycle',
+            icon: '🔄',
+            lane: msg.lane || '—',
+            html: `cycle complete · ${fmt(last.totalSats || 0)} sats`,
+            ts: (last.endTs || Date.now()),
+          };
+        }
+      } else if (msg.kind === 'message_flow') {
+        if (msg.phase !== 'sending' && msg.phase !== 'confirmed') return;
+        const amt = msg.amount_sats ? ` · ${fmt(msg.amount_sats)} sats` : '';
+        row = {
+          kind: 'handoff',
+          icon: '📤',
+          lane: msg.lane || '—',
+          html: `${msg.from_name || msg.from || 'captain'} → ${msg.to_name || msg.to || 'worker'}${amt}`,
+          ts: (msg.ts || Date.now()),
+        };
+      } else if (msg.kind === 'agent' && msg.ev && msg.ev.type === 'session_end' && msg.ev.error) {
+        row = {
+          kind: 'cycle',
+          icon: '⚠',
+          lane: msg.lane || '—',
+          html: `${msg.role || 'agent'} error · ${String(msg.ev.error).slice(0, 64)}`,
+          ts: msg.ev.ts || Date.now(),
+        };
+      }
+      if (!row) return;
+      prependTickerRow(row);
+    }
+
+    function prependTickerRow(row) {
+      const feed = document.getElementById('event-ticker');
+      if (!feed) return;
+      const emptyChild = feed.querySelector('.empty');
+      if (emptyChild) emptyChild.remove();
+      const node = document.createElement('div');
+      node.className = 'ticker-row';
+      node.setAttribute('data-kind', row.kind);
+      node.setAttribute('data-ts', String(row.ts));
+      node.innerHTML = `
+        <span class="ic">${row.icon}</span>
+        <span class="tag">${row.lane}</span>
+        <span class="msg">${row.html}</span>
+        <span class="ago">${relativeTime(row.ts)}</span>
+      `;
+      feed.insertBefore(node, feed.firstChild);
+      while (feed.childElementCount > TICKER_MAX) {
+        feed.removeChild(feed.lastElementChild);
+      }
+      _tickerCount = Math.min(TICKER_MAX, _tickerCount + 1);
+      const countEl = document.getElementById('ticker-count');
+      if (countEl) countEl.textContent = fmt(_tickerCount);
+    }
+
+    function tickTickerAgos() {
+      const feed = document.getElementById('event-ticker');
+      if (!feed) return;
+      const rows = feed.querySelectorAll('.ticker-row');
+      for (const row of rows) {
+        const ts = parseInt(row.getAttribute('data-ts') || '0', 10);
+        if (!ts) continue;
+        const ago = row.querySelector('.ago');
+        if (ago) ago.textContent = relativeTime(ts);
+      }
     }
 
     // Kick off
@@ -2646,19 +2791,48 @@
       get snapCount() { return window.__dm._snapCount; },
     };
 
+    // Derive the "uptime" base from the footer's data-start-sec so the
+    // hero counter shows REAL server uptime, not "time since this tab
+    // opened". The footer partial renders before our <script> runs so
+    // the element is guaranteed present. Fall back to now() if missing.
+    function _seedUptimeFromFooter() {
+      const el = document.getElementById('footer-uptime');
+      if (el && el.dataset && el.dataset.startSec) {
+        const startSec = parseInt(el.dataset.startSec, 10) || 0;
+        _sessionStartMs = Date.now() - (startSec * 1000);
+      } else {
+        _sessionStartMs = Date.now();
+      }
+    }
+    // Footer partial is injected below this inline <script> in the body,
+    // so it isn't in the DOM yet when this script runs. Defer until parse
+    // completes so we read server uptime, not tab lifetime.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _seedUptimeFromFooter);
+    } else {
+      _seedUptimeFromFooter();
+    }
+
     setupTabs();
     connect();
 
     // Tick the "X seconds ago" labels once per second. Both the per-lane
-    // last-delegate indicator and the activity feed's .ago spans need
-    // their text to age even when no new events arrive.
+    // last-delegate indicator, activity feed, ticker rows, and the
+    // hero-uptime counter all need their text to age even when no new
+    // events arrive.
     setInterval(() => {
       if (state.lanes.size > 0) renderLanes();
       if ((state.activity || []).length > 0) {
         renderDirty.activity = true;
         scheduleRender();
       }
+      tickTickerAgos();
+      // Drive the uptime + lane count every tick so the hero feels alive
+      // even in a quiet window (e.g. mid-synthesis when no proofs are
+      // being emitted). Cheap — small text replace through the throttle.
+      renderTotals();
     }, 1000);
   </script>
+  {{FOOTER}}
 </body>
 </html>
