@@ -174,9 +174,11 @@ for lid in "${LANE_IDS[@]}"; do
         BATCH_CAP="$BATCH_CAP" \
         SKINNY_CAPTAIN_MODE="$SKINNY_CAPTAIN_MODE" \
         ENABLE_SYNTHESIS="$ENABLE_SYNTHESIS" \
+        SYNTHESIS_EVERY_N="${SYNTHESIS_EVERY_N:-25}" \
         QUEUE_MODE="$QUEUE_MODE" \
         FIREHOSE_DIR="$FIREHOSE_DIR" \
         PREFLIGHT_CERTS_ONLY="${PREFLIGHT_CERTS_ONLY:-0}" \
+        SKIP_NANOSTORE_UPLOAD="${SKIP_NANOSTORE_UPLOAD:-0}" \
         node "$REPO_ROOT/scripts/lane-cycle.js" --lane "$lid" \
             > "$log_file" 2>&1
     ) &

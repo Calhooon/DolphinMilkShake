@@ -1,0 +1,15 @@
+{
+  "name": "dolphinmilkshake",
+  "version": "1.0.0",
+  "description": "> 25 autonomous AI agents organized in a 3-layer pyramid. Captains orchestrate, coordinators dispatch, workers execute. Every action is paid in BSV micropayments and proofed on-chain. The output: verified intelligence reports where every claim is traceable through all 3 layers to its original source. > > **$45 total. 1.5 million transactions. Every one verifiable.**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@bsv/sdk": "^2.0.13"
+  }
+}
