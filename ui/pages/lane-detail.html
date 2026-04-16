@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🐬 DolphinSense · Lane {{LANE_ID}}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    /* =====================================================================
+       Lane Detail page — drill-down for a single lane.
+       Consumes the `/events` SSE stream (snapshot-mode) as the primary data
+       source; falls back to `/api/state` for the initial paint and uses
+       `/api/txs?lane=<id>` for the recent txid feed. No bespoke endpoints.
+       ===================================================================== */
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 4px;
+    }
+
+    /* ---- Top band: lane identity + lifetime totals --------------------- */
+    .lane-header {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 20px 22px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+    }
+    .lane-title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .lane-emoji {
+      font-size: 34px;
+      line-height: 1;
+      filter: drop-shadow(0 0 14px rgba(92, 242, 164, 0.35));
+    }
+    .lane-id {
+      font-family: var(--mono);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .lane-tags {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .lane-tag-pill {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .lane-tag-pill.source-bluesky {
+      color: var(--accent-2);
+      border-color: rgba(122, 183, 255, 0.35);
+      background: rgba(122, 183, 255, 0.08);
+    }
+    .lane-tag-pill.source-wikipedia {
+      color: var(--accent-3);
+      border-color: rgba(197, 163, 255, 0.35);
+      background: rgba(197, 163, 255, 0.08);
+    }
+    .lane-tag-pill.source-reddit {
+      color: var(--warn);
+      border-color: rgba(255, 203, 92, 0.35);
+      background: rgba(255, 203, 92, 0.08);
+    }
+    .lane-title-row .lane-status-wrap {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .phase-pill {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .phase-pill.running {
+      color: var(--accent);
+      border-color: rgba(92, 242, 164, 0.35);
+      background: rgba(92, 242, 164, 0.1);
+    }
+    .phase-pill.error {
+      color: var(--bad);
+      border-color: rgba(255, 122, 130, 0.35);
+      background: rgba(255, 122, 130, 0.1);
+    }
+
+    /* KPI row -------------------------------------------------------------- */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .kpi {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .kpi-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .kpi-value {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-value.accent    { color: var(--accent); }
+    .kpi-value.accent-2  { color: var(--accent-2); }
+    .kpi-value.accent-3  { color: var(--accent-3); }
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ---- Agent row: three columns (captain / worker / synthesis) ------- */
+    .agent-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 880px) {
+      .agent-row { grid-template-columns: 1fr; }
+    }
+    .agent-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px 18px;
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+      position: relative;
+      overflow: hidden;
+    }
+    .agent-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--muted-soft);
+    }
+    .agent-card.captain::before   { background: var(--captain); }
+    .agent-card.worker::before    { background: var(--worker); }
+    .agent-card.synthesis::before { background: var(--synthesis); }
+
+    .agent-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .agent-role {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .agent-card.captain   .agent-role { color: var(--captain); }
+    .agent-card.worker    .agent-role { color: var(--worker); }
+    .agent-card.synthesis .agent-role { color: var(--synthesis); }
+    .agent-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .agent-balance {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .agent-balance .unit {
+      font-size: 10px;
+      color: var(--muted);
+      margin-left: 4px;
+      font-weight: 400;
+    }
+    .agent-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+      font-size: 10px;
+    }
+    .agent-meta-k {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .agent-meta-v {
+      font-family: var(--mono);
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .agent-state-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .agent-state-chip.active {
+      color: var(--accent);
+      border-color: rgba(92, 242, 164, 0.35);
+      background: rgba(92, 242, 164, 0.1);
+    }
+    .agent-state-chip.active::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    /* ---- Two-col grid for cycles + article preview -------------------- */
+    .split-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 960px) {
+      .split-row { grid-template-columns: 1fr; }
+    }
+
+    /* ---- Cycle list rows (timeline) ----------------------------------- */
+    .cycle-list { padding: 4px 0; }
+    .cycle-row {
+      padding: 10px 16px;
+      display: grid;
+      grid-template-columns: 120px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      font-size: 11px;
+    }
+    .cycle-row:hover { background: rgba(92, 242, 164, 0.03); }
+    .cycle-stamp {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    .cycle-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .cycle-meta b {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-weight: 600;
+    }
+    .cycle-article-link {
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background: rgba(122, 183, 255, 0.08);
+      border: 1px solid rgba(122, 183, 255, 0.25);
+      color: var(--accent-2);
+    }
+    .cycle-article-link:hover {
+      background: rgba(122, 183, 255, 0.16);
+      text-decoration: none;
+      color: var(--accent-2);
+    }
+
+    /* ---- Article preview ---------------------------------------------- */
+    .article-preview {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .article-preview .cycle-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.02em;
+    }
+    .article-preview .article-url {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--accent-2);
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+    }
+    .article-preview .article-body {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.55;
+      min-height: 60px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .article-preview .article-body.loading { color: var(--muted-soft); font-style: italic; }
+    .article-preview .article-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ---- Recent txs grid ---------------------------------------------- */
+    .tx-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .tx-group-card {
+      background: var(--grad-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .tx-group-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    }
+    .tx-group-head .count { font-family: var(--mono); color: var(--text-dim); }
+    .tx-group-card.captain   .tx-group-head { color: var(--captain); }
+    .tx-group-card.worker    .tx-group-head { color: var(--worker); }
+    .tx-group-card.synthesis .tx-group-head { color: var(--synthesis); }
+    .tx-group-card.unlabeled .tx-group-head { color: var(--muted); }
+    .tx-group-body {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    /* ---- Live event feed ---------------------------------------------- */
+    .live-feed .panel-body {
+      max-height: 320px;
+      padding: 4px 0;
+    }
+    .live-event {
+      padding: 6px 16px;
+      font-family: var(--mono);
+      font-size: 10px;
+      display: grid;
+      grid-template-columns: 56px 90px 1fr;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      animation: fade-in-up 0.3s var(--ease-out-expo) both;
+    }
+    .live-event .t { color: var(--muted); }
+    .live-event .k {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      text-align: center;
+    }
+    .live-event .k.proof_emitted { color: var(--accent);   border-color: rgba(92, 242, 164, 0.3); }
+    .live-event .k.message_flow  { color: var(--accent-2); border-color: rgba(122, 183, 255, 0.3); }
+    .live-event .k.agent         { color: var(--accent-3); border-color: rgba(197, 163, 255, 0.3); }
+    .live-event .k.cycle_aggregate { color: var(--warn); border-color: rgba(255, 203, 92, 0.3); }
+    .live-event .d {
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .live-event .d a { color: var(--accent); }
+
+    /* ---- Error log ---------------------------------------------------- */
+    .error-row {
+      padding: 8px 16px;
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: 120px 80px 1fr;
+      gap: 10px;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+    }
+    .error-row .t { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+    .error-row .r { font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+    .error-row .r.captain { color: var(--captain); }
+    .error-row .r.worker { color: var(--worker); }
+    .error-row .r.synthesis { color: var(--synthesis); }
+    .error-row .m { color: var(--bad); font-family: var(--mono); font-size: 10px; word-break: break-word; }
+
+    /* ---- Not-found block ---------------------------------------------- */
+    .not-found {
+      padding: 48px 24px;
+      text-align: center;
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+    }
+    .not-found h2 {
+      font-size: 22px;
+      margin: 0 0 12px 0;
+      color: var(--bad);
+    }
+    .not-found p { color: var(--muted); max-width: 500px; margin: 0 auto 18px; font-size: 12px; line-height: 1.6; }
+    .not-found .lane-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .not-found .lane-picker a {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .not-found .lane-picker a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  {{NAV}}
+  <main>
+    <!-- ======================================================= Lane detail ======================================================= -->
+    <div id="lane-view">
+      <!-- ---- Top band ----------------------------------------------------- -->
+      <section class="lane-header">
+        <div class="lane-title-row">
+          <span class="lane-emoji" id="lane-emoji">🐬</span>
+          <span class="lane-id" id="lane-id">{{LANE_ID}}</span>
+          <div class="lane-tags" id="lane-tags"></div>
+          <div class="lane-status-wrap">
+            <span class="phase-pill" id="lane-phase">idle</span>
+          </div>
+        </div>
+        <div class="kpi-row" id="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">Cycles</div>
+            <div class="kpi-value" id="kpi-cycles">0</div>
+            <div class="kpi-sub">completed</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Txids</div>
+            <div class="kpi-value accent" id="kpi-txs">0</div>
+            <div class="kpi-sub">on-chain proofs</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Sats</div>
+            <div class="kpi-value accent-2" id="kpi-sats">0</div>
+            <div class="kpi-sub">lifetime spend</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Articles</div>
+            <div class="kpi-value accent-3" id="kpi-articles">0</div>
+            <div class="kpi-sub">synthesized</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Tenant</div>
+            <div class="kpi-value" id="kpi-tenant" style="font-size:14px;">—</div>
+            <div class="kpi-sub" id="kpi-tenant-sub">source / subreddit</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- 3-agent panel ------------------------------------------------- -->
+      <section class="agent-row" id="agent-row">
+        <!-- Populated by renderAgents() -->
+      </section>
+
+      <!-- ---- Cycle history + latest article ------------------------------- -->
+      <section class="split-row">
+        <div class="panel">
+          <div class="panel-head">
+            <span>Cycle history</span>
+            <span class="count" id="cycle-count">0</span>
+          </div>
+          <div class="panel-body cycle-list" id="cycle-list">
+            <div class="empty">waiting for cycle aggregates…</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <span>Latest article</span>
+            <span class="count" id="article-count">0</span>
+          </div>
+          <div class="panel-body">
+            <div class="article-preview" id="article-preview">
+              <div class="empty">no synthesis articles yet for this lane</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- Recent txs grouped by role ----------------------------------- -->
+      <section>
+        <div class="tx-groups" id="tx-groups">
+          <!-- Populated by renderTxGroups() -->
+        </div>
+      </section>
+
+      <!-- ---- Live event feed ---------------------------------------------- -->
+      <section class="panel live-feed">
+        <div class="panel-head">
+          <span>Live events · this lane</span>
+          <span class="count" id="live-count">0</span>
+        </div>
+        <div class="panel-body" id="live-feed">
+          <div class="empty">waiting for live events on <span class="mono" id="live-feed-hint">this lane</span>…</div>
+        </div>
+      </section>
+
+      <!-- ---- Error log ----------------------------------------------------- -->
+      <section class="panel">
+        <div class="panel-head">
+          <span>Error log</span>
+          <span class="count" id="err-count">0</span>
+        </div>
+        <div class="panel-body" id="err-log">
+          <div class="empty">no errors detected — all agents healthy</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =================================== Not-found fallback =================================== -->
+    <div id="not-found-view" class="not-found hidden">
+      <h2>Lane not found</h2>
+      <p>No lane called <code id="missing-id" class="mono">?</code> is configured in <code>fleet/lanes.json</code>.
+         Pick one of these:</p>
+      <div class="lane-picker" id="lane-picker"></div>
+    </div>
+  </main>
+  {{FOOTER}}
+  <script>
+    // =====================================================================
+    // Lane Detail — consumes the same /events SSE stream as the dashboard
+    // and the `/api/state` endpoint for first paint. No bespoke endpoints.
+    //
+    // The lane ID is injected server-side via {{LANE_ID}} and also parsed
+    // from the URL as a fallback (defense in depth — if a future server
+    // refactor changes the placeholder, the URL parsing still works).
+    // =====================================================================
+    'use strict';
+
+    // Resolve the current lane id, preferring the SSR-injected value but
+    // falling back to URL parsing if the token wasn't substituted.
+    const LANE_ID = (function () {
+      const injected = document.getElementById('lane-id')?.textContent?.trim();
+      if (injected && injected !== '{{LANE_ID}}') return injected;
+      const m = location.pathname.match(/^\/lane\/(.+?)\/?$/);
+      return m ? decodeURIComponent(m[1]) : '';
+    })();
+
+    document.title = `🐬 DolphinSense · Lane ${LANE_ID}`;
+
+    // Page state — driven entirely by the snapshot stream.
+    const pageState = {
+      laneConfig: null,        // { id, subreddit, source, display_prefix, agents:[...] }
+      perLane: null,           // snap.perLane[LANE_ID]
+      walletHealth: {},        // { role: {sats, utxos, updatedAt} }
+      articlesForLane: [],     // filtered snap.articles
+      recentTxsForLane: [],    // filtered snap.recentTxs
+      recentFlowsForLane: [],  // filtered snap.recentFlows
+      liveEvents: [],          // rolling ring of SSE events for THIS lane
+      errors: [],              // agent state events with .error or state containing 'error'/'failed'
+      allLaneIds: [],          // for not-found fallback
+      cycleHistory: new Map(), // cycle_dir → aggregate (augments articles with non-article cycles)
+    };
+
+    const MAX_LIVE_EVENTS = 60;
+    const MAX_ERRORS = 30;
+
+    // --------------------------------------------------------------------
+    // Formatters
+    // --------------------------------------------------------------------
+    function fmtInt(n) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString('en-US');
+    }
+    function fmtSats(n) {
+      if (!n || n < 0) return '0';
+      return Number(n).toLocaleString('en-US');
+    }
+    function fmtAgo(ms) {
+      if (!ms) return '—';
+      const diff = Math.max(0, Date.now() - ms);
+      if (diff < 1000) return 'now';
+      if (diff < 60_000) return Math.floor(diff / 1000) + 's ago';
+      if (diff < 3_600_000) return Math.floor(diff / 60_000) + 'm ago';
+      if (diff < 86_400_000) return Math.floor(diff / 3_600_000) + 'h ago';
+      return Math.floor(diff / 86_400_000) + 'd ago';
+    }
+    function fmtTs(ms) {
+      if (!ms) return '—';
+      const d = new Date(ms);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    function fmtDatetime(ms) {
+      if (!ms) return '—';
+      const d = new Date(ms);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function shortTxid(txid) {
+      if (!txid || txid.length < 18) return txid || '';
+      return `${txid.slice(0, 10)}…${txid.slice(-8)}`;
+    }
+    function sourceClass(src) {
+      if (src === 'bluesky') return 'source-bluesky';
+      if (src === 'wikipedia') return 'source-wikipedia';
+      if (src === 'reddit') return 'source-reddit';
+      return '';
+    }
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    // Parse a cycle dir like `cycle-2026-04-16T18-35-21-a1e5a5c2` → epoch ms.
+    function parseCycleDirMs(dir) {
+      if (!dir) return 0;
+      const m = dir.match(/^cycle-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})/);
+      if (!m) return 0;
+      const iso = m[1].replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3') + 'Z';
+      const t = Date.parse(iso);
+      return isNaN(t) ? 0 : t;
+    }
+
+    // --------------------------------------------------------------------
+    // Snapshot application — single source of truth.
+    // --------------------------------------------------------------------
+    function applySnapshot(snap) {
+      // Validate lane exists in config; if not, show fallback.
+      pageState.allLaneIds = (snap.lanes || []).map((l) => l.id);
+      const cfg = (snap.lanes || []).find((l) => l.id === LANE_ID);
+      if (!cfg) {
+        renderNotFound();
+        return;
+      }
+      pageState.laneConfig = cfg;
+      pageState.perLane = snap.perLane ? snap.perLane[LANE_ID] || null : null;
+
+      // Filter wallet health to this lane.
+      pageState.walletHealth = {};
+      for (const [key, w] of Object.entries(snap.walletHealth || {})) {
+        const [lane, role] = key.split(':');
+        if (lane === LANE_ID) pageState.walletHealth[role] = w;
+      }
+
+      // Filter articles.
+      pageState.articlesForLane = (snap.articles || []).filter((a) => a.lane === LANE_ID);
+
+      // Filter recent txs.
+      pageState.recentTxsForLane = (snap.recentTxs || []).filter((t) => t.lane === LANE_ID);
+
+      // Filter recent flows.
+      pageState.recentFlowsForLane = (snap.recentFlows || []).filter((f) => f.lane === LANE_ID);
+
+      renderAll();
+    }
+
+    // --------------------------------------------------------------------
+    // Renderers — individually-targeted DOM updates.
+    // --------------------------------------------------------------------
+    function renderAll() {
+      renderHeader();
+      renderAgents();
+      renderCycles();
+      renderArticle();
+      renderTxGroups();
+      renderErrors();
+    }
+
+    function renderHeader() {
+      const cfg = pageState.laneConfig;
+      const p = pageState.perLane;
+      const emojiEl = document.getElementById('lane-emoji');
+      if (cfg?.display_prefix) emojiEl.textContent = cfg.display_prefix;
+
+      // Tags: source + subreddit/prefix
+      const tags = document.getElementById('lane-tags');
+      tags.innerHTML = '';
+      if (cfg?.source) {
+        const el = document.createElement('span');
+        el.className = `lane-tag-pill ${sourceClass(cfg.source)}`;
+        el.textContent = cfg.source;
+        tags.appendChild(el);
+      }
+      if (cfg?.subreddit && cfg.subreddit !== cfg.id) {
+        const el = document.createElement('span');
+        el.className = 'lane-tag-pill';
+        el.textContent = cfg.subreddit;
+        tags.appendChild(el);
+      }
+      const agentCount = (cfg?.agents || []).length;
+      if (agentCount) {
+        const el = document.createElement('span');
+        el.className = 'lane-tag-pill';
+        el.textContent = `${agentCount} agents`;
+        tags.appendChild(el);
+      }
+
+      // Phase pill
+      const phase = p?.cyclePhase || 'idle';
+      const hasError = pageState.errors.length > 0;
+      const phaseEl = document.getElementById('lane-phase');
+      phaseEl.className = 'phase-pill';
+      if (hasError) {
+        phaseEl.classList.add('error');
+        phaseEl.textContent = 'error · ' + phase;
+      } else if (phase && phase !== 'idle' && phase !== 'done') {
+        phaseEl.classList.add('running');
+        phaseEl.textContent = phase;
+      } else if (phase === 'done') {
+        phaseEl.textContent = 'done';
+      } else {
+        phaseEl.textContent = 'idle';
+      }
+
+      // KPIs
+      document.getElementById('kpi-cycles').textContent = fmtInt(p?.cycles ?? 0);
+      document.getElementById('kpi-txs').textContent = fmtInt(p?.txs ?? 0);
+      document.getElementById('kpi-sats').textContent = fmtSats(p?.sats ?? 0);
+      document.getElementById('kpi-articles').textContent = fmtInt(p?.articles ?? 0);
+      document.getElementById('kpi-tenant').textContent = cfg?.source || '—';
+      document.getElementById('kpi-tenant-sub').textContent = cfg?.subreddit || cfg?.id || '';
+    }
+
+    function renderAgents() {
+      const row = document.getElementById('agent-row');
+      const cfg = pageState.laneConfig;
+      if (!cfg) { row.innerHTML = ''; return; }
+      const agentCfgs = cfg.agents || [];
+      const perLaneAgents = pageState.perLane?.agents || {};
+      const roles = ['captain', 'worker', 'synthesis'];
+
+      row.innerHTML = roles.map((role) => {
+        const aCfg = agentCfgs.find((a) => a.role === role) || {};
+        const aState = perLaneAgents[role] || {};
+        const wallet = pageState.walletHealth[role] || {};
+        const isActive = !!aState.active;
+        const sats = wallet.sats ?? null;
+        const utxos = wallet.utxos ?? null;
+        const walletFresh = wallet.updatedAt ? fmtAgo(wallet.updatedAt) : 'no data';
+        const lastTool = aState.lastTool || '—';
+        const lastToolAt = aState.lastToolAt ? fmtAgo(aState.lastToolAt) : '—';
+        const currentCost = Number(aState.sats || 0);
+
+        return `
+          <div class="agent-card ${role}">
+            <div class="agent-head">
+              <span class="agent-role">${role}</span>
+              <span class="agent-state-chip ${isActive ? 'active' : ''}">${escapeHtml(aState.state || 'idle')}</span>
+            </div>
+            <div class="agent-name" title="${escapeHtml(aCfg.name || '')}">${escapeHtml(aCfg.name || '—')}</div>
+            <div class="agent-balance">
+              ${sats === null ? '<span style="color:var(--muted-soft)">no wallet data</span>' : fmtSats(sats) + '<span class="unit">sats</span>'}
+            </div>
+            <div class="agent-meta-grid">
+              <div>
+                <div class="agent-meta-k">UTXOs</div>
+                <div class="agent-meta-v">${utxos === null ? '—' : fmtInt(utxos)}</div>
+              </div>
+              <div>
+                <div class="agent-meta-k">Wallet</div>
+                <div class="agent-meta-v">${walletFresh}</div>
+              </div>
+              <div>
+                <div class="agent-meta-k">Iter</div>
+                <div class="agent-meta-v">${aState.iter || 0}</div>
+              </div>
+              <div>
+                <div class="agent-meta-k">Cost this run</div>
+                <div class="agent-meta-v">${fmtSats(currentCost)} sats</div>
+              </div>
+              <div>
+                <div class="agent-meta-k">Port</div>
+                <div class="agent-meta-v">${aCfg.server_port || '—'}</div>
+              </div>
+              <div>
+                <div class="agent-meta-k">Last tool</div>
+                <div class="agent-meta-v" title="${escapeHtml(lastTool)} · ${lastToolAt}">${escapeHtml(lastTool)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCycles() {
+      const host = document.getElementById('cycle-list');
+      const countEl = document.getElementById('cycle-count');
+      // Union of articles-for-lane (has url) + cycleHistory map (from cycle_aggregate events)
+      const byDir = new Map();
+      for (const a of pageState.articlesForLane) {
+        byDir.set(a.cycleDir, {
+          cycleDir: a.cycleDir,
+          cycleId: a.cycleId,
+          url: a.url,
+          txidsUrl: a.txidsUrl,
+          proofs: a.proofs || 0,
+          ts: (a.ts || 0) * 1000,
+          fromArticle: true,
+        });
+      }
+      for (const [dir, agg] of pageState.cycleHistory.entries()) {
+        const prior = byDir.get(dir) || { cycleDir: dir };
+        const c0 = (agg.cycles || [])[0] || {};
+        byDir.set(dir, {
+          ...prior,
+          cycleDir: dir,
+          cycleId: prior.cycleId || c0.cycleId,
+          url: prior.url || c0.nanostoreUrl || null,
+          txidsUrl: prior.txidsUrl || c0.txidsUrl || null,
+          proofs: prior.proofs || c0.proofsCreated || 0,
+          totalSats: c0.totalSats || 0,
+          durationMs: c0.durationMs || null,
+          ts: prior.ts || parseCycleDirMs(dir),
+        });
+      }
+      const cycles = [...byDir.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      countEl.textContent = cycles.length;
+
+      if (!cycles.length) {
+        host.innerHTML = '<div class="empty">waiting for cycle aggregates…</div>';
+        return;
+      }
+      host.innerHTML = cycles.slice(0, 40).map((c) => {
+        const dur = c.durationMs ? Math.round(c.durationMs / 1000) + 's' : '—';
+        const sats = c.totalSats ? fmtSats(c.totalSats) + ' sats' : '';
+        const proofs = (c.proofs || 0) + ' proofs';
+        const article = c.url
+          ? `<a class="cycle-article-link" href="${escapeHtml(c.url)}" target="_blank" rel="noopener">📄 article</a>`
+          : '<span class="cycle-article-link" style="opacity:0.4">no article</span>';
+        return `
+          <div class="cycle-row">
+            <div class="cycle-stamp" title="${escapeHtml(c.cycleDir)}">${fmtDatetime(c.ts) || c.cycleDir}</div>
+            <div class="cycle-meta">
+              <span>${proofs}</span>
+              ${sats ? `<span>${sats}</span>` : ''}
+              <span>duration <b>${dur}</b></span>
+              ${c.cycleId ? `<span>id <b>${escapeHtml(String(c.cycleId).slice(0, 12))}</b></span>` : ''}
+            </div>
+            <div>${article}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderArticle() {
+      const host = document.getElementById('article-preview');
+      const countEl = document.getElementById('article-count');
+      countEl.textContent = pageState.articlesForLane.length;
+      const latest = pageState.articlesForLane[0];
+      if (!latest) {
+        host.innerHTML = '<div class="empty">no synthesis articles yet for this lane</div>';
+        return;
+      }
+      host.innerHTML = `
+        <div class="cycle-label">${escapeHtml(latest.cycleDir || '')} · ${escapeHtml(String(latest.cycleId || ''))}</div>
+        <div class="article-url"><a href="${escapeHtml(latest.url)}" target="_blank" rel="noopener">${escapeHtml(latest.url)}</a></div>
+        <div class="article-body loading" id="article-body">loading article preview…</div>
+        <div class="article-actions">
+          <a class="btn btn-primary" href="${escapeHtml(latest.url)}" target="_blank" rel="noopener">Open full article ↗</a>
+          ${latest.txidsUrl ? `<a class="btn" href="${escapeHtml(latest.txidsUrl)}" target="_blank" rel="noopener">txids manifest ↗</a>` : ''}
+          <span class="btn" style="cursor:default">${latest.proofs || 0} proofs</span>
+        </div>
+      `;
+      // Lazy-load the article body preview.
+      fetchArticlePreview(latest.url, latest.cycleDir);
+    }
+
+    // Cached by url so switching between cycles doesn't hammer the CDN.
+    const _articleCache = new Map();
+    async function fetchArticlePreview(url, cacheKey) {
+      const body = document.getElementById('article-body');
+      if (!body) return;
+      if (_articleCache.has(url)) {
+        body.classList.remove('loading');
+        body.textContent = _articleCache.get(url);
+        return;
+      }
+      try {
+        const r = await fetch(url, { cache: 'force-cache' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const text = await r.text();
+        // Article files are markdown / plain. Strip HTML tags if any, take
+        // title (first non-empty line) + first 200 chars.
+        const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const preview = stripped.slice(0, 240) + (stripped.length > 240 ? '…' : '');
+        _articleCache.set(url, preview);
+        // Don't clobber a newer article that may have rendered in the meantime.
+        if (body.dataset.key !== cacheKey && body.dataset.key) return;
+        body.classList.remove('loading');
+        body.textContent = preview;
+      } catch (e) {
+        body.classList.remove('loading');
+        body.textContent = `(preview unavailable — open full article for the full synthesis)`;
+      }
+    }
+
+    function renderTxGroups() {
+      const host = document.getElementById('tx-groups');
+      const txs = pageState.recentTxsForLane.slice(0, 100);
+      // Group by cycle_dir → infer role from nothing (not available per-tx).
+      // Instead, split by the position in the stream: the server doesn't tag
+      // per-role txs, so we use a single "all" bucket + flow-derived hints.
+      // To give judges something role-flavored, we look at recentFlows and
+      // bucket flow-adjacent txs.
+      const all = txs;
+      const nTotal = all.length;
+      const groups = [
+        { key: 'all', label: 'Recent txids (last 100)', cls: 'unlabeled' },
+      ];
+      host.innerHTML = groups.map((g) => {
+        const items = g.key === 'all' ? all : [];
+        if (!items.length) {
+          return `
+            <div class="tx-group-card ${g.cls}">
+              <div class="tx-group-head">
+                <span>${escapeHtml(g.label)}</span>
+                <span class="count">0</span>
+              </div>
+              <div class="tx-group-body">
+                <div class="empty">waiting for live txids on this lane…</div>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="tx-group-card ${g.cls}">
+            <div class="tx-group-head">
+              <span>${escapeHtml(g.label)}</span>
+              <span class="count">${items.length}${g.key === 'all' && nTotal >= 100 ? '+' : ''}</span>
+            </div>
+            <div class="tx-group-body">
+              ${items.map((t) => `
+                <div class="tx-item">
+                  <span class="txid"><a href="https://whatsonchain.com/tx/${escapeHtml(t.txid)}" target="_blank" rel="noopener" title="${escapeHtml(t.txid)}">${escapeHtml(shortTxid(t.txid))}</a></span>
+                  <span class="lane-tag" title="${escapeHtml(t.cycle_dir || '')}">${t.cycle_dir ? escapeHtml(t.cycle_dir.slice(6, 18)) : '—'}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function appendLiveEvent(kind, description, ts) {
+      pageState.liveEvents.unshift({ kind, description, ts: ts || Date.now() });
+      if (pageState.liveEvents.length > MAX_LIVE_EVENTS) {
+        pageState.liveEvents.length = MAX_LIVE_EVENTS;
+      }
+      renderLiveFeed();
+    }
+
+    function renderLiveFeed() {
+      const host = document.getElementById('live-feed');
+      const countEl = document.getElementById('live-count');
+      const hint = document.getElementById('live-feed-hint');
+      if (hint) hint.textContent = LANE_ID;
+      countEl.textContent = pageState.liveEvents.length;
+      if (!pageState.liveEvents.length) {
+        host.innerHTML = `<div class="empty">waiting for live events on <span class="mono">${escapeHtml(LANE_ID)}</span>…</div>`;
+        return;
+      }
+      host.innerHTML = pageState.liveEvents.map((e) => `
+        <div class="live-event">
+          <span class="t">${fmtTs(e.ts)}</span>
+          <span class="k ${escapeHtml(e.kind)}">${escapeHtml(e.kind.replace(/_/g, ' '))}</span>
+          <span class="d">${e.description || ''}</span>
+        </div>
+      `).join('');
+    }
+
+    function recordError(when, role, msg) {
+      pageState.errors.unshift({ when: when || Date.now(), role: role || '—', msg });
+      if (pageState.errors.length > MAX_ERRORS) {
+        pageState.errors.length = MAX_ERRORS;
+      }
+      renderErrors();
+    }
+
+    function renderErrors() {
+      const host = document.getElementById('err-log');
+      const countEl = document.getElementById('err-count');
+      countEl.textContent = pageState.errors.length;
+      if (!pageState.errors.length) {
+        host.innerHTML = '<div class="empty">no errors detected — all agents healthy</div>';
+        return;
+      }
+      host.innerHTML = pageState.errors.map((e) => `
+        <div class="error-row">
+          <span class="t">${fmtDatetime(e.when)}</span>
+          <span class="r ${escapeHtml(e.role)}">${escapeHtml(e.role)}</span>
+          <span class="m">${escapeHtml(e.msg)}</span>
+        </div>
+      `).join('');
+    }
+
+    // --------------------------------------------------------------------
+    // Not-found fallback — shown if the lane id isn't in lanes.json.
+    // --------------------------------------------------------------------
+    let _renderedNotFound = false;
+    function renderNotFound() {
+      if (_renderedNotFound) return;
+      _renderedNotFound = true;
+      document.getElementById('lane-view').classList.add('hidden');
+      const nf = document.getElementById('not-found-view');
+      nf.classList.remove('hidden');
+      document.getElementById('missing-id').textContent = LANE_ID || '(empty)';
+      const picker = document.getElementById('lane-picker');
+      picker.innerHTML = (pageState.allLaneIds || []).map((id) =>
+        `<a href="/lane/${encodeURIComponent(id)}">${escapeHtml(id)}</a>`
+      ).join('');
+    }
+
+    // --------------------------------------------------------------------
+    // SSE handling — listen for snapshot + per-lane filtered events.
+    // --------------------------------------------------------------------
+    let es = null;
+    function connectSse() {
+      if (es) return;
+      try {
+        es = new EventSource('/events');
+      } catch (e) {
+        window.__dmSetNavStatus?.('down', 'sse failed');
+        return;
+      }
+      es.onopen = () => window.__dmSetNavStatus?.('live', 'connected');
+      es.onerror = () => window.__dmSetNavStatus?.('down', 'reconnecting…');
+      es.onmessage = (m) => {
+        let ev;
+        try { ev = JSON.parse(m.data); } catch { return; }
+        handleEvent(ev);
+      };
+    }
+
+    function handleEvent(ev) {
+      if (!ev || !ev.kind) return;
+
+      // snapshot is authoritative — always apply.
+      if (ev.kind === 'snapshot' && ev.state) {
+        applySnapshot(ev.state);
+        return;
+      }
+
+      // All other events: filter to this lane for the live feed + sidecar state.
+      if (ev.lane && ev.lane !== LANE_ID) return;
+
+      switch (ev.kind) {
+        case 'init':
+          // Kick off initial validation if the snapshot hasn't arrived yet.
+          pageState.allLaneIds = (ev.lanes || []).map((l) => l.id);
+          if (!pageState.allLaneIds.includes(LANE_ID)) {
+            // Wait for snapshot in case lanes arrive late; if it still
+            // hasn't resolved after a beat, show fallback.
+            setTimeout(() => {
+              if (!pageState.laneConfig) renderNotFound();
+            }, 800);
+          }
+          break;
+
+        case 'proof_emitted':
+          if (ev._replay) return;  // don't flood the feed with replays
+          appendLiveEvent('proof_emitted',
+            `<a href="https://whatsonchain.com/tx/${escapeHtml(ev.txid)}" target="_blank" rel="noopener">${escapeHtml(shortTxid(ev.txid))}</a>` +
+            (ev.cycle_dir ? ` · ${escapeHtml(ev.cycle_dir)}` : ''),
+            Date.now());
+          break;
+
+        case 'message_flow':
+          if (ev._replay) return;
+          appendLiveEvent('message_flow',
+            `${escapeHtml(ev.phase || '')} · ${escapeHtml(ev.from_name || ev.from || '?')} → ${escapeHtml(ev.to_name || ev.to || '?')}` +
+            (ev.amount_sats ? ` · ${fmtSats(ev.amount_sats)} sats` : ''),
+            Date.now());
+          break;
+
+        case 'agent':
+        case 'agent_state':
+          if (ev.ev && ev.role) {
+            const type = ev.ev.type || 'event';
+            const name = ev.ev.name ? ' · ' + ev.ev.name : '';
+            appendLiveEvent('agent',
+              `${escapeHtml(ev.role)} · ${escapeHtml(type)}${escapeHtml(name)}` +
+              (ev.ev.iter ? ` · iter ${ev.ev.iter}` : ''),
+              Date.now());
+            // Detect errors: common shapes are type:'error', type:'task_failed',
+            // or state containing 'error'/'failed'/'stopped'.
+            const type2 = String(type).toLowerCase();
+            if (type2.includes('error') || type2.includes('fail') || type2.includes('stopped')) {
+              recordError(Date.now(), ev.role, `${type}${ev.ev.name ? ': ' + ev.ev.name : ''}`);
+            }
+          }
+          break;
+
+        case 'cycle_aggregate':
+          if (ev.cycle_dir && ev.data) {
+            pageState.cycleHistory.set(ev.cycle_dir, ev.data);
+            renderCycles();
+          }
+          appendLiveEvent('cycle_aggregate',
+            `${escapeHtml(ev.cycle_dir || '')} ${ev.data?.cycles?.[0]?.nanostoreUrl ? '· article synthesized' : ''}`,
+            Date.now());
+          break;
+
+        default:
+          // Ignore other kinds.
+          break;
+      }
+    }
+
+    // --------------------------------------------------------------------
+    // Periodic re-render so "Xs ago" timers stay fresh even with no new events.
+    // --------------------------------------------------------------------
+    function tickRerender() {
+      // Only re-render bits that depend on "time since".
+      if (pageState.laneConfig) renderAgents();
+    }
+    setInterval(tickRerender, 5000);
+
+    // --------------------------------------------------------------------
+    // Bootstrap — fetch initial /api/state for instant paint, then SSE.
+    // --------------------------------------------------------------------
+    async function bootstrap() {
+      try {
+        const r = await fetch('/api/state', { cache: 'no-cache' });
+        if (r.ok) {
+          const state = await r.json();
+          applySnapshot(state);
+        }
+      } catch (e) {
+        // non-fatal — SSE will catch us up.
+      }
+      connectSse();
+    }
+
+    // Start.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrap);
+    } else {
+      bootstrap();
+    }
+  </script>
+</body>
+</html>

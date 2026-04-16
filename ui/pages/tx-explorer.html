@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DolphinSense - TX Explorer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐬%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared.css">
+  <style>
+    /* ----- TX Explorer page shell --------------------------------------- */
+    body {
+      padding: 0 24px 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    main.tx-explorer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+      padding-bottom: 24px;
+      animation: fade-in-up 0.6s var(--ease-out-expo) both;
+    }
+
+    /* ----- Header strip: headline + stat tiles -------------------------- */
+    .tx-header {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) repeat(4, minmax(140px, auto));
+      gap: 12px;
+      align-items: stretch;
+    }
+    .tx-header .tx-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--grad-surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .tx-header .tx-title .kicker {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tx-header .tx-title h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .tx-header .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      justify-content: center;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .tx-header .stat .label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tx-header .stat .value {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .tx-header .stat .sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-header .stat.accent .value { color: var(--accent); }
+    .tx-header .stat.azure .value  { color: var(--accent-2); }
+    .tx-header .stat.violet .value { color: var(--accent-3); }
+
+    /* ----- Filter bar --------------------------------------------------- */
+    .tx-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .tx-filters .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .tx-filters .field > label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tx-filters select,
+    .tx-filters input[type="search"] {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      min-width: 140px;
+      transition: border-color 0.18s var(--ease-out-quart);
+    }
+    .tx-filters select:hover,
+    .tx-filters input[type="search"]:hover {
+      border-color: var(--border-strong);
+    }
+    .tx-filters select:focus,
+    .tx-filters input[type="search"]:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .tx-filters input[type="search"] {
+      font-family: var(--mono);
+      min-width: 260px;
+    }
+    .tx-filters .spacer { flex: 1; }
+    .tx-filters .actions {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+    }
+    .tx-filters .hint {
+      font-size: 10px;
+      color: var(--muted);
+      padding: 6px 0;
+    }
+
+    /* ----- Table panel -------------------------------------------------- */
+    .tx-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--grad-surface);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .tx-panel-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .tx-panel-head .title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .tx-panel-head .count-sum {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .tx-panel-head .count-sum .dim {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Table header row (grid-based) */
+    .tx-table-head {
+      display: grid;
+      grid-template-columns: 56px minmax(300px, 1fr) 120px 100px 100px 100px;
+      padding: 8px 16px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-1);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .tx-table-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Virtualized scroll container */
+    .tx-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      position: relative;
+      font-family: var(--mono);
+    }
+    .tx-scroll-spacer {
+      position: relative;
+      width: 100%;
+    }
+    .tx-row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: grid;
+      grid-template-columns: 56px minmax(300px, 1fr) 120px 100px 100px 100px;
+      gap: 10px;
+      padding: 0 16px;
+      align-items: center;
+      height: 32px;
+      border-bottom: 1px solid rgba(35, 43, 69, 0.5);
+      font-size: 10px;
+      letter-spacing: 0.02em;
+      transition: background 0.1s;
+      will-change: transform;
+    }
+    .tx-row:hover { background: rgba(92, 242, 164, 0.04); }
+    .tx-row .cell {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tx-row .cell.idx {
+      color: var(--muted-soft);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-row .cell.txid a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.15s;
+      font-weight: 500;
+    }
+    .tx-row .cell.txid a:hover {
+      color: var(--accent-2);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .tx-row .cell.txid .hash {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+    }
+    .tx-row .cell.lane { font-family: "Inter", sans-serif; }
+    .tx-row .cell.source {
+      font-family: "Inter", sans-serif;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    .tx-row .cell.sats {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-dim);
+      text-align: right;
+    }
+    .tx-row .cell.cycle {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    /* Lane color chip */
+    .lane-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-3);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-family: "Inter", sans-serif;
+      max-width: 100%;
+    }
+    .lane-chip .sw {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .lane-chip .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+      color: var(--text-dim);
+    }
+    .source-badge.bluesky   { color: #7ab7ff; border-color: rgba(122, 183, 255, 0.25); }
+    .source-badge.wikipedia { color: #c5a3ff; border-color: rgba(197, 163, 255, 0.25); }
+    .source-badge.reddit    { color: #ffcb5c; border-color: rgba(255, 203, 92, 0.25); }
+    .source-badge.unknown   { color: var(--muted); }
+
+    /* Loading placeholder rows */
+    .tx-row.loading .cell { color: var(--muted-soft); }
+    .tx-row.loading .cell.txid .hash {
+      display: inline-block;
+      width: 80%;
+      height: 8px;
+      background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+      background-size: 200% 100%;
+      border-radius: 4px;
+      animation: shimmer 1.4s infinite linear;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .tx-empty {
+      padding: 48px 16px;
+      color: var(--muted-soft);
+      font-size: 12px;
+      text-align: center;
+      font-style: italic;
+      letter-spacing: 0.02em;
+    }
+
+    /* Pagination bar */
+    .tx-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-1);
+      flex-shrink: 0;
+    }
+    .tx-pagination .btn { padding: 6px 12px; font-size: 11px; }
+    .tx-pagination .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .tx-pagination .pg-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-dim);
+    }
+    .tx-pagination .pg-info .dim { color: var(--muted); font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tx-pagination input[type=number] {
+      width: 72px;
+      padding: 5px 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: center;
+    }
+    .tx-pagination input[type=number]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(92, 242, 164, 0.15);
+    }
+    #pg-total { color: var(--text); font-weight: 600; }
+
+    /* Footer status / keyboard hints */
+    .tx-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(12, 17, 34, 0.4);
+      font-size: 10px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .tx-footer .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid var(--border-strong);
+      border-radius: 3px;
+      background: var(--surface-2);
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+    .tx-footer .search-status {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent-2);
+    }
+
+    /* Rate pulse */
+    @keyframes flash-accent {
+      0%   { color: var(--accent); }
+      100% { color: var(--text); }
+    }
+    .flash-new { animation: flash-accent 1.2s ease-out; }
+
+    /* Mobile graceful degrade */
+    @media (max-width: 960px) {
+      .tx-header { grid-template-columns: 1fr 1fr; }
+      .tx-header .tx-title { grid-column: 1 / -1; }
+      .tx-table-head,
+      .tx-row { grid-template-columns: 40px minmax(180px, 1fr) 100px 90px; }
+      .tx-row .cell.sats,
+      .tx-row .cell.cycle,
+      .tx-table-head .col-sats,
+      .tx-table-head .col-cycle { display: none; }
+    }
+  </style>
+</head>
+<body>
+  {{NAV}}
+
+  <main class="tx-explorer">
+
+    <!-- ===== Header strip ============================================== -->
+    <section class="tx-header" aria-label="Fleet transaction totals">
+      <div class="tx-title">
+        <span class="kicker">TX Explorer</span>
+        <h1>On-chain transactions</h1>
+      </div>
+      <div class="stat accent">
+        <span class="label">Total Txs</span>
+        <span class="value" id="stat-total">—</span>
+        <span class="sub" id="stat-total-sub">indexed at boot</span>
+      </div>
+      <div class="stat azure">
+        <span class="label">Rate / sec</span>
+        <span class="value" id="stat-rate">0.0</span>
+        <span class="sub">live proofs</span>
+      </div>
+      <div class="stat violet">
+        <span class="label">Total Sats</span>
+        <span class="value" id="stat-sats">—</span>
+        <span class="sub" id="stat-sats-sub">&nbsp;</span>
+      </div>
+      <div class="stat">
+        <span class="label">Lanes</span>
+        <span class="value" id="stat-lanes">—</span>
+        <span class="sub" id="stat-cycles">—</span>
+      </div>
+    </section>
+
+    <!-- ===== Filters =================================================== -->
+    <section class="tx-filters" aria-label="Transaction filters">
+      <div class="field">
+        <label for="filter-lane">Lane</label>
+        <select id="filter-lane"><option value="">All lanes</option></select>
+      </div>
+      <div class="field">
+        <label for="filter-source">Source</label>
+        <select id="filter-source">
+          <option value="">All sources</option>
+          <option value="bluesky">Bluesky</option>
+          <option value="wikipedia">Wikipedia</option>
+          <option value="reddit">Reddit</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-time">Time range</label>
+        <select id="filter-time">
+          <option value="">All time</option>
+          <option value="300">Last 5 min</option>
+          <option value="3600">Last 1 hour</option>
+          <option value="86400">Last 24 hours</option>
+        </select>
+      </div>
+      <div class="field" style="flex: 1; min-width: 260px;">
+        <label for="filter-search">Search (txid prefix)</label>
+        <input type="search" id="filter-search" placeholder="e.g. 8a166b59… or any hex prefix" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="actions">
+        <button class="btn" id="btn-reset" type="button" title="Clear all filters">Reset</button>
+        <button class="btn btn-primary" id="btn-export" type="button" title="Export current view as CSV">Export CSV</button>
+      </div>
+    </section>
+
+    <!-- ===== Table ===================================================== -->
+    <section class="tx-panel" aria-label="Transaction list">
+      <div class="tx-panel-head">
+        <span class="title">On-chain txids · click any row to verify on WhatsOnChain</span>
+        <span class="count-sum" id="view-count"><span class="dim">rows:</span> —</span>
+      </div>
+      <div class="tx-table-head" role="row">
+        <span role="columnheader" class="col-idx">#</span>
+        <span role="columnheader">Txid</span>
+        <span role="columnheader">Lane</span>
+        <span role="columnheader">Source</span>
+        <span role="columnheader" class="col-sats" style="text-align: right;">Sats</span>
+        <span role="columnheader" class="col-cycle">Cycle</span>
+      </div>
+      <div class="tx-scroll" id="tx-scroll" role="rowgroup" tabindex="0">
+        <div class="tx-scroll-spacer" id="tx-spacer">
+          <div class="tx-empty" id="tx-empty">Loading transaction index…</div>
+        </div>
+      </div>
+      <div class="tx-pagination" id="tx-pagination">
+        <button class="btn" id="pg-first" type="button" title="First page">«</button>
+        <button class="btn" id="pg-prev" type="button" title="Previous page">‹ Prev</button>
+        <span class="pg-info">
+          <span class="dim">page</span>
+          <input type="number" id="pg-jump" min="1" step="1" value="1" aria-label="Jump to page">
+          <span class="dim">of</span>
+          <span id="pg-total">—</span>
+        </span>
+        <button class="btn" id="pg-next" type="button" title="Next page">Next ›</button>
+        <button class="btn" id="pg-last" type="button" title="Last page">»</button>
+      </div>
+      <div class="tx-footer">
+        <span>
+          <span class="kbd">click</span> txid to open WhatsOnChain
+          &nbsp;·&nbsp; <span class="kbd">type</span> to prefix-search
+          &nbsp;·&nbsp; <span class="kbd">←/→</span> for page navigation
+        </span>
+        <span class="search-status" id="search-status"></span>
+      </div>
+    </section>
+
+  </main>
+
+  {{FOOTER}}
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ===== Config =======================================================
+    const API_TXS   = '/api/txs';
+    const API_STATE = '/api/state';
+    const SSE_URL   = '/events';
+    const WOC_URL   = (txid) => `https://whatsonchain.com/tx/${txid}`;
+
+    // Pagination tuning
+    const ROW_H         = 32;   // px — must match CSS .tx-row height
+    const ROWS_PER_PAGE = 100;  // rows shown on screen per page (user-facing)
+    const PAGE_SIZE     = 2000; // server fetch chunk size (one fetch covers 20 UI pages)
+    const OVERSCAN      = 0;    // unused in paginated mode, kept for renderLiveOnly
+    const PREFETCH_PAD  = 0;    // unused in paginated mode
+
+    // Lane color palette (stable hashing — same lane id → same swatch)
+    const LANE_PALETTE = [
+      '#5cf2a4', '#7ab7ff', '#c5a3ff', '#ffcb5c', '#ff7a82',
+      '#6de5c5', '#9bb7ff', '#e4a6ff', '#ffb166', '#ff9fa6',
+      '#7ad9a9', '#62a5f6', '#b87df6', '#d99a42', '#e05b63',
+      '#4ecf93', '#5189cc', '#9d7de0', '#c08037', '#b84a52',
+    ];
+    function laneColor(id) {
+      let h = 0;
+      for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+      return LANE_PALETTE[h % LANE_PALETTE.length];
+    }
+
+    // ===== State ========================================================
+    const state = {
+      // snapshot from server
+      lanes: [],              // [{id, source, display_prefix, subreddit}]
+      laneById: {},           // id → {source, display_prefix}
+      totals: { txs: 0, sats: 0, articles: 0, cycles: 0 },
+      byLaneCounts: {},       // full-index per-lane counts
+      scannedAt: 0,
+
+      // filters
+      filter: {
+        lane: '',
+        source: '',
+        time: '',
+        search: '',
+      },
+
+      // live proofs (ts-tagged so time filter works)
+      // Map txid → { ts, lane, cycle_dir }
+      liveTxs: new Map(),
+      liveOrder: [],          // [txid] newest-first for time-filter fallback
+
+      // rate tracker
+      rateBuckets: [],        // [{ts, count}] 1s buckets, keep 60
+      lastRateTs: 0,
+
+      // page cache for current filter view — key by page idx
+      // { total, lane, pages: Map<pageIdx, {txs, fetchedAt, inflight}> }
+      view: null,
+
+      // search state
+      searchMode: false,
+      searchResults: [],      // flat array of {txid, lane}
+      searching: false,
+
+      // pagination
+      currentPage: 0,         // 0-indexed UI page
+    };
+
+    // ===== DOM refs =====================================================
+    const el = {
+      statTotal:   document.getElementById('stat-total'),
+      statTotalSub:document.getElementById('stat-total-sub'),
+      statRate:    document.getElementById('stat-rate'),
+      statSats:    document.getElementById('stat-sats'),
+      statSatsSub: document.getElementById('stat-sats-sub'),
+      statLanes:   document.getElementById('stat-lanes'),
+      statCycles:  document.getElementById('stat-cycles'),
+      filterLane:  document.getElementById('filter-lane'),
+      filterSource:document.getElementById('filter-source'),
+      filterTime:  document.getElementById('filter-time'),
+      filterSearch:document.getElementById('filter-search'),
+      btnReset:    document.getElementById('btn-reset'),
+      btnExport:   document.getElementById('btn-export'),
+      scroll:      document.getElementById('tx-scroll'),
+      spacer:      document.getElementById('tx-spacer'),
+      empty:       document.getElementById('tx-empty'),
+      viewCount:   document.getElementById('view-count'),
+      searchStatus:document.getElementById('search-status'),
+      pgFirst:     document.getElementById('pg-first'),
+      pgPrev:      document.getElementById('pg-prev'),
+      pgNext:      document.getElementById('pg-next'),
+      pgLast:      document.getElementById('pg-last'),
+      pgJump:      document.getElementById('pg-jump'),
+      pgTotal:     document.getElementById('pg-total'),
+    };
+
+    // ===== Number formatting ===========================================
+    const nf = new Intl.NumberFormat('en-US');
+    function fmt(n)   { return nf.format(Math.floor(n || 0)); }
+    function fmtSats(n) {
+      if (!n || n < 0) n = 0;
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+      return String(n);
+    }
+
+    // ===== Page fetch + cache ==========================================
+    // The server offers a per-lane filter OR no-filter (all lanes). We map
+    // the current filter to a "view key" and keep a page cache keyed by
+    // (viewKey, pageIdx). When filters change we rebuild the view.
+
+    function filterToViewKey() {
+      // Search is handled separately (not by page fetching).
+      // Lane filter: direct server-side support.
+      // Source filter: derived client-side (requires knowing lane → source).
+      // Time filter: client-side (only applies to liveTxs because historical
+      // ones have no per-tx ts — flagged in footer when engaged).
+      return JSON.stringify({ lane: state.filter.lane });
+    }
+
+    function laneMatchesSourceFilter(laneId) {
+      if (!state.filter.source) return true;
+      const lane = state.laneById[laneId];
+      return lane && lane.source === state.filter.source;
+    }
+
+    function viewTotal() {
+      // If a lane filter is set, total comes from byLaneCounts[lane].
+      // Otherwise it's totals.txs (or fallback).
+      if (state.filter.lane) return state.byLaneCounts[state.filter.lane] || 0;
+      if (state.filter.source) {
+        // Sum byLaneCounts across lanes with that source.
+        let sum = 0;
+        for (const [lid, cnt] of Object.entries(state.byLaneCounts)) {
+          if (laneMatchesSourceFilter(lid)) sum += cnt;
+        }
+        return sum;
+      }
+      return state.totals.txs || 0;
+    }
+
+    function ensureView() {
+      const key = filterToViewKey();
+      if (!state.view || state.view.key !== key) {
+        state.view = {
+          key,
+          lane: state.filter.lane,
+          pages: new Map(),
+          serverTotal: 0, // total for the server-side filter (lane only)
+        };
+      }
+    }
+
+    // Fetch a given page idx (each page = PAGE_SIZE rows) for current view.
+    // Seeded PRNG + Fisher-Yates so each page shuffles the same way on
+    // every render (stable pagination, visually varied rows).
+    function shufflePage(arr, seed) {
+      const out = arr.slice();
+      let s = (seed + 1) * 2654435761 >>> 0;
+      for (let i = out.length - 1; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        const j = s % (i + 1);
+        const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+      }
+      return out;
+    }
+
+    function fetchPage(pageIdx) {
+      ensureView();
+      const existing = state.view.pages.get(pageIdx);
+      if (existing && (existing.txs || existing.inflight)) return existing;
+      const entry = { txs: null, inflight: true, fetchedAt: 0 };
+      state.view.pages.set(pageIdx, entry);
+      const offset = pageIdx * PAGE_SIZE;
+      const params = new URLSearchParams({
+        offset: String(offset),
+        limit:  String(PAGE_SIZE),
+      });
+      if (state.view.lane) params.set('lane', state.view.lane);
+      const capturedKey = state.view.key;
+      fetch(`${API_TXS}?${params}`, { cache: 'no-store' })
+        .then((r) => r.ok ? r.json() : Promise.reject(new Error('bad resp')))
+        .then((body) => {
+          // Bail if the view has changed since we started.
+          if (!state.view || state.view.key !== capturedKey) return;
+          let txs = body.txs || [];
+          // Server returns txs sorted by lane (all bsky-en together, then
+          // bsky-en-2, etc). Shuffle deterministically per page so the
+          // visual rhythm varies lane-to-lane without breaking pagination.
+          // Unless a lane filter is active — then keep server order.
+          if (!state.view.lane && txs.length > 1) {
+            txs = shufflePage(txs, pageIdx);
+          }
+          entry.txs = txs;
+          entry.inflight = false;
+          entry.fetchedAt = Date.now();
+          state.view.serverTotal = body.total || 0;
+          if (body.byLaneCounts) state.byLaneCounts = body.byLaneCounts;
+          render();
+        })
+        .catch(() => {
+          entry.inflight = false;
+          entry.txs = [];
+        });
+      return entry;
+    }
+
+    // ===== Client-side source + time filtering =========================
+    // For the source filter we need to post-filter rows from the current
+    // page cache. For the time filter, we switch to "live-only" mode.
+
+    function needsClientSideFilter() {
+      return !!state.filter.source || !!state.filter.time;
+    }
+
+    function renderRow(i, abs, topPx) {
+      // abs = { txid, lane, ts?, source?, cycle_dir? }
+      const laneMeta = state.laneById[abs.lane] || { source: 'unknown' };
+      const color = laneColor(abs.lane);
+      const href = WOC_URL(abs.txid);
+      const short = abs.txid.slice(0, 16) + '…' + abs.txid.slice(-8);
+      const cycleLabel = abs.cycle_dir
+        ? abs.cycle_dir.replace(/^cycle-/, '#').slice(0, 10)
+        : (abs.ts ? 'live' : '—');
+      const sourceCls = (laneMeta.source || 'unknown').replace(/[^a-z]/gi, '').toLowerCase();
+      const sourceTxt = laneMeta.source || '—';
+      // Sats: not per-tx — show em-dash unless we have it from live events.
+      const satsTxt = '—';
+      const top = (typeof topPx === 'number') ? topPx : i * ROW_H;
+
+      return `
+        <div class="tx-row" style="top: ${top}px" data-txid="${abs.txid}">
+          <span class="cell idx">${fmt(i + 1)}</span>
+          <span class="cell txid">
+            <a href="${href}" target="_blank" rel="noopener" title="${abs.txid}
+click to open WhatsOnChain">
+              <span class="hash">${short}</span>
+            </a>
+          </span>
+          <span class="cell lane">
+            <span class="lane-chip" title="${abs.lane}">
+              <span class="sw" style="background: ${color};"></span>
+              <span class="name">${abs.lane}</span>
+            </span>
+          </span>
+          <span class="cell source">
+            <span class="source-badge ${sourceCls}">${sourceTxt}</span>
+          </span>
+          <span class="cell sats">${satsTxt}</span>
+          <span class="cell cycle" title="${abs.cycle_dir || ''}">${cycleLabel}</span>
+        </div>
+      `;
+    }
+
+    function renderLoadingRow(i, topPx) {
+      const top = (typeof topPx === 'number') ? topPx : i * ROW_H;
+      return `
+        <div class="tx-row loading" style="top: ${top}px">
+          <span class="cell idx">${fmt(i + 1)}</span>
+          <span class="cell txid"><span class="hash"></span></span>
+          <span class="cell lane"><span class="lane-chip"><span class="sw"></span><span class="name">…</span></span></span>
+          <span class="cell source"><span class="source-badge unknown">…</span></span>
+          <span class="cell sats">—</span>
+          <span class="cell cycle">…</span>
+        </div>
+      `;
+    }
+
+    // ===== Render loop ==================================================
+    let renderScheduled = false;
+    function scheduleRender() {
+      if (renderScheduled) return;
+      renderScheduled = true;
+      requestAnimationFrame(() => {
+        renderScheduled = false;
+        render();
+      });
+    }
+
+    function render() {
+      // SEARCH mode → render pre-collected results (no virtualization fancy
+      // needed; results capped at 5000 by definition). If empty list,
+      // render empty-state.
+      if (state.searchMode) {
+        renderSearchResults();
+        return;
+      }
+
+      // SOURCE-only filter (no lane, no time) → we need client-side filtering.
+      // Simplest approach: fetch pages sequentially and keep a filtered list.
+      // For now, if only source is set (no lane) we still use server pages
+      // but post-filter each row and let users know counts can lag.
+      // TIME filter → live-only view using state.liveTxs (fast, no fetch).
+      if (state.filter.time) {
+        renderLiveOnly();
+        return;
+      }
+
+      ensureView();
+      const total  = viewTotal();
+      const scroll = el.scroll;
+      const spacer = el.spacer;
+
+      if (total === 0) {
+        spacer.style.height = '120px';
+        spacer.innerHTML = '<div class="tx-empty">No transactions match the current filter.</div>';
+        el.viewCount.innerHTML = `<span class="dim">rows:</span> 0`;
+        return;
+      }
+
+      // Paginated mode — render ROWS_PER_PAGE rows at a time, no virtualization.
+      const numPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+      const curPage  = Math.min(state.currentPage, numPages - 1);
+      state.currentPage = curPage;
+
+      const firstIdx = curPage * ROWS_PER_PAGE;
+      const lastExclusive = Math.min(total, firstIdx + ROWS_PER_PAGE);
+      const rowsOnPage = lastExclusive - firstIdx;
+
+      spacer.style.height = (rowsOnPage * ROW_H) + 'px';
+
+      // Fetch the server page(s) that overlap [firstIdx, lastExclusive).
+      const srvFirst = Math.floor(firstIdx / PAGE_SIZE);
+      const srvLast  = Math.floor((lastExclusive - 1) / PAGE_SIZE);
+      for (let p = srvFirst; p <= srvLast; p++) fetchPage(p);
+
+      let html = '';
+      for (let i = firstIdx; i < lastExclusive; i++) {
+        const srvPageIdx = Math.floor(i / PAGE_SIZE);
+        const srvInPage  = i % PAGE_SIZE;
+        const page       = state.view.pages.get(srvPageIdx);
+        const localTop   = (i - firstIdx) * ROW_H;
+        if (!page || !page.txs) { html += renderLoadingRow(i, localTop); continue; }
+        const entry = page.txs[srvInPage];
+        if (!entry) { html += renderLoadingRow(i, localTop); continue; }
+        if (!laneMatchesSourceFilter(entry.lane)) {
+          html += renderRow(i, { ...entry, _dim: true }, localTop);
+          continue;
+        }
+        html += renderRow(i, entry, localTop);
+      }
+      spacer.innerHTML = html;
+
+      el.viewCount.innerHTML = `<span class="dim">showing</span> ${fmt(firstIdx + 1)}–${fmt(lastExclusive)} <span class="dim">of</span> ${fmt(total)}`;
+      updatePaginationControls(curPage, numPages);
+    }
+
+    function updatePaginationControls(curPage, numPages) {
+      if (!el.pgFirst) return;
+      el.pgTotal.textContent = fmt(numPages);
+      el.pgJump.value = curPage + 1;
+      el.pgJump.max = numPages;
+      el.pgFirst.disabled = curPage === 0;
+      el.pgPrev.disabled  = curPage === 0;
+      el.pgNext.disabled  = curPage >= numPages - 1;
+      el.pgLast.disabled  = curPage >= numPages - 1;
+    }
+
+    function gotoPage(p) {
+      state.currentPage = Math.max(0, Math.floor(p));
+      if (el.scroll) el.scroll.scrollTop = 0;
+      render();
+    }
+
+    function viewTotalForServer() {
+      // The server's /api/txs total is unfiltered or lane-filtered.
+      // Time/source are client-side; we still may need the full list to
+      // apply them (for source w/o lane).
+      if (state.filter.lane) return state.byLaneCounts[state.filter.lane] || state.view.serverTotal || 0;
+      return state.totals.txs || state.view.serverTotal || 0;
+    }
+
+    // ===== Live-only view (time filter) ================================
+    function renderLiveOnly() {
+      const cutoffSec = parseInt(state.filter.time || '0', 10);
+      const now = Date.now();
+      const cutoffMs = cutoffSec ? now - cutoffSec * 1000 : 0;
+
+      const rows = [];
+      for (let i = 0; i < state.liveOrder.length; i++) {
+        const txid = state.liveOrder[i];
+        const meta = state.liveTxs.get(txid);
+        if (!meta) continue;
+        if (cutoffMs && meta.ts < cutoffMs) continue;
+        if (state.filter.lane && meta.lane !== state.filter.lane) continue;
+        if (!laneMatchesSourceFilter(meta.lane)) continue;
+        rows.push({ txid, lane: meta.lane, ts: meta.ts, cycle_dir: meta.cycle_dir });
+      }
+
+      const total = rows.length;
+      el.spacer.style.height = Math.max(total * ROW_H, ROW_H) + 'px';
+
+      if (total === 0) {
+        el.spacer.innerHTML = `<div class="tx-empty">No live txs in the selected window. The time filter only covers txs observed after this page loaded (~${state.liveTxs.size} indexed).</div>`;
+        el.viewCount.innerHTML = `<span class="dim">rows:</span> 0`;
+        return;
+      }
+
+      // Render visible window only.
+      const scrollTop = el.scroll.scrollTop;
+      const viewH = el.scroll.clientHeight || 480;
+      const first = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
+      const lastExclusive = Math.min(total, Math.ceil((scrollTop + viewH) / ROW_H) + OVERSCAN);
+
+      let html = '';
+      for (let i = first; i < lastExclusive; i++) {
+        html += renderRow(i, rows[i]);
+      }
+      el.spacer.innerHTML = html;
+      el.viewCount.innerHTML = `<span class="dim">live-only:</span> ${fmt(total)} <span class="dim">txs</span>`;
+    }
+
+    // ===== Search mode =================================================
+    // Search is prefix-match on txid (all-lowercase hex). We progressively
+    // scan server pages until we hit MAX_SEARCH_SCAN or find MAX_RESULTS.
+    const MAX_RESULTS = 2000;
+    const MAX_SEARCH_SCAN = 1_700_000; // hard cap — full dataset
+
+    let searchAbortId = 0;
+
+    function runSearch(query) {
+      const q = (query || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+      if (!q || q.length < 2) {
+        // Too short — exit search mode, resume normal render.
+        state.searchMode = false;
+        state.searchResults = [];
+        el.searchStatus.textContent = '';
+        render();
+        return;
+      }
+      state.searchMode = true;
+      state.searching = true;
+      state.searchResults = [];
+      el.searchStatus.textContent = 'searching…';
+
+      const myId = ++searchAbortId;
+
+      // Use a lane/source-filtered range if possible to shrink the search
+      // space. Otherwise scan the full flat index.
+      const laneFilter = state.filter.lane || null;
+      let offset = 0;
+      const total = laneFilter
+        ? (state.byLaneCounts[laneFilter] || 0)
+        : (state.totals.txs || state.view?.serverTotal || MAX_SEARCH_SCAN);
+
+      function step() {
+        if (myId !== searchAbortId) return; // cancelled
+        if (state.searchResults.length >= MAX_RESULTS) return finish(true);
+        if (offset >= total || offset >= MAX_SEARCH_SCAN) return finish(false);
+
+        const params = new URLSearchParams({
+          offset: String(offset),
+          limit:  String(PAGE_SIZE),
+        });
+        if (laneFilter) params.set('lane', laneFilter);
+
+        fetch(`${API_TXS}?${params}`, { cache: 'no-store' })
+          .then((r) => r.ok ? r.json() : Promise.reject())
+          .then((body) => {
+            if (myId !== searchAbortId) return;
+            const txs = body.txs || [];
+            for (const t of txs) {
+              if (!t || !t.txid) continue;
+              if (t.txid.startsWith(q)) {
+                if (state.filter.source && !laneMatchesSourceFilter(t.lane)) continue;
+                state.searchResults.push(t);
+                if (state.searchResults.length >= MAX_RESULTS) break;
+              }
+            }
+            offset += PAGE_SIZE;
+            el.searchStatus.textContent =
+              `searched ${fmt(Math.min(offset, total))} · found ${fmt(state.searchResults.length)}`;
+            renderSearchResults();
+            // Yield to browser between pages so UI stays responsive.
+            setTimeout(step, 0);
+          })
+          .catch(() => finish(false));
+      }
+
+      function finish(cappedByResults) {
+        if (myId !== searchAbortId) return;
+        state.searching = false;
+        const status = cappedByResults
+          ? `capped at ${fmt(MAX_RESULTS)} matches`
+          : `done · ${fmt(state.searchResults.length)} matches`;
+        el.searchStatus.textContent = status;
+        renderSearchResults();
+      }
+
+      step();
+    }
+
+    function renderSearchResults() {
+      const rows = state.searchResults;
+      const total = rows.length;
+      el.spacer.style.height = Math.max(total * ROW_H, ROW_H) + 'px';
+
+      if (total === 0) {
+        el.spacer.innerHTML = state.searching
+          ? '<div class="tx-empty">Scanning…</div>'
+          : '<div class="tx-empty">No txids match that prefix.</div>';
+        el.viewCount.innerHTML = `<span class="dim">search:</span> 0`;
+        return;
+      }
+
+      const scrollTop = el.scroll.scrollTop;
+      const viewH = el.scroll.clientHeight || 480;
+      const first = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
+      const lastExclusive = Math.min(total, Math.ceil((scrollTop + viewH) / ROW_H) + OVERSCAN);
+
+      let html = '';
+      for (let i = first; i < lastExclusive; i++) {
+        html += renderRow(i, rows[i]);
+      }
+      el.spacer.innerHTML = html;
+      el.viewCount.innerHTML = `<span class="dim">search hits:</span> ${fmt(total)}`;
+    }
+
+    // ===== Stat strip ===================================================
+    function renderStats() {
+      el.statTotal.textContent = fmt(state.totals.txs || 0);
+      const scannedStr = state.scannedAt
+        ? new Date(state.scannedAt).toLocaleTimeString()
+        : '—';
+      el.statTotalSub.textContent = `indexed ${scannedStr}`;
+      el.statSats.textContent = fmtSats(state.totals.sats || 0);
+      el.statSatsSub.textContent = `${fmt(state.totals.sats || 0)} sats`;
+      el.statLanes.textContent = fmt(state.lanes.length);
+      el.statCycles.textContent = `${fmt(state.totals.cycles || 0)} cycles · ${fmt(state.totals.articles || 0)} articles`;
+    }
+
+    function updateRate() {
+      const now = Math.floor(Date.now() / 1000);
+      // Drop buckets older than 60s.
+      state.rateBuckets = state.rateBuckets.filter((b) => now - b.ts <= 60);
+      if (state.rateBuckets.length === 0) {
+        el.statRate.textContent = '0.0';
+        return;
+      }
+      const total = state.rateBuckets.reduce((a, b) => a + b.count, 0);
+      const span  = Math.max(1, now - state.rateBuckets[0].ts);
+      const rate  = total / span;
+      el.statRate.textContent = rate.toFixed(1);
+    }
+
+    function bumpRate(n) {
+      const now = Math.floor(Date.now() / 1000);
+      const last = state.rateBuckets[state.rateBuckets.length - 1];
+      if (last && last.ts === now) last.count += n;
+      else state.rateBuckets.push({ ts: now, count: n });
+    }
+
+    setInterval(updateRate, 1000);
+
+    // ===== Filter UI ====================================================
+    function populateLaneDropdown() {
+      const sel = el.filterLane;
+      const current = sel.value;
+      // Clear + rebuild (keep "All" first).
+      sel.innerHTML = '<option value="">All lanes</option>';
+      const entries = [...state.lanes].sort((a, b) => a.id.localeCompare(b.id));
+      for (const lane of entries) {
+        const count = state.byLaneCounts[lane.id] || 0;
+        const opt = document.createElement('option');
+        opt.value = lane.id;
+        opt.textContent = `${lane.id}  ·  ${fmt(count)}`;
+        sel.appendChild(opt);
+      }
+      if (current) sel.value = current;
+    }
+
+    function applyFilterChange() {
+      // Reset view, scroll position, and current page. Rebuild.
+      state.view = null;
+      state.searchMode = false;
+      state.currentPage = 0;
+      el.scroll.scrollTop = 0;
+      el.searchStatus.textContent = '';
+      const q = el.filterSearch.value.trim();
+      if (q.length >= 2) {
+        runSearch(q);
+      } else {
+        render();
+      }
+    }
+
+    el.filterLane.addEventListener('change', () => {
+      state.filter.lane = el.filterLane.value;
+      applyFilterChange();
+    });
+    el.filterSource.addEventListener('change', () => {
+      state.filter.source = el.filterSource.value;
+      applyFilterChange();
+    });
+    el.filterTime.addEventListener('change', () => {
+      state.filter.time = el.filterTime.value;
+      applyFilterChange();
+    });
+
+    let searchDebounce = 0;
+    el.filterSearch.addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      const q = el.filterSearch.value.trim();
+      searchDebounce = setTimeout(() => {
+        state.filter.search = q;
+        if (q.length < 2) {
+          state.searchMode = false;
+          state.searchResults = [];
+          searchAbortId++; // cancel in-flight
+          el.searchStatus.textContent = '';
+          render();
+        } else {
+          runSearch(q);
+        }
+      }, 220);
+    });
+
+    el.btnReset.addEventListener('click', () => {
+      state.filter = { lane: '', source: '', time: '', search: '' };
+      el.filterLane.value = '';
+      el.filterSource.value = '';
+      el.filterTime.value = '';
+      el.filterSearch.value = '';
+      searchAbortId++;
+      el.searchStatus.textContent = '';
+      applyFilterChange();
+    });
+
+    el.btnExport.addEventListener('click', () => {
+      exportCsv();
+    });
+
+    // Pagination controls
+    if (el.pgFirst) {
+      el.pgFirst.addEventListener('click', () => gotoPage(0));
+      el.pgPrev.addEventListener('click', () => gotoPage(state.currentPage - 1));
+      el.pgNext.addEventListener('click', () => gotoPage(state.currentPage + 1));
+      el.pgLast.addEventListener('click', () => {
+        const total = viewTotal();
+        const numPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+        gotoPage(numPages - 1);
+      });
+      el.pgJump.addEventListener('change', () => {
+        const v = parseInt(el.pgJump.value, 10);
+        if (Number.isFinite(v) && v > 0) gotoPage(v - 1);
+      });
+    }
+    window.addEventListener('keydown', (e) => {
+      if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (e.key === 'ArrowRight') { gotoPage(state.currentPage + 1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { gotoPage(state.currentPage - 1); e.preventDefault(); }
+    });
+    window.addEventListener('resize', scheduleRender);
+
+    // ===== CSV export ===================================================
+    function exportCsv() {
+      // Export the *current visible set*:
+      //   - search mode → all search results
+      //   - live-only mode → all live rows
+      //   - otherwise → iterate cached pages; uncached rows omitted with a
+      //     warning row at the top.
+      const rows = [['index', 'txid', 'lane', 'source', 'whatsonchain_url']];
+      let omitted = 0;
+
+      if (state.searchMode) {
+        state.searchResults.forEach((t, i) => {
+          const src = state.laneById[t.lane]?.source || '';
+          rows.push([i + 1, t.txid, t.lane, src, WOC_URL(t.txid)]);
+        });
+      } else if (state.filter.time) {
+        const cutoffSec = parseInt(state.filter.time || '0', 10);
+        const cutoffMs = cutoffSec ? Date.now() - cutoffSec * 1000 : 0;
+        let idx = 0;
+        for (const txid of state.liveOrder) {
+          const meta = state.liveTxs.get(txid);
+          if (!meta) continue;
+          if (cutoffMs && meta.ts < cutoffMs) continue;
+          if (state.filter.lane && meta.lane !== state.filter.lane) continue;
+          if (!laneMatchesSourceFilter(meta.lane)) continue;
+          idx++;
+          const src = state.laneById[meta.lane]?.source || '';
+          rows.push([idx, txid, meta.lane, src, WOC_URL(txid)]);
+        }
+      } else {
+        // Dump every cached page that matches current filter, in order.
+        const pages = [...state.view?.pages.entries() || []].sort((a, b) => a[0] - b[0]);
+        let globalIdx = 0;
+        const total = viewTotal();
+        const firstPage = pages.length ? pages[0][0] : 0;
+        for (let p = 0; p * PAGE_SIZE < total; p++) {
+          const page = state.view?.pages.get(p);
+          if (!page || !page.txs) {
+            // Omit — flag in the warning row.
+            omitted += Math.min(PAGE_SIZE, total - p * PAGE_SIZE);
+            continue;
+          }
+          for (const t of page.txs) {
+            if (!laneMatchesSourceFilter(t.lane)) continue;
+            globalIdx++;
+            const src = state.laneById[t.lane]?.source || '';
+            rows.push([globalIdx, t.txid, t.lane, src, WOC_URL(t.txid)]);
+          }
+        }
+      }
+
+      const header = [
+        `# DolphinSense TX Explorer · exported ${new Date().toISOString()}`,
+        `# filter: lane=${state.filter.lane || 'all'} source=${state.filter.source || 'all'} time=${state.filter.time || 'all'} search=${state.filter.search || ''}`,
+      ];
+      if (omitted > 0) {
+        header.push(`# WARNING: ${omitted} rows omitted (not yet fetched). Scroll through the list to cache all pages, then re-export.`);
+      }
+      const csv = header.join('\n') + '\n' + rows.map(csvRow).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `dolphinsense-txs-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+    function csvRow(arr) {
+      return arr.map(csvCell).join(',');
+    }
+    function csvCell(v) {
+      const s = String(v == null ? '' : v);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    }
+
+    // ===== Wire up state from snapshot =================================
+    function ingestSnapshot(snap) {
+      if (!snap) return;
+      state.totals = snap.totals || state.totals;
+      state.lanes = snap.lanes || [];
+      state.laneById = {};
+      for (const l of state.lanes) state.laneById[l.id] = l;
+      if (snap.perLane) {
+        // perLane doesn't directly give byLaneCounts — the /api/txs endpoint
+        // does. We'll refresh byLaneCounts from the first txs fetch.
+      }
+      renderStats();
+      populateLaneDropdown();
+    }
+
+    function ingestByLaneCounts(blc, scannedAt) {
+      if (blc) state.byLaneCounts = blc;
+      if (scannedAt) state.scannedAt = scannedAt;
+      // Refresh lane dropdown labels (they include counts).
+      populateLaneDropdown();
+      renderStats();
+    }
+
+    // ===== Bootstrap ===================================================
+    async function bootstrap() {
+      // 1) Snapshot for lanes + totals.
+      try {
+        const r = await fetch(API_STATE, { cache: 'no-store' });
+        if (r.ok) {
+          const snap = await r.json();
+          ingestSnapshot(snap);
+        }
+      } catch { /* soldier on */ }
+
+      // 2) First /api/txs call for byLaneCounts + scannedAt. Also gives us
+      //    the first page of all-lanes data to render immediately.
+      try {
+        const r = await fetch(`${API_TXS}?offset=0&limit=${PAGE_SIZE}`, { cache: 'no-store' });
+        if (r.ok) {
+          const body = await r.json();
+          state.totals.txs = body.total || state.totals.txs;
+          ingestByLaneCounts(body.byLaneCounts, body.scannedAt);
+          ensureView();
+          const page = state.view.pages.get(0) || { txs: null, inflight: false, fetchedAt: 0 };
+          page.txs = body.txs || [];
+          page.inflight = false;
+          page.fetchedAt = Date.now();
+          state.view.serverTotal = body.total || 0;
+          state.view.pages.set(0, page);
+        }
+      } catch { /* soldier on */ }
+
+      render();
+      connectSse();
+    }
+
+    // ===== SSE ==========================================================
+    function connectSse() {
+      let es;
+      try {
+        es = new EventSource(SSE_URL);
+      } catch {
+        window.__dmSetNavStatus && window.__dmSetNavStatus('down', 'no sse');
+        return;
+      }
+
+      es.addEventListener('open', () => {
+        window.__dmSetNavStatus && window.__dmSetNavStatus('live', 'connected');
+      });
+      es.addEventListener('error', () => {
+        window.__dmSetNavStatus && window.__dmSetNavStatus('down', 'reconnecting…');
+      });
+
+      es.addEventListener('message', (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+
+        if (msg.kind === 'snapshot' && msg.state) {
+          ingestSnapshot(msg.state);
+        } else if (msg.kind === 'init' && Array.isArray(msg.lanes)) {
+          state.lanes = msg.lanes;
+          state.laneById = {};
+          for (const l of state.lanes) state.laneById[l.id] = l;
+          populateLaneDropdown();
+        } else if (msg.kind === 'init_historical') {
+          state.totals = {
+            txs: msg.txs || 0,
+            sats: msg.sats || 0,
+            articles: msg.articles || 0,
+            cycles: msg.cycles || 0,
+          };
+          if (msg.scannedAt) state.scannedAt = msg.scannedAt;
+          renderStats();
+        } else if (msg.kind === 'proof_emitted' && msg.txid) {
+          // Live tx — track for rate + time filter.
+          const ts = Date.now();
+          if (!state.liveTxs.has(msg.txid)) {
+            state.liveTxs.set(msg.txid, {
+              ts,
+              lane: msg.lane,
+              cycle_dir: msg.cycle_dir,
+            });
+            state.liveOrder.unshift(msg.txid);
+            if (state.liveOrder.length > 20000) {
+              const drop = state.liveOrder.pop();
+              state.liveTxs.delete(drop);
+            }
+            if (!msg._replay) {
+              bumpRate(1);
+              state.totals.txs = (state.totals.txs || 0) + 1;
+              state.byLaneCounts[msg.lane] = (state.byLaneCounts[msg.lane] || 0) + 1;
+              renderStats();
+              // Only re-render for live txs when a time filter is active
+              // (otherwise page cache would be stale but acceptable).
+              if (state.filter.time) scheduleRender();
+            }
+          }
+        }
+      });
+    }
+
+    // Kick off.
+    bootstrap();
+
+  })();
+  </script>
+</body>
+</html>
