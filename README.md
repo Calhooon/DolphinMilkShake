@@ -19,7 +19,7 @@ Dolphinsense is the opposite — every agent thought is a transaction, every cit
 | Autonomous agents | **90** (30 lanes × captain + worker + synthesis) |
 | Independent wallets | **90** (each with its own BRC-100 identity) |
 | Humans in the loop | **0** |
-| Total cost | **~$90** (inference + mining + x402 services) |
+| Total cost | **~$96** (~\$41 LLM inference + ~\$49 scrape proofs + ~\$6 coordination) |
 
 ## Reproduce the dashboard in 30 seconds
 
@@ -104,15 +104,16 @@ Every arrow in that diagram is a BRC-18 decision proof + a BRC-29 payment + a BR
 
 ## Cost breakdown
 
-| Source | 24h Volume | Cost |
-|---|---|---|
-| LLM inference payments (x402) | ~7,000 | ~$2 (250k sats) |
-| Scrape proofs (BRC-18 OP_RETURN) | ~1,500,000 | ~$75 (3 BSV) |
-| BRC-48 state tokens | ~100,000 | ~$5 |
-| MessageBox + BRC-52 + UHRP | ~5,000 | ~$3 |
-| **Total** | **~1,612,000** | **~$85** |
+BSV at ~$16.50 per 100M sats (1 BSV ≈ $16.50).
 
-Every transaction is a real payment, proof, token, or message receipt. No batch scripts, no artificial volume. Scale this by running a better LLM — the architecture is identical, only the thinking cost changes.
+| Source | 24h Volume | Sats | USD |
+|---|---|---|---|
+| LLM inference payments (x402) | ~7,000 | ~250,000,000 (2.5 BSV) | ~$41 |
+| Scrape proofs (BRC-18 OP_RETURN, ~200 sats each) | ~1,500,000 | ~300,000,000 (3 BSV) | ~$49 |
+| BRC-48 state tokens + MessageBox + UHRP | ~105,000 | ~35,000,000 | ~$6 |
+| **Total** | **~1,612,000** | **~585,000,000** | **~$96** |
+
+Every transaction is a real payment, proof, token, or message receipt. No batch scripts, no artificial volume. Scale this by running a better LLM — the architecture is identical, only the thinking cost changes. The $41 of LLM inference is the biggest line; drop to Haiku or gpt-5-nano and it collapses.
 
 ## What's in this repo
 
@@ -125,7 +126,6 @@ Every transaction is a real payment, proof, token, or message receipt. No batch 
 | `feeder/` | Real-time data feeders (Bluesky Jetstream + Wikipedia stream) |
 | `agents/` | Per-agent dolphin-milk config TOML files |
 | `prompts/` | System prompts by role (captain, worker, synthesis) |
-| `STATUS-2026-04-*.md` | Session-by-session progress notes |
 
 ## What's NOT in this repo (by design)
 
@@ -136,8 +136,8 @@ Every transaction is a real payment, proof, token, or message receipt. No batch 
 
 ## Dependencies to run the live fleet (not the demo replay)
 
-- [rust-bsv-worm](https://github.com/Calgooon/rust-bsv-worm) — the Dolphin Milk autonomous agent framework (each of the 90 agents is a dolphin-milk instance with a role-specific prompt)
-- [bsv-wallet-cli](https://github.com/Calgooon/bsv-wallet-cli) — BRC-100 wallet daemon (one per agent)
+- [dolphin-milk](https://github.com/calhooon/dolphin-milk) — the autonomous agent framework (each of the 90 agents is a `dolphin-milk serve` instance with a role-specific prompt)
+- [bsv-wallet-cli](https://github.com/calhooon/bsv-wallet-cli) — BRC-100 wallet daemon (one per agent)
 - [MetaNet Client](https://getmetanet.com) — parent wallet on port 3321 that issues BRC-52 certs
 
 The demo replay in `demo-evidence/` needs none of these — just Node.

@@ -11,7 +11,7 @@
 #      scripts/start-fleet-daemons.sh start
 #   2. Feeder process running and populating per-sub queue.jsonl files —
 #      start via scripts/feeder-preflight.sh
-#   3. rust-bsv-worm release binary built at $RUST_BSV_WORM_DIR/target/release/dolphin-milk
+#   3. dolphin-milk release binary built at $RUST_BSV_WORM_DIR/target/release/dolphin-milk
 #   4. MetaNet Desktop parent wallet running on port 3321
 #
 # Usage:
@@ -25,7 +25,7 @@
 #   BATCH_CAP              records per cycle (default 100)
 #   SKINNY_CAPTAIN_MODE    parallel (default — E20d-validated) | liveness
 #   ENABLE_SYNTHESIS       1 (default) | 0
-#   RUST_BSV_WORM_DIR      path to rust-bsv-worm (default ~/bsv/rust-bsv-worm)
+#   RUST_BSV_WORM_DIR      path to dolphin-milk (default ~/bsv/rust-bsv-worm)
 #
 # Exit codes:
 #   0  all lanes completed successfully

@@ -25,7 +25,7 @@ network, they just pop records off the queue.
 
 | file | purpose |
 |---|---|
-| `reddit-cache-feeder.js` | the feeder process (copied from `rust-bsv-worm@f47c0c3` — keep these in sync if the upstream moves) |
+| `reddit-cache-feeder.js` | the feeder process (copied from `dolphin-milk@f47c0c3` — keep these in sync if the upstream moves) |
 | `subs.json` | production sub list (TBD — Day 1 task) |
 | `README.md` | this file |
 
@@ -66,7 +66,7 @@ Per-instance variation for larger fleets: `FEEDER_USER_AGENT="DolphinSense/0.1 l
 ## Agent consumer pattern
 
 Agents consume records using the `QUEUE_MODE` path in the
-`rust-bsv-worm` test harness (`tests/multi-worm/test_cycle_v2.js`). The
+`dolphin-milk` test harness (`tests/multi-worm/test_cycle_v2.js`). The
 core logic — which dolphinmilkshake's own fleet launcher will replicate
 as it matures — is:
 
@@ -120,4 +120,4 @@ See [../NEXT.md](../NEXT.md) for the full Day 1/2/3 task list.
 
 - [PLAN-C-SCALE.md](../PLAN-C-SCALE.md) — architecture + scale math
 - [WALLETS.md](../WALLETS.md) — operational recipe for the wallet fleet
-- `rust-bsv-worm@f47c0c3:scripts/reddit-cache-feeder.js` — source of truth upstream
+- `dolphin-milk@f47c0c3:scripts/reddit-cache-feeder.js` — source of truth upstream

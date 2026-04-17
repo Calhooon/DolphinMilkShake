@@ -43,7 +43,7 @@ const crypto = require('crypto');
 const DOLPHINMILKSHAKE_ROOT = process.env.DOLPHINMILKSHAKE_ROOT
   || path.resolve(__dirname, '..');
 const RUST_BSV_WORM_DIR = process.env.RUST_BSV_WORM_DIR
-  || path.resolve(process.env.HOME, 'bsv/rust-bsv-worm');
+  || path.resolve(process.env.HOME, 'bsv/dolphin-milk');
 
 const LANES_FILE = process.env.LANES_FILE
   || path.join(DOLPHINMILKSHAKE_ROOT, 'fleet/lanes.json');
