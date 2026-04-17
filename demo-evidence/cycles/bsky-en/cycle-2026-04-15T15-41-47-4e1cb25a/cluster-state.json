@@ -1,0 +1,54 @@
+{
+  "createdAt": "2026-04-15T15:41:51.282Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-bsky-en": {
+      "name": "captain-bsky-en",
+      "port": 8100,
+      "walletPort": 3400,
+      "identityKey": "03e6d02d3dd96b1b20d989d45abc3bab281e449aee78d3190a136318df3856482c",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-bsky-en",
+      "certHash": "dm-captain-bsky-en-03e6d02d-1776216933",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-15T15:41:51.183Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-bsky-en/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-bsky-en/server-stderr.log"
+    },
+    "worker-bsky-en": {
+      "name": "worker-bsky-en",
+      "port": 8101,
+      "walletPort": 3401,
+      "identityKey": "0329f8fe66ccc5e07200c566beca12b276b50f48efcb7a757332143f96090e554f",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-bsky-en",
+      "certHash": "dm-worker-bsky-en-0329f8fe-1776216935",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-15T15:41:51.282Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-bsky-en/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-bsky-en/server-stderr.log"
+    }
+  }
+}

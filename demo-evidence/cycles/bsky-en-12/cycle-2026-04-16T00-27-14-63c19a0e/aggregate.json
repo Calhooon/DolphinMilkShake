@@ -1,0 +1,512 @@
+{
+  "runNonce": "63c19a0e",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 100,
+  "successCycles": 13,
+  "completedCycles": 55,
+  "inProgress": true,
+  "synthesisEnabled": true,
+  "totalSats": 1887816,
+  "totalProofs": 1299,
+  "satsPerProofAvg": 1453,
+  "avgCycleSats": 145217,
+  "avgCycleWallSec": 170,
+  "totalWallSec": 40680,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "error": "cycle 63c19a0e-000: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 1,
+      "cycleId": "63c19a0e-001",
+      "recordCount": 100,
+      "scrapeWallMs": 25,
+      "captainTaskId": "2113b085-7977-4546-aa4b-8ff036a8e9b3",
+      "captainIter": 2,
+      "captainSats": 87910,
+      "workerTaskId": "f125c263-f446-4b4f-9f6c-d29f527b518e",
+      "workerSats": 12605,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "c652457031163f8fc5d8036f45614790dbbbe1d523114e9b7e6764dc224a14e1",
+      "lastTxid": "a54c996568058f365348dd0319aa823146f8a91c93e85128d06086dea626fd2a",
+      "manifestSha256": "31006483e3165aee4d0ec36908128bb9db81d003a6cdf2c705ce1bcc80bb413f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 100515,
+      "satsPerProof": 1005,
+      "cycleWallMs": 274256,
+      "cycleWallSec": 274
+    },
+    {
+      "cycleIdx": 2,
+      "cycleId": "63c19a0e-002",
+      "recordCount": 100,
+      "scrapeWallMs": 30,
+      "captainTaskId": "572dcb13-e826-45b3-bbd2-1f091d56b65f",
+      "captainIter": 2,
+      "captainSats": 91867,
+      "workerTaskId": "f125c263-f446-4b4f-9f6c-d29f527b518e",
+      "workerSats": 12605,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "c652457031163f8fc5d8036f45614790dbbbe1d523114e9b7e6764dc224a14e1",
+      "lastTxid": "a54c996568058f365348dd0319aa823146f8a91c93e85128d06086dea626fd2a",
+      "manifestSha256": "31006483e3165aee4d0ec36908128bb9db81d003a6cdf2c705ce1bcc80bb413f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 104472,
+      "satsPerProof": 1045,
+      "cycleWallMs": 120068,
+      "cycleWallSec": 120
+    },
+    {
+      "cycleIdx": 3,
+      "cycleId": "63c19a0e-003",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "78b929f5-90bc-421f-80e9-df3abd538c28",
+      "captainIter": 2,
+      "captainSats": 106770,
+      "workerTaskId": "6a1a6e25-4f6b-498c-a334-7853a529afe8",
+      "workerSats": 14217,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "19849522cebd149745f6db060de3e54ab079552c772a7b364bcb9e4528e32535",
+      "lastTxid": "e51962c20340d5bf8b902eb04d5cce82d41276097c3ec87cc101f1693bda6767",
+      "manifestSha256": "bdde2c0b3ae8a0ec149bbd89389570e4649786b4c8c890209c1f7ee85e181c55",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 120987,
+      "satsPerProof": 1210,
+      "cycleWallMs": 93741,
+      "cycleWallSec": 94
+    },
+    {
+      "cycleIdx": 4,
+      "cycleId": "63c19a0e-004",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "9324d7bc-961b-4954-aad2-3e906a5763cf",
+      "captainIter": 2,
+      "captainSats": 100099,
+      "workerTaskId": "67c89606-90b7-4a50-a03c-b79f48e00c2b",
+      "workerSats": 13746,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "acd77b862f201ff7123c49192996b3ef264f5de22cc09b8a6c6bae4a1c02172a",
+      "lastTxid": "274d4e03e443ddf5e6adba9f4a667f5c314c96a8bd053da5452462f28fa6c980",
+      "manifestSha256": "965431f750fdac8812e6949459e5306033d1a5b94a2797a75330c9f2e6bafd3b",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 113845,
+      "satsPerProof": 1138,
+      "cycleWallMs": 135284,
+      "cycleWallSec": 135
+    },
+    {
+      "cycleIdx": 5,
+      "cycleId": "63c19a0e-005",
+      "recordCount": 100,
+      "scrapeWallMs": 23,
+      "captainTaskId": "773a880c-0d3e-44d1-99b6-e0057b6b5ee3",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "6d8e19e2-1bc3-452c-b881-594d302d6fa4",
+      "workerSats": 12890,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "c0408bbb2972544947b697c03b0d375511ccdc6089193487e4022dde3a50f5d0",
+      "lastTxid": "763adc6aa90ad6fc13adf732f5f85613cca8d25997f36201c4f7529388a3a9b2",
+      "manifestSha256": "ee21a025ba9b415a7ef791e62f5f1540b85912f563166bf3a46a331e34011c78",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 14690,
+      "satsPerProof": 147,
+      "cycleWallMs": 106390,
+      "cycleWallSec": 106
+    },
+    {
+      "cycleIdx": 6,
+      "cycleId": "63c19a0e-006",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "0959f779-210b-4e3c-8576-4d3fe999a649",
+      "captainIter": 2,
+      "captainSats": 89353,
+      "workerTaskId": "6d8e19e2-1bc3-452c-b881-594d302d6fa4",
+      "workerSats": 12890,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "c0408bbb2972544947b697c03b0d375511ccdc6089193487e4022dde3a50f5d0",
+      "lastTxid": "763adc6aa90ad6fc13adf732f5f85613cca8d25997f36201c4f7529388a3a9b2",
+      "manifestSha256": "ee21a025ba9b415a7ef791e62f5f1540b85912f563166bf3a46a331e34011c78",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 102243,
+      "satsPerProof": 1022,
+      "cycleWallMs": 111558,
+      "cycleWallSec": 112
+    },
+    {
+      "cycleIdx": 7,
+      "cycleId": "63c19a0e-007",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "6dffc114-f148-48b3-91a8-f69cf07d7de9",
+      "captainIter": 2,
+      "captainSats": 92790,
+      "workerTaskId": "7b133c11-7b34-41f0-a32d-39eb7b4e6b6d",
+      "workerSats": 13749,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "74a41a2b6bddc9bf989cd262c777dff47eba6b01edb59cbf0c5ee24552a4fc10",
+      "lastTxid": "17aaf92c0b28a8c2e2956fdb49565c3962d9bf06e40c704f8131f0f2e718b2e3",
+      "manifestSha256": "845e5af8669540bbb90a95c7e08693c190de396f14c0d5acb715a33714f53f3c",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 106539,
+      "satsPerProof": 1065,
+      "cycleWallMs": 274812,
+      "cycleWallSec": 275
+    },
+    {
+      "cycleIdx": 8,
+      "cycleId": "63c19a0e-008",
+      "recordCount": 100,
+      "scrapeWallMs": 22,
+      "captainTaskId": "104bdba0-b555-48b3-b035-997545976e24",
+      "captainIter": 2,
+      "captainSats": 121253,
+      "workerTaskId": "ad1b8332-41f9-4b2b-b99e-b4e6c00cff2a",
+      "workerSats": 13787,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "6f3bb86fe23c1f565bfb59d16bb1e3e847456ff22ceb6b8ea21680d28e022ef2",
+      "lastTxid": "95bca22e9e5549ae113b906deb1ee1f31d12c8807ec184c5e3676bd5f329cb08",
+      "manifestSha256": "da3d5b177cc82e20f16101f868ed01694ce24847db7479f5f7cab539f5f5c1ef",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 135040,
+      "satsPerProof": 1364,
+      "cycleWallMs": 245098,
+      "cycleWallSec": 245
+    },
+    {
+      "cycleIdx": 9,
+      "error": "cycle 63c19a0e-009: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 10,
+      "error": "cycle 63c19a0e-010: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 11,
+      "error": "cycle 63c19a0e-011: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 12,
+      "cycleId": "63c19a0e-012",
+      "recordCount": 100,
+      "scrapeWallMs": 24,
+      "captainTaskId": "01aaa11f-385b-4ab1-87bf-bf2168d4b9a0",
+      "captainIter": 2,
+      "captainSats": 106359,
+      "workerTaskId": "8ade9584-4015-4953-b30d-faf977473cac",
+      "workerSats": 113671,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "a81404e2cec3bfa271ac9c96fa794c1bcc3bfb50f25a997b7434776f70110b61",
+      "lastTxid": "2a4a688430231362577ce94cc290dec16794175eab3977e7beb1931c1c0d26be",
+      "manifestSha256": "75fc4b6ac4adcedfd2028e0665d1f77c9f7f2ae80e77166e83f0b0f48e1a0c4f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 220030,
+      "satsPerProof": 2200,
+      "cycleWallMs": 208315,
+      "cycleWallSec": 208
+    },
+    {
+      "cycleIdx": 13,
+      "cycleId": "63c19a0e-013",
+      "recordCount": 100,
+      "scrapeWallMs": 91,
+      "captainTaskId": "156bec34-8651-40b8-a405-5b2d9dda58f7",
+      "captainIter": 2,
+      "captainSats": 115983,
+      "workerTaskId": "8ade9584-4015-4953-b30d-faf977473cac",
+      "workerSats": 113671,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "a81404e2cec3bfa271ac9c96fa794c1bcc3bfb50f25a997b7434776f70110b61",
+      "lastTxid": "2a4a688430231362577ce94cc290dec16794175eab3977e7beb1931c1c0d26be",
+      "manifestSha256": "75fc4b6ac4adcedfd2028e0665d1f77c9f7f2ae80e77166e83f0b0f48e1a0c4f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 229654,
+      "satsPerProof": 2297,
+      "cycleWallMs": 170690,
+      "cycleWallSec": 171
+    },
+    {
+      "cycleIdx": 14,
+      "cycleId": "63c19a0e-014",
+      "recordCount": 100,
+      "scrapeWallMs": 17,
+      "captainTaskId": "60992055-edd1-4977-bacb-c00958463be2",
+      "captainIter": 2,
+      "captainSats": 108620,
+      "workerTaskId": "f6cb1014-2a22-4490-942c-fd651bb70d56",
+      "workerSats": 113671,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "ab659c44747be060ed5742bd06bab8868710e17e168da4bc6495401ff5f30577",
+      "lastTxid": "63f984b36339b67e886a7fe93340830c25bb4264133db452edbef0ed2e786114",
+      "manifestSha256": "75a81dff357c459ae5b2c38884ac45fc6a1d360b77ee3895f3c7c2086ce2d8c4",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 222291,
+      "satsPerProof": 2223,
+      "cycleWallMs": 104945,
+      "cycleWallSec": 105
+    },
+    {
+      "cycleIdx": 15,
+      "error": "cycle 63c19a0e-015: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 16,
+      "cycleId": "63c19a0e-016",
+      "recordCount": 100,
+      "scrapeWallMs": 252,
+      "captainTaskId": "68f9c19d-ea7f-4d45-8b5d-774db27caa54",
+      "captainIter": 2,
+      "captainSats": 119481,
+      "workerTaskId": "332ffc2d-5914-4fec-b91e-9017b51fbeec",
+      "workerSats": 113433,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "47c618a127fa96a4d6ff7ffafcbc6e12af9807ffabdec491a3ac4e6aa2d1fb24",
+      "lastTxid": "2f39a5d0249f314ad2b4ef39cb520586c6eb4ea74637a9141e187bffe3e71e60",
+      "manifestSha256": "9324626d6c6d18a88887f51042cb89c775758f4ea6a786ad94e7693cb20e5642",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 232914,
+      "satsPerProof": 2329,
+      "cycleWallMs": 235172,
+      "cycleWallSec": 235
+    },
+    {
+      "cycleIdx": 17,
+      "cycleId": "63c19a0e-017",
+      "recordCount": 100,
+      "scrapeWallMs": 83,
+      "captainTaskId": "135149e1-f09e-4c90-abbf-10f8b9298fa0",
+      "captainIter": 2,
+      "captainSats": 71163,
+      "workerTaskId": "332ffc2d-5914-4fec-b91e-9017b51fbeec",
+      "workerSats": 113433,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "47c618a127fa96a4d6ff7ffafcbc6e12af9807ffabdec491a3ac4e6aa2d1fb24",
+      "lastTxid": "2f39a5d0249f314ad2b4ef39cb520586c6eb4ea74637a9141e187bffe3e71e60",
+      "manifestSha256": "9324626d6c6d18a88887f51042cb89c775758f4ea6a786ad94e7693cb20e5642",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 184596,
+      "satsPerProof": 1846,
+      "cycleWallMs": 128822,
+      "cycleWallSec": 129
+    },
+    {
+      "cycleIdx": 18,
+      "error": "cycle 63c19a0e-018: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 19,
+      "error": "cycle 63c19a0e-019: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 20,
+      "error": "cycle 63c19a0e-020: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 21,
+      "error": "cycle 63c19a0e-021: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 22,
+      "error": "cycle 63c19a0e-022: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 23,
+      "error": "cycle 63c19a0e-023: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 24,
+      "error": "cycle 63c19a0e-024: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 25,
+      "error": "cycle 63c19a0e-025: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 26,
+      "error": "cycle 63c19a0e-026: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 27,
+      "error": "cycle 63c19a0e-027: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 28,
+      "error": "cycle 63c19a0e-028: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 29,
+      "error": "cycle 63c19a0e-029: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 30,
+      "error": "cycle 63c19a0e-030: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 31,
+      "error": "cycle 63c19a0e-031: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 32,
+      "error": "cycle 63c19a0e-032: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 33,
+      "error": "cycle 63c19a0e-033: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 34,
+      "error": "cycle 63c19a0e-034: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 35,
+      "error": "cycle 63c19a0e-035: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 36,
+      "error": "cycle 63c19a0e-036: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 37,
+      "error": "cycle 63c19a0e-037: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 38,
+      "error": "cycle 63c19a0e-038: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 39,
+      "error": "cycle 63c19a0e-039: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 40,
+      "error": "cycle 63c19a0e-040: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 41,
+      "error": "cycle 63c19a0e-041: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 42,
+      "error": "cycle 63c19a0e-042: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 43,
+      "error": "cycle 63c19a0e-043: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 44,
+      "error": "cycle 63c19a0e-044: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 45,
+      "error": "cycle 63c19a0e-045: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 46,
+      "error": "cycle 63c19a0e-046: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 47,
+      "error": "cycle 63c19a0e-047: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 48,
+      "error": "cycle 63c19a0e-048: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 49,
+      "error": "cycle 63c19a0e-049: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 50,
+      "error": "cycle 63c19a0e-050: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 51,
+      "error": "cycle 63c19a0e-051: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 52,
+      "error": "cycle 63c19a0e-052: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 53,
+      "error": "cycle 63c19a0e-053: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 54,
+      "error": "cycle 63c19a0e-054: worker proof not found before deadline"
+    }
+  ]
+}

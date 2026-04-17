@@ -1,0 +1,13 @@
+{
+  "cycleId": "47b4da02-005",
+  "runNonce": "47b4da02",
+  "cycleIdx": 5,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "668cf9be120e1bf60ebc904cb6d0e25ea0489e3bca98cd5f9c28e2c21bb493c1",
+  "lastTxid": "411abdd386c83f63e4d4ac7307df4892a02a5d3036129c61973d7b2f9eb71cc7",
+  "manifestSha256": "866c2df21296ecc5924e1232faadee257110976ec889f60414c09f525742bad3",
+  "txidFile": "/tmp/dolphinsense-shared/wiki-en/cycle-47b4da02-004/records.jsonl.txids",
+  "createdAt": "2026-04-15T16:16:45.173Z"
+}

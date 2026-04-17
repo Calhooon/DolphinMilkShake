@@ -1,0 +1,78 @@
+{
+  "createdAt": "2026-04-17T14:49:38.114Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-gaming": {
+      "name": "captain-gaming",
+      "port": 8109,
+      "walletPort": 3409,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/captain-gaming",
+      "certHash": "dm-captain-wiki-en-2-02501414-1776437329",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:49:35.840Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/captain-gaming/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/captain-gaming/server-stderr.log"
+    },
+    "worker-gaming": {
+      "name": "worker-gaming",
+      "port": 8110,
+      "walletPort": 3410,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/worker-gaming",
+      "certHash": "dm-worker-bsky-en-3-02501414-1776437332",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:49:38.114Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/worker-gaming/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/worker-gaming/server-stderr.log"
+    },
+    "synthesis-gaming": {
+      "name": "synthesis-gaming",
+      "port": 8111,
+      "walletPort": 3411,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/synthesis-gaming",
+      "certHash": "dm-synthesis-movies-02501414-1776437338",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "synthesis",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:49:36.352Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/synthesis-gaming/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-pt/synthesis-gaming/server-stderr.log"
+    }
+  }
+}

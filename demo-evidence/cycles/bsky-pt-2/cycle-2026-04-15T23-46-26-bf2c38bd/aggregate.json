@@ -1,0 +1,23 @@
+{
+  "runNonce": "bf2c38bd",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 0,
+  "completedCycles": 1,
+  "inProgress": false,
+  "synthesisEnabled": true,
+  "totalSats": 0,
+  "totalProofs": 0,
+  "satsPerProofAvg": null,
+  "avgCycleSats": null,
+  "avgCycleWallSec": null,
+  "totalWallSec": 1370,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "error": "task 4d022f84-5dbc-468b-8abe-2efd13d2c72c did not complete before deadline"
+    }
+  ]
+}

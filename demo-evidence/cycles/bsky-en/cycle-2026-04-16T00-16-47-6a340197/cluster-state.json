@@ -1,0 +1,78 @@
+{
+  "createdAt": "2026-04-16T00:16:52.606Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-worldnews": {
+      "name": "captain-worldnews",
+      "port": 8100,
+      "walletPort": 3400,
+      "identityKey": "03e6d02d3dd96b1b20d989d45abc3bab281e449aee78d3190a136318df3856482c",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-worldnews",
+      "certHash": "dm-captain-worldnews-03e6d02d-1776274144",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:16:52.412Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-worldnews/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/captain-worldnews/server-stderr.log"
+    },
+    "worker-worldnews": {
+      "name": "worker-worldnews",
+      "port": 8101,
+      "walletPort": 3401,
+      "identityKey": "0329f8fe66ccc5e07200c566beca12b276b50f48efcb7a757332143f96090e554f",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-worldnews",
+      "certHash": "dm-worker-worldnews-0329f8fe-1776274145",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:16:52.606Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-worldnews/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/worker-worldnews/server-stderr.log"
+    },
+    "synthesis-worldnews": {
+      "name": "synthesis-worldnews",
+      "port": 8102,
+      "walletPort": 3402,
+      "identityKey": "0366715ee4ce0ab0112b09693f59c7b969be9b9909491389bf25cf782d1191cf64",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/synthesis-worldnews",
+      "certHash": "dm-synthesis-worldnews-0366715e-1776274146",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "synthesis",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:16:52.425Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/synthesis-worldnews/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en/synthesis-worldnews/server-stderr.log"
+    }
+  }
+}

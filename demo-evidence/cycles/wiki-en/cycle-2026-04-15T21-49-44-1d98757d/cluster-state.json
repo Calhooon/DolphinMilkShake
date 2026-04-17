@@ -1,0 +1,78 @@
+{
+  "createdAt": "2026-04-15T21:49:49.379Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-movies": {
+      "name": "captain-movies",
+      "port": 8112,
+      "walletPort": 3412,
+      "identityKey": "02db2b07330ff40eff9ab402ad41e28d34d2f8347ffbbcbfc95460c6de199a2f34",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/captain-movies",
+      "certHash": "dm-captain-movies-02db2b07-1776274184",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-15T21:49:49.318Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/captain-movies/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/captain-movies/server-stderr.log"
+    },
+    "worker-movies": {
+      "name": "worker-movies",
+      "port": 8113,
+      "walletPort": 3413,
+      "identityKey": "0354aa17ec577f806c330298ed718f2293dc2d685af37c11a31f8a12248058f3bb",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/worker-movies",
+      "certHash": "dm-worker-movies-0354aa17-1776274186",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-15T21:49:49.293Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/worker-movies/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/worker-movies/server-stderr.log"
+    },
+    "synthesis-movies": {
+      "name": "synthesis-movies",
+      "port": 8114,
+      "walletPort": 3414,
+      "identityKey": "03371b6fb2823718c3ce1828d2d79cd13d979499ff8d3263101b5d4302dbc09a36",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/synthesis-movies",
+      "certHash": "dm-synthesis-movies-03371b6f-1776274187",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "synthesis",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-15T21:49:49.379Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/synthesis-movies/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en/synthesis-movies/server-stderr.log"
+    }
+  }
+}

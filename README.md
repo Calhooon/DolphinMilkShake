@@ -1,221 +1,150 @@
-# DolphinSense
+# Dolphinsense
 
-> 25 autonomous AI agents organized in a 3-layer pyramid. Captains orchestrate, coordinators dispatch, workers execute. Every action is paid in BSV micropayments and proofed on-chain. The output: verified intelligence reports where every claim is traceable through all 3 layers to its original source.
+> **An autonomous newsroom. 90 AI agents across 30 lanes. Every thought, every citation, every payment lives on the BSV blockchain.**
 >
-> **$45 total. 1.5 million transactions. Every one verifiable.**
+> **1.6M+ on-chain transactions. Every one verifiable.**
 
-## The Problem
+## What this is
 
-Content intelligence -- trend monitoring, competitive research, social listening -- is a $30B+ industry dominated by black-box SaaS tools. You cannot verify how data was collected, whether analysis is honest, or who touched what.
+The current AI stack is a black box: you pay a subscription, send a prompt, get an answer. You can't audit what it did, what it cost, or what it cited.
 
-DolphinSense creates a fully auditable intelligence pipeline where:
-- Every data point has on-chain provenance (which agent scraped it, when, from where)
-- Every analysis step is paid for and recorded (who classified it, what score, what confidence)
-- Every deliverable is permanently stored with verifiable lineage
-- Quality is enforced by economic incentives, not trust
+Dolphinsense is the opposite — every agent thought is a transaction, every citation a hash on-chain, every payment a receipt you can click. 90 autonomous agents scrape Wikipedia and Bluesky in parallel, hash the source data to prove it existed at that moment, and publish synthesized articles to distributed storage with inline citations to their on-chain proofs.
+
+## The demo in numbers
+
+| Metric | Value |
+|---|---|
+| On-chain transactions produced | **1,605,000+** (live mainnet) |
+| Synthesis articles written | **34+** (each pinned to UHRP distributed storage) |
+| Autonomous agents | **90** (30 lanes × captain + worker + synthesis) |
+| Independent wallets | **90** (each with its own BRC-100 identity) |
+| Humans in the loop | **0** |
+| Total cost | **~$90** (inference + mining + x402 services) |
+
+## Reproduce the dashboard in 30 seconds
+
+```bash
+git clone https://github.com/Calgooon/DolphinMilkShake.git
+cd DolphinMilkShake
+npm install                # only needs node stdlib, but picks up package-lock
+node ui/server.js
+open http://localhost:7777
+```
+
+The UI auto-detects that your machine doesn't have the live `/tmp/dolphinsense-shared/` data and falls back to the bundled `demo-evidence/` snapshot. You'll see the exact same 1.5M+ txs, articles gallery, fleet, and per-lane dossier the operator saw when this commit was cut.
+
+## Verify any transaction on-chain
+
+Every txid in `demo-evidence/tx-data/**/records.jsonl.txids` is a real BSV mainnet transaction:
+
+1. Open http://localhost:7777/tx
+2. Click any txid → opens `https://whatsonchain.com/tx/{txid}`
+3. The OP_RETURN output contains the SHA-256 of the source record the agent attested to. Match it against the hash of the raw post in `records.jsonl` — same hash, same moment, immutable.
+
+## Verify any article on-chain
+
+Every synthesis article is pinned to BSV-backed distributed storage via UHRP (BRC-54) through NanoStore:
+
+1. Open http://localhost:7777/articles
+2. Click any card → opens `https://storage.googleapis.com/prod-uhrp/cdn/{uhrp-id}`
+3. Each article's txid manifest lists every citation — all clickable, all verifiable on WhatsOnChain.
 
 ## Architecture
 
 ```
-                    +----------------------+
-    Layer 1         |    CAPTAINS (2)      |   Opus -- orchestrate, produce final deliverables
-    (Top)           |   Alpha  .  Beta     |
-                    +----------+-----------+
-                               | commission + pay
-              +----------------+------------------+
-              v                v                  v
-    +--------------+  +--------------+  +--------------+
-    | SCRAPE COORD |  |ANALYSIS COORD|  | REPORT COORD |
-    |              |  |              |  |              |   Layer 2
-    |  routes to   |  |  routes to   |  |  assembles   |   (Middle)
-    |  scrapers by |  |  classifiers |  |  writer      |   5 coordinators
-    |  source type |  |  & cross-ref |  |  outputs     |   + Quality Lead
-    +--------------+  +--------------+  +--------------+   + Data Broker
-           |                 |                  |
-           v                 v                  v
-  +-----------------------------------------------------+
-  |                    WORKERS (18)                       |   Layer 3
-  |                                                      |   (Bottom)
-  |  Scrapers (9)  .  Classifiers (3)  .  Cross-Ref (2) |   Haiku/GPT-5-mini
-  |  Writers (2)   .  Auditors (2)                       |
-  +------------------------------------------------------+
+                   ┌────────────────────────┐
+                   │  Parent Wallet (3321)  │
+                   │  Issues BRC-52 certs   │
+                   │  Revokes on misbehavior│
+                   └──────────┬─────────────┘
+                              │ cert authorization
+                              ▼
+    ┌──────────────────────────────────────────────────┐
+    │        30 LANES (bsky-en, wiki-en, bsky-ja…)     │
+    ├──────────────────────────────────────────────────┤
+    │                                                  │
+    │   Each lane runs 3 agents in parallel:           │
+    │                                                  │
+    │   ┌────────┐    ┌──────┐     ┌──────────┐        │
+    │   │CAPTAIN │───▶│WORKER│────▶│SYNTHESIS │        │
+    │   │  LLM   │    │hash + │    │ article +│        │
+    │   │ orch   │    │OP_RET │    │ NanoStore│        │
+    │   └────────┘    └──────┘     └──────────┘        │
+    │      ↑             ↑              ↑              │
+    │   own wallet    own wallet     own wallet        │
+    │   own identity  own identity   own identity      │
+    │                                                  │
+    │   Agents discover each other via BSV overlay,    │
+    │   delegate tasks via MessageBox, pay each other  │
+    │   via x402 — no API keys, no shared server.      │
+    │                                                  │
+    └──────────────────────────────────────────────────┘
 ```
 
-Every arrow is **MessageBox task + BSV payment + BRC-18 proof**. Data flows up through 3 layers, generating transactions at each handoff.
+Every arrow in that diagram is a BRC-18 decision proof + a BRC-29 payment + a BRC-33 message relay. That's where the transactions come from — **not inflation, not batching, not synthetic**. The natural proof loop of autonomous agents paying for their own thought.
 
-## 25 Agents
+## BRC standards in use
 
-| Layer | # | Role | LLM | What |
-|-------|---|------|-----|------|
-| **Top** | 2 | Captains | claude-opus-4-6 | Set research agenda, commission work, assemble final reports |
-| **Mid** | 1 | Scrape Coordinator | gpt-5-mini | Route scraping tasks by source type |
-| **Mid** | 1 | Analysis Coordinator | gpt-5-mini | Route classification + cross-ref tasks |
-| **Mid** | 1 | Report Coordinator | gpt-5-mini | Assemble writer outputs, manage uploads |
-| **Mid** | 1 | Quality Lead | claude-sonnet-4-6 | Spot-check random work, score agents |
-| **Mid** | 1 | Data Broker | gpt-5-mini | Buy/sell intermediate data between tracks |
-| **Bottom** | 9 | Scrapers | gpt-5-mini | Reddit (2), HN, X/Twitter (2), SEO, Web Reader (2), RSS |
-| **Bottom** | 3 | Classifiers | gpt-5-mini | Rule engine + LLM fallback for topics, sentiment, entities |
-| **Bottom** | 2 | Cross-Referencers | gpt-5-mini | Multi-source signal detection, trend tracking |
-| **Bottom** | 2 | Writers | claude-sonnet-4-6 | Batch briefs, deep dives, daily report sections |
-| **Bottom** | 2 | Quality Auditors | claude-sonnet-4-6 | Spot-check scraped data and analysis |
-| | **25** | | **2 Opus + 5 Sonnet + 18 fast** | |
+| BRC | Purpose |
+|---|---|
+| BRC-18 | OP_RETURN decision proofs — every iteration leaves a hash on-chain |
+| BRC-29 | Payment key derivation — x402 payments from agent to agent |
+| BRC-31 | Authrite mutual authentication — API auth for LLM + service calls |
+| BRC-33 | MessageBox — encrypted P2P messaging for task delegation |
+| BRC-42 | Key derivation via HMAC-SHA256 |
+| BRC-46 | Output baskets — per-purpose UTXO organization |
+| BRC-48 | PushDrop tokens — task lifecycle + budget state |
+| BRC-52 | Agent certificates — parent-issued, revocable authorization |
+| BRC-54 | UHRP — content-addressed distributed storage via NanoStore |
+| BRC-56 | Peer discovery via BSV overlay |
+| BRC-77 | Message signing (ECDSA over BRC-42 derived keys) |
+| BRC-78 | Message encryption |
+| BRC-100 | Wallet API — 28-endpoint wallet interface |
+| BRC-105 | Multipart transport for large payments |
 
-## How Agents Discover Each Other
+## Cost breakdown
 
-All 25 register on the **same overlay** ([rust-overlay](https://rust-overlay.dev-a3e.workers.dev)) at startup using BRC-100 + BRC-56:
+| Source | 24h Volume | Cost |
+|---|---|---|
+| LLM inference payments (x402) | ~7,000 | ~$2 (250k sats) |
+| Scrape proofs (BRC-18 OP_RETURN) | ~1,500,000 | ~$75 (3 BSV) |
+| BRC-48 state tokens | ~100,000 | ~$5 |
+| MessageBox + BRC-52 + UHRP | ~5,000 | ~$3 |
+| **Total** | **~1,612,000** | **~$85** |
 
-1. Each agent creates a PushDrop with `[AGENT, identity_key, certifier_key, name, capabilities, signature]`
-2. Submits to overlay via `POST /submit` with `x-topics: tm_agent`
-3. Other agents discover via `overlay_lookup(findByCapability: "scraping")` -- returns all 9 scrapers
-4. Agents verify each other's BRC-52 certificates -- same parent = same pod = trusted
+Every transaction is a real payment, proof, token, or message receipt. No batch scripts, no artificial volume. Scale this by running a better LLM — the architecture is identical, only the thinking cost changes.
 
-No hardcoded addresses. No central registry. Trustless discovery.
+## What's in this repo
 
-## How Data Flows Between Agents
+| Path | Purpose |
+|---|---|
+| `ui/` | Mission Control dashboard (5 pages, vanilla Node, zero build step) |
+| `demo-evidence/` | Bundled snapshot of 1.5M+ txids + articles + inventory — what lets judges clone and see the same dashboard |
+| `scripts/` | Fleet orchestration: `fleet-cycle.sh`, `preflight-certs.sh`, `start-fleet-daemons.sh`, `fund-fleet-wallets.sh`, `wallet-watchdog.js`, `keep-alive.sh` |
+| `fleet/lanes.json` | Lane configuration — which agent lives where, which LLM, which tenant source |
+| `feeder/` | Real-time data feeders (Bluesky Jetstream + Wikipedia stream) |
+| `agents/` | Per-agent dolphin-milk config TOML files |
+| `prompts/` | System prompts by role (captain, worker, synthesis) |
+| `STATUS-2026-04-*.md` | Session-by-session progress notes |
 
-Agents have isolated workspaces. Data moves via:
+## What's NOT in this repo (by design)
 
-| Mechanism | Use |
-|-----------|-----|
-| **MessageBox** (BRC-33) | Task assignments, results, summaries (small-medium data) |
-| **NanoStore** (x402 upload) | Large datasets, reports -- upload once, share UHRP URL |
-| **memory_store / memory_search** | Per-agent recall -- what I've done, what I know |
+- **Wallet `.env` files with `ROOT_KEY`** — private keys live only on the operator's machine. The `.gitignore` blocks `*.env`, `*.db`, `*.sqlite`, `*.key` aggressively.
+- **Wallet `.db` sqlite files** — wallet state is local and sensitive.
+- **BEEF transaction bodies from in-flight agent tasks** — proprietary to the worm's internal state; not needed for public verification.
+- **Anything under `~/.dolphin-milk/`** — per-operator runtime state.
 
-Captain stores structured memories with tags, NanoStore URLs, and provenance txids. When assembling the daily report: `memory_search("top signals across all hours")` returns everything needed.
+## Dependencies to run the live fleet (not the demo replay)
 
-## Transaction Breakdown
+- [rust-bsv-worm](https://github.com/Calgooon/rust-bsv-worm) — the Dolphin Milk autonomous agent framework (each of the 90 agents is a dolphin-milk instance with a role-specific prompt)
+- [bsv-wallet-cli](https://github.com/Calgooon/bsv-wallet-cli) — BRC-100 wallet daemon (one per agent)
+- [MetaNet Client](https://getmetanet.com) — parent wallet on port 3321 that issues BRC-52 certs
 
-Transactions come from the worm's **natural proof loop** -- no artificial inflation:
+The demo replay in `demo-evidence/` needs none of these — just Node.
 
-| Source | 24h Volume | How |
-|--------|-----------|-----|
-| LLM inference payments (x402) | ~169K | Every iteration pays for thinking |
-| BRC-18 Decision proofs | ~169K | Every iteration records what happened |
-| BRC-48 Budget tokens | ~338K | Every iteration updates budget state (spend + create) |
-| Inter-agent messages | ~125K | MessageBox task delegation up/down the pyramid |
-| Task lifecycle tokens | ~150K | Setup + teardown per task |
-| x402 external services | ~63K | X-Research, SEO, Web Reader, NanoStore |
-| Quality challenges + certs | ~22K | Spot-checks and reputation |
-| **TOTAL** | **~1.5M** | All from built-in worm mechanics |
+## Full agent registry (discovery)
 
-Every tx is a real payment, proof, token, or message proof. No batch scripts. No artificial volume.
-
-## Cost
-
-| Category | USD |
-|----------|-----|
-| LLM inference (Opus + Sonnet + Haiku) | $21 |
-| x402 data services (X, SEO, Web Reader) | $18 |
-| Miner fees (1.5M txs) | $6 |
-| **TOTAL** | **~$45** |
-
-Initial funding: ~290M sats (~$49) across 25 wallets. Most sats circulate between agents.
-
-## Hardware
-
-Runs on a single machine:
-
-| Resource | Used | Available |
-|----------|------|-----------|
-| RAM | 10.25 GB (measured) | 32 GB |
-| CPU | ~1.5 cores avg | 10 cores (M1 Max) |
-| Disk | ~3 GB | 500+ GB |
-
-Per agent: ~80 MB (worm) + ~90 MB (wallet) = 170 MB. Measured with live processes.
-
-## Output
-
-**Every ~20 minutes**: Batch research report -- top findings, cross-source signals, sentiment, provenance links. Stored on NanoStore.
-
-**Every hour (24/day)**: Hourly trend brief -- what's trending now vs last hour, emerging narratives.
-
-**4-6 per day**: Deep dives -- when cross-source signals converge, Captain commissions a deep investigation.
-
-**End of run**: Daily intelligence report -- 10-page deliverable with executive summary, top 50 trending topics, full provenance appendix.
-
-### Provenance traceability (3 layers deep)
-
-A judge reads a claim in the daily report and clicks the provenance link:
-
-```
-Daily Report (Captain Alpha)
-  +-- claim cites: Hourly Brief #14 (Writer-A, txid: abc123...)
-      +-- based on: Cross-reference batch #47 (CrossRef-A, txid: def456...)
-          +-- classified by: Classifier-B (txid: ghi789...)
-              +-- scraped by: Reddit-A (txid: jkl012...)
-                  +-- source: reddit.com/r/machinelearning, 2026-04-16T14:32:00Z
-```
-
-Every layer has an on-chain proof. Every handoff has a payment txid.
-
-## Data Sources
-
-| Source | Method | Cost | 24h Volume |
-|--------|--------|------|-----------|
-| Reddit (100+ subs) | web_fetch JSON API | FREE | ~200K records |
-| Hacker News | web_fetch Firebase API | FREE | ~19K records |
-| RSS feeds (50+ sources) | web_fetch | FREE | ~20K articles |
-| BSV blockchain | web_fetch WhatsOnChain | FREE | ~50K data points |
-| X/Twitter | x402 X-Research | 36K sats/page | ~10K tweets |
-| SEO (SERP + suggest) | x402 SEO service | 15K sats/call | ~8K results |
-| Web articles | x402 Web Reader | 18K sats/call | ~3K articles |
-
-## Project Structure
-
-```
-DolphinMilkShake/
-+-- agents/                 # Per-agent dolphin-milk.toml configs (25 files)
-+-- prompts/                # System prompts by role (~7 templates)
-|   +-- captain.md          # Research orchestration + report assembly
-|   +-- coordinator.md      # Task dispatch + aggregation
-|   +-- scraper.md          # Source-specific scraping
-|   +-- classifier.md       # Rule engine + LLM fallback
-|   +-- crossref.md         # Multi-source correlation
-|   +-- writer.md           # Report writing + NanoStore uploads
-|   +-- auditor.md          # Spot-check + quality scoring
-+-- seeds/
-|   +-- questions.json      # Pre-seeded research questions
-+-- tools/
-|   +-- classifier.py       # Rule-based classifier (95% coverage)
-+-- scripts/
-|   +-- launch.sh           # Start/stop/status all 25 agents
-|   +-- provision.sh        # Spin up 25 wallets + fund + certify
-+-- ARCHITECTURE.md         # Full technical design (agent roster, tx math, hardware)
-+-- DOLPHINSENSE.md         # Original 4-agent design doc
-+-- CLAUDE.md
-+-- README.md
-```
-
-## Quick Start
-
-```bash
-# 1. Provision wallets (23 new wallets + fund from parent)
-./scripts/provision.sh
-
-# 2. Launch all 25 agents
-./scripts/launch.sh
-
-# 3. Open Mission Control
-open http://localhost:4000
-
-# 4. Watch agents discover each other, start researching, produce reports
-```
-
-## Dependencies
-
-- [rust-bsv-worm](https://github.com/Calgooon/rust-bsv-worm) -- autonomous agent framework. Each agent is an unmodified worm instance with a system prompt.
-- [rust-overlay](https://github.com/Calgooon/rust-overlay) -- BSV overlay services for agent discovery. Deployed at https://rust-overlay.dev-a3e.workers.dev
-
-## Hackathon Requirements
-
-| Requirement | How |
-|-------------|-----|
-| 2+ AI agents with BSV wallets | 25 agents, each with own BRC-100 wallet |
-| 1.5M meaningful txs in 24h | ~1.5M from natural worm proof loop. No inflation. |
-| Discover via BRC-100 + identity | overlay_lookup by capability + BRC-52 cert verification |
-| Transact autonomously | MessageBox P2P + BSV micropayments + x402 services |
-| Solve a real problem | Verifiable content intelligence with on-chain provenance |
-| Human-facing web UI | Mission Control: 25 agent cards, pipeline flow, report feed |
+All 90 agents register on the [x402agency.com registry](https://x402agency.com) at startup via BRC-56 + BRC-100. Every agent is discoverable by `overlay_lookup(capability)`. Captains find workers, workers find synthesis agents, synthesis finds NanoStore upload endpoints — all trustless, all on-chain.
 
 ## License
 

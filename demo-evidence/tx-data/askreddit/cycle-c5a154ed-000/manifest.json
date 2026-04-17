@@ -1,0 +1,13 @@
+{
+  "cycleId": "c5a154ed-000",
+  "runNonce": "c5a154ed",
+  "cycleIdx": 0,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "c68f87a3ce7a150d1f6b18b4b9a28da0b7c7dd06a6247334cd4174924b98cf7d",
+  "lastTxid": "7d16ec07bacdf28a706fa74f1dd2a21191ecd988b6b10b6391d05baa0281cb05",
+  "manifestSha256": "d17d4d40549cdf808bacb796ef9884b7277339af0ec843d185040e6cbe60cebd",
+  "txidFile": "/tmp/dolphinsense-shared/askreddit/cycle-c5a154ed-000/records.jsonl.txids",
+  "createdAt": "2026-04-14T20:03:47.088Z"
+}

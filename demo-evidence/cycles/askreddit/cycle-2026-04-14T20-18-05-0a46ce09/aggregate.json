@@ -1,0 +1,42 @@
+{
+  "runNonce": "0a46ce09",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 1,
+  "synthesisEnabled": false,
+  "totalSats": 121569,
+  "totalProofs": 100,
+  "satsPerProofAvg": 1216,
+  "avgCycleSats": 121569,
+  "avgCycleWallSec": 294,
+  "totalWallSec": 298,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "0a46ce09-000",
+      "recordCount": 100,
+      "scrapeWallMs": 19,
+      "captainTaskId": "49aba259-b31b-4ced-9d4d-89f59ecbd3e9",
+      "captainIter": 2,
+      "captainSats": 107396,
+      "workerTaskId": "28f93913-0aab-49b2-9e40-9f0b984d88dc",
+      "workerSats": 14173,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "40b9e0decd94efe21acde4bed9517e04acf125b99dddcc94e3591704c4689f8a",
+      "lastTxid": "d836c92896b0b9cadaed40b394e8ec4a599ea7fa53f95f39e5f7b282077951ae",
+      "manifestSha256": "c9ab27eb4ef028de843c6f86981fb52cd4e64cff831402058abfd5c1b378b0f6",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 121569,
+      "satsPerProof": 1216,
+      "cycleWallMs": 293907,
+      "cycleWallSec": 294
+    }
+  ]
+}

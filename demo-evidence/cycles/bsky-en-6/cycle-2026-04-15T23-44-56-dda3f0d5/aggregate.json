@@ -1,0 +1,41 @@
+{
+  "runNonce": "dda3f0d5",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 1,
+  "completedCycles": 1,
+  "inProgress": false,
+  "synthesisEnabled": true,
+  "totalSats": 110674,
+  "totalProofs": 0,
+  "satsPerProofAvg": null,
+  "avgCycleSats": 110674,
+  "avgCycleWallSec": 76,
+  "totalWallSec": 81,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "dda3f0d5-000",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "80509e8d-2ec6-40b2-815b-2ee38646bdaf",
+      "captainIter": 2,
+      "captainSats": 101575,
+      "workerTaskId": "1af2fed2-d156-40aa-8d15-e09c338d983d",
+      "workerSats": 9099,
+      "proofsCreated": 0,
+      "proofErrors": 0,
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 0,
+      "totalSats": 110674,
+      "satsPerProof": null,
+      "cycleWallMs": 76072,
+      "cycleWallSec": 76
+    }
+  ]
+}

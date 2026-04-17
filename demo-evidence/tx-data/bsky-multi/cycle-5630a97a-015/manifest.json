@@ -1,0 +1,13 @@
+{
+  "cycleId": "5630a97a-015",
+  "runNonce": "5630a97a",
+  "cycleIdx": 15,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "c3dca73b75805c97cb94c46017dd6a9502937de9563e081b4081196f436fccc7",
+  "lastTxid": "bfddab43e66f2e77d3091625ec0589194fdfd8137d69f93318dccc080ff4e127",
+  "manifestSha256": "0352bfa977e25a5da6d1a497917f7f51e7ecbb7276a6d5073bcbe23a749a237f",
+  "txidFile": "/tmp/dolphinsense-shared/bsky-multi/cycle-5630a97a-014/records.jsonl.txids",
+  "createdAt": "2026-04-15T18:26:32.814Z"
+}

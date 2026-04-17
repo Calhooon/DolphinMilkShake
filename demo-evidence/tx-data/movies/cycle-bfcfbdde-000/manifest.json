@@ -1,0 +1,13 @@
+{
+  "cycleId": "bfcfbdde-000",
+  "runNonce": "bfcfbdde",
+  "cycleIdx": 0,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "db1b8ffd40e75401b6d052a1fbc4e3c57c3564fa11af91fb192eff26f0afddb4",
+  "lastTxid": "cd4042fb010e6cd4dbb893cefdecc93f1ca05ea146eaf3af1400e8009cd4e825",
+  "manifestSha256": "a0aafba1d440084e34cba0494864a17630cf677838833d1ca35a4454452709d3",
+  "txidFile": "/tmp/dolphinsense-shared/movies/cycle-bfcfbdde-000/records.jsonl.txids",
+  "createdAt": "2026-04-14T21:08:40.079Z"
+}
