@@ -33,14 +33,39 @@ const os = require('os');
 // ---- paths ----------------------------------------------------------------
 const UI_DIR = __dirname;
 const REPO_ROOT = path.resolve(UI_DIR, '..');
+
+// The repo can ship a bundled `demo-evidence/` snapshot so `git clone &&
+// node ui/server.js` reproduces the dashboard on any machine. Path-resolution
+// order per input: (1) explicit env override, (2) live operator path if it
+// exists, (3) demo-evidence snapshot path if bundled, (4) live path anyway
+// (we'll fail fast with a clear error). This keeps the author's live-mode
+// experience unchanged while still working for judges who clone the repo.
+const DEMO_DIR = path.join(REPO_ROOT, 'demo-evidence');
+function resolvePath(envName, livePath, demoSubpath) {
+  if (process.env[envName]) return process.env[envName];
+  if (livePath && fs.existsSync(livePath)) return livePath;
+  const demoPath = path.join(DEMO_DIR, demoSubpath);
+  if (fs.existsSync(demoPath)) return demoPath;
+  return livePath;
+}
+
 const LANES_FILE = process.env.LANES_FILE
   || path.join(REPO_ROOT, 'fleet/lanes.json');
-const INVENTORY_FILE = process.env.INVENTORY_FILE
-  || `${os.homedir()}/bsv/wallets/fleet/INVENTORY.json`;
-const FLEET_WORKSPACE = process.env.FLEET_WORKSPACE
-  || `${os.homedir()}/bsv/rust-bsv-worm/test-workspaces/fleet`;
-const SHARED_DIR = process.env.SHARED_DIR
-  || '/tmp/dolphinsense-shared';
+const INVENTORY_FILE = resolvePath(
+  'INVENTORY_FILE',
+  `${os.homedir()}/bsv/wallets/fleet/INVENTORY.json`,
+  'inventory-public.json'
+);
+const FLEET_WORKSPACE = resolvePath(
+  'FLEET_WORKSPACE',
+  `${os.homedir()}/bsv/rust-bsv-worm/test-workspaces/fleet`,
+  'cycles'
+);
+const SHARED_DIR = resolvePath(
+  'SHARED_DIR',
+  '/tmp/dolphinsense-shared',
+  'tx-data'
+);
 const FIREHOSE_DIR = process.env.FIREHOSE_DIR
   || '/tmp/dolphinsense-firehose';
 
@@ -49,6 +74,19 @@ const PORT = parseInt(process.env.PORT || '7777', 10);
 // from ~500ms to ~150ms. Poll duration is logged below so we can verify
 // the interval isn't getting starved by the pollers themselves.
 const POLL_MS = parseInt(process.env.POLL_MS || '150', 10);
+
+// ---- startup mode log -----------------------------------------------------
+function modeFor(p) {
+  if (p.startsWith(DEMO_DIR)) return 'demo-evidence';
+  if (p.startsWith('/tmp')) return 'live:/tmp';
+  if (p.includes('/test-workspaces/')) return 'live:rust-bsv-worm';
+  if (p.includes('/bsv/wallets/')) return 'live:fleet-wallets';
+  return 'custom';
+}
+console.error(`[ui] path resolution:`);
+console.error(`[ui]   INVENTORY_FILE  = ${INVENTORY_FILE}  [${modeFor(INVENTORY_FILE)}]`);
+console.error(`[ui]   FLEET_WORKSPACE = ${FLEET_WORKSPACE}  [${modeFor(FLEET_WORKSPACE)}]`);
+console.error(`[ui]   SHARED_DIR      = ${SHARED_DIR}  [${modeFor(SHARED_DIR)}]`);
 
 // ---- load lane config once ------------------------------------------------
 let lanesDoc;

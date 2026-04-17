@@ -1,0 +1,42 @@
+{
+  "runNonce": "6402485a",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 1,
+  "synthesisEnabled": true,
+  "totalSats": 410310,
+  "totalProofs": 100,
+  "satsPerProofAvg": 4103,
+  "avgCycleSats": 410310,
+  "avgCycleWallSec": 354,
+  "totalWallSec": 370,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "6402485a-000",
+      "recordCount": 100,
+      "scrapeWallMs": 18,
+      "captainTaskId": "d1ce0f2f-f9c3-4017-a661-40a0f905aa6a",
+      "captainIter": 2,
+      "captainSats": 111167,
+      "workerTaskId": "68d15ea2-2cbd-4470-bf96-d141d0a13c62",
+      "workerSats": 15315,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "be0a8391a29bac2cae5d9a4fc42bd1166607ecd8d476d92440eaaa57873f383d",
+      "lastTxid": "643866b251c0133bb340505063a0017e3e345f9ddaf9d8e4ca568e78c30c7fce",
+      "manifestSha256": "6f00890e2fa6350e745485fd313d012aba81bac849ecbc38fa72179dc7ac013b",
+      "synthesisTaskId": "ec62bdad-1eab-4f34-bdce-231ea3dbfba3",
+      "synthesisSats": 283828,
+      "nanostoreUrl": "https://storage.googleapis.com/prod-uhrp/cdn/FhT8c8TL3JoVMR3NcHbJje",
+      "txidsUrl": "https://storage.googleapis.com/prod-uhrp/cdn/KfgFRg7gkmtK1PdJbk289N",
+      "annotatedCount": 100,
+      "totalSats": 410310,
+      "satsPerProof": 4103,
+      "cycleWallMs": 354174,
+      "cycleWallSec": 354
+    }
+  ]
+}

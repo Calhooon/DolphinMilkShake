@@ -1,0 +1,1028 @@
+{
+  "runNonce": "bc1c7495",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 100,
+  "successCycles": 29,
+  "completedCycles": 100,
+  "inProgress": false,
+  "synthesisEnabled": true,
+  "totalSats": 3440495,
+  "totalProofs": 2887,
+  "satsPerProofAvg": 1192,
+  "avgCycleSats": 118638,
+  "avgCycleWallSec": 153,
+  "totalWallSec": 4479,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "bc1c7495-000",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "368374eb-3a7b-4cda-aa9a-2c5c714c64f7",
+      "captainIter": 2,
+      "captainSats": 102203,
+      "workerTaskId": "c886973b-aa39-44d2-be65-1ceadf0262e7",
+      "workerSats": 13259,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "98bebde77e635154bd0597b9969a167c45bdac393e1f22e06f65334bda903ea7",
+      "lastTxid": "7dc5ee763fb231bbc614c1fcec52d269958557dd93af5ec8b9524a3ba91479c3",
+      "manifestSha256": "5bf56fceb8361cd041c52686a02c23fd85a9e58758bab0cdbf282e62e3870edf",
+      "synthesisTaskId": "64d118c2-250b-4a26-8f08-3b596c616aa6",
+      "synthesisSats": 110364,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 225826,
+      "satsPerProof": 2258,
+      "cycleWallMs": 294703,
+      "cycleWallSec": 295
+    },
+    {
+      "cycleIdx": 1,
+      "cycleId": "bc1c7495-001",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "b33abf46-2c68-4d1e-b40d-e5e10a8ce2f4",
+      "captainIter": 2,
+      "captainSats": 114600,
+      "workerTaskId": "4e70580b-dded-4c04-a853-acc4bc6d00ea",
+      "workerSats": 13511,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "676694811f04d3314036434e312c3d563885aea575075bab274b125c6ea73605",
+      "lastTxid": "9d34a2a5e863fcde2412a1c77c63b0af729ded858529239b230ec81e86f87213",
+      "manifestSha256": "1690554176d0149da35627e727f3f34d566f5c5359dd48a951b9311dd5512bb8",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 128111,
+      "satsPerProof": 1281,
+      "cycleWallMs": 195932,
+      "cycleWallSec": 196
+    },
+    {
+      "cycleIdx": 2,
+      "cycleId": "bc1c7495-002",
+      "recordCount": 100,
+      "scrapeWallMs": 66,
+      "captainTaskId": "6858fa3c-6e12-468a-9074-9b6247b2bb50",
+      "captainIter": 2,
+      "captainSats": 126884,
+      "workerTaskId": "4e70580b-dded-4c04-a853-acc4bc6d00ea",
+      "workerSats": 13511,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "676694811f04d3314036434e312c3d563885aea575075bab274b125c6ea73605",
+      "lastTxid": "9d34a2a5e863fcde2412a1c77c63b0af729ded858529239b230ec81e86f87213",
+      "manifestSha256": "1690554176d0149da35627e727f3f34d566f5c5359dd48a951b9311dd5512bb8",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 140395,
+      "satsPerProof": 1404,
+      "cycleWallMs": 96645,
+      "cycleWallSec": 97
+    },
+    {
+      "cycleIdx": 3,
+      "cycleId": "bc1c7495-003",
+      "recordCount": 100,
+      "scrapeWallMs": 21,
+      "captainTaskId": "18e7d785-193e-4ed2-b8f3-9a5073cd16df",
+      "captainIter": 2,
+      "captainSats": 102264,
+      "workerTaskId": "97c1801a-b226-40e7-9068-e66c2bfc1169",
+      "workerSats": 13783,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "ed74f84730142fa3c5fc4f785a9abf08dd9f451a08e74a1507d6b554d1a14d9c",
+      "lastTxid": "ed44f03fd584fcb51e9cedd767a8975d0ccfdaf8441cf9715680d848da002420",
+      "manifestSha256": "0716bd10dc11ab6ab231e4b38be567ae3c664b7c90d2320dd35dcd7740fbe51a",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 116047,
+      "satsPerProof": 1160,
+      "cycleWallMs": 117805,
+      "cycleWallSec": 118
+    },
+    {
+      "cycleIdx": 4,
+      "cycleId": "bc1c7495-004",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "7a9983f3-d1e5-4b24-8628-7d9b8c5a8ade",
+      "captainIter": 2,
+      "captainSats": 107736,
+      "workerTaskId": "a10bbc09-71a9-42b7-9724-63aee8a9346d",
+      "workerSats": 14863,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "6cc25392dabb296dd8d339d41ca7e71bc74a79fdf63c111f536768ca6cdf5e4b",
+      "lastTxid": "46bf8cbd376d16bb25905518b6056e7b2ff040bc7cd865457b26121b5fd8cc25",
+      "manifestSha256": "bcc3100dacc4bc7fdabccb58a3812d08369fe9178fecab053b68b4ac8d43eff6",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 122599,
+      "satsPerProof": 1226,
+      "cycleWallMs": 99596,
+      "cycleWallSec": 100
+    },
+    {
+      "cycleIdx": 5,
+      "cycleId": "bc1c7495-005",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "de9931a9-6163-466c-b1cf-b3a130826ed7",
+      "captainIter": 2,
+      "captainSats": 106225,
+      "workerTaskId": "035d58c9-5993-43f7-9622-636c8fba9498",
+      "workerSats": 12896,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "86bf108ea0cc112e0349ad23ff90e6a1e930d157a681b67f10a28b810cbdb054",
+      "lastTxid": "76803b31f192ebe32ea692350a606c76ff876816e398d40daee8a15ac539f078",
+      "manifestSha256": "f006d0f2105f220005a8761921f81131b25103619aae400d096d3fe7b6b8571d",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 119121,
+      "satsPerProof": 1191,
+      "cycleWallMs": 123562,
+      "cycleWallSec": 124
+    },
+    {
+      "cycleIdx": 6,
+      "cycleId": "bc1c7495-006",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "299aee85-a840-4bde-b84e-879091243564",
+      "captainIter": 2,
+      "captainSats": 106900,
+      "workerTaskId": "f78a36e3-a6ff-4135-846d-2fce21f24938",
+      "workerSats": 13185,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "d4e68a5e5f34c6128e7440f6ad13d8336b298ac559afd04ad380745738ac3391",
+      "lastTxid": "8363834237e1577343a1215821ac7060e24f0f1c6f13b0b19b0a50e88311c8b3",
+      "manifestSha256": "a6a713772c336ca0b5742dfe21965a9ad29fef88d86e25e957908e360e525675",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 120085,
+      "satsPerProof": 1201,
+      "cycleWallMs": 111971,
+      "cycleWallSec": 112
+    },
+    {
+      "cycleIdx": 7,
+      "cycleId": "bc1c7495-007",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "cb8e9ecb-3dec-42ae-9387-d7c7d5900e67",
+      "captainIter": 2,
+      "captainSats": 88484,
+      "workerTaskId": "f78a36e3-a6ff-4135-846d-2fce21f24938",
+      "workerSats": 13185,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "d4e68a5e5f34c6128e7440f6ad13d8336b298ac559afd04ad380745738ac3391",
+      "lastTxid": "8363834237e1577343a1215821ac7060e24f0f1c6f13b0b19b0a50e88311c8b3",
+      "manifestSha256": "a6a713772c336ca0b5742dfe21965a9ad29fef88d86e25e957908e360e525675",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 101669,
+      "satsPerProof": 1017,
+      "cycleWallMs": 74351,
+      "cycleWallSec": 74
+    },
+    {
+      "cycleIdx": 8,
+      "cycleId": "bc1c7495-008",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "bb4eec43-640f-49fa-bce5-c8c0ca872463",
+      "captainIter": 2,
+      "captainSats": 90215,
+      "workerTaskId": "0bafbbfd-68e6-4aa2-88e3-0661c3935560",
+      "workerSats": 15554,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "8cd824adeab667a58f1a95cb260d0784bf56ed04cd0bbcb0f9d77b3792c38fbd",
+      "lastTxid": "bd7b0ea5237f3e2667e780e4b81f1b177fcb0091c4db822444a038ada223a507",
+      "manifestSha256": "1bd7e9c3eb856ae841cfb5929614e93d4399f8a50ab0f113b4304675798bf304",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 105769,
+      "satsPerProof": 1058,
+      "cycleWallMs": 128522,
+      "cycleWallSec": 129
+    },
+    {
+      "cycleIdx": 9,
+      "cycleId": "bc1c7495-009",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "4a9b54c3-2957-4e71-866a-4060b3c5844b",
+      "captainIter": 2,
+      "captainSats": 98216,
+      "workerTaskId": "e8662478-b690-4701-a74b-76ce9b78f635",
+      "workerSats": 15106,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "752a527e626c0e187ff63394286f89d7208e8790c98c8a39d5d4eb0f3b01403a",
+      "lastTxid": "d7452db2486e78e42bd824b74fbb8960fb530aee6690ffe626de28125d549db9",
+      "manifestSha256": "eb407e6d73513e921494c44e0bebdd8d70f461a4476270e7f9b83a5c85189656",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 113322,
+      "satsPerProof": 1133,
+      "cycleWallMs": 344504,
+      "cycleWallSec": 345
+    },
+    {
+      "cycleIdx": 10,
+      "cycleId": "bc1c7495-010",
+      "recordCount": 100,
+      "scrapeWallMs": 30,
+      "captainTaskId": "aaf93d97-74e7-4070-a9f4-69b33bc977da",
+      "captainIter": 2,
+      "captainSats": 100842,
+      "workerTaskId": "e8662478-b690-4701-a74b-76ce9b78f635",
+      "workerSats": 15106,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "752a527e626c0e187ff63394286f89d7208e8790c98c8a39d5d4eb0f3b01403a",
+      "lastTxid": "d7452db2486e78e42bd824b74fbb8960fb530aee6690ffe626de28125d549db9",
+      "manifestSha256": "eb407e6d73513e921494c44e0bebdd8d70f461a4476270e7f9b83a5c85189656",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 115948,
+      "satsPerProof": 1159,
+      "cycleWallMs": 189231,
+      "cycleWallSec": 189
+    },
+    {
+      "cycleIdx": 11,
+      "cycleId": "bc1c7495-011",
+      "recordCount": 100,
+      "scrapeWallMs": 55,
+      "captainTaskId": "068bd491-5bf6-471f-a455-cc4666026a7e",
+      "captainIter": 2,
+      "captainSats": 95243,
+      "workerTaskId": "598a3e44-4837-42cd-82b8-c4c0a6b86981",
+      "workerSats": 15004,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "db59f9d75a267772b12b48e5a2b1d19348ff010448a86e726bd24ed0b9625204",
+      "lastTxid": "86dc6ac01e631c27ef9c0021e5a97b3c211624dd0066fe1434e0acb56075250c",
+      "manifestSha256": "119edb763bd9cc5ba47527a91271bcea178f23536a436c1addada5aee0346133",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 110247,
+      "satsPerProof": 1102,
+      "cycleWallMs": 240368,
+      "cycleWallSec": 240
+    },
+    {
+      "cycleIdx": 12,
+      "cycleId": "bc1c7495-012",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "38465cd5-fcc5-472a-9cc4-c1873795841a",
+      "captainIter": 2,
+      "captainSats": 62912,
+      "workerTaskId": "e139301b-0e26-4c5a-8412-26058c8cf55c",
+      "workerSats": 14700,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "7df9f1788e8c8ceb3993182c957b5ca17bf1dc8bf0dd4ec690f678662330f3bf",
+      "lastTxid": "e5f40755a9d3ae11e91c4d0e6bc79ad1655d0916fc64cb5389763e73bc125564",
+      "manifestSha256": "db9a90ee0f413a3bd5c95d0ab51897d79fa859879a81345c67b793433b255927",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 77612,
+      "satsPerProof": 776,
+      "cycleWallMs": 137939,
+      "cycleWallSec": 138
+    },
+    {
+      "cycleIdx": 13,
+      "cycleId": "bc1c7495-013",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "387110a3-c09f-4889-a5e6-a4873bb2e588",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "e139301b-0e26-4c5a-8412-26058c8cf55c",
+      "workerSats": 14700,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "7df9f1788e8c8ceb3993182c957b5ca17bf1dc8bf0dd4ec690f678662330f3bf",
+      "lastTxid": "e5f40755a9d3ae11e91c4d0e6bc79ad1655d0916fc64cb5389763e73bc125564",
+      "manifestSha256": "db9a90ee0f413a3bd5c95d0ab51897d79fa859879a81345c67b793433b255927",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 16500,
+      "satsPerProof": 165,
+      "cycleWallMs": 18498,
+      "cycleWallSec": 18
+    },
+    {
+      "cycleIdx": 14,
+      "cycleId": "bc1c7495-014",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "fe59e52e-95da-4d3a-830c-a8526e8ed0f3",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "01204473-e609-46f9-a4ec-524a1554e373",
+      "workerSats": 14676,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "2ae013213423f323d705e0b4934e51e5884d555f58b31f0718bb027f860b3018",
+      "lastTxid": "8aa7eb8480e7393e02cb08d67faf5dd6017c0cfdd6303fcad63977aeb6bb31a1",
+      "manifestSha256": "d3b6170b03606d3588671a5cc5869017d043aa33b1d518576b785a3731c46127",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 16476,
+      "satsPerProof": 165,
+      "cycleWallMs": 163049,
+      "cycleWallSec": 163
+    },
+    {
+      "cycleIdx": 15,
+      "cycleId": "bc1c7495-015",
+      "recordCount": 100,
+      "scrapeWallMs": 17,
+      "captainTaskId": "cbba4270-6422-4640-b4dc-23337b8e8eee",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "01204473-e609-46f9-a4ec-524a1554e373",
+      "workerSats": 14676,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "2ae013213423f323d705e0b4934e51e5884d555f58b31f0718bb027f860b3018",
+      "lastTxid": "8aa7eb8480e7393e02cb08d67faf5dd6017c0cfdd6303fcad63977aeb6bb31a1",
+      "manifestSha256": "d3b6170b03606d3588671a5cc5869017d043aa33b1d518576b785a3731c46127",
+      "synthesisTaskId": "f53fcce5-7f26-45b4-ae10-5caa73eeda09",
+      "synthesisSats": 108969,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 125445,
+      "satsPerProof": 1254,
+      "cycleWallMs": 94436,
+      "cycleWallSec": 94
+    },
+    {
+      "cycleIdx": 16,
+      "cycleId": "bc1c7495-016",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "b51fcf7a-731d-4eb1-bdee-f852b73c9701",
+      "captainIter": 2,
+      "captainSats": 106913,
+      "workerTaskId": "87d00cb0-57e1-420c-8eb7-d8a349d5aca2",
+      "workerSats": 13685,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "32a8ec33937c20a0364073d06d10fa94add92115b46a990f93d2b246d2388638",
+      "lastTxid": "da90d4c615ccd1211ecc32dbd6db48d71aeac350e83bdbe5d99ab0d4d5c09d5b",
+      "manifestSha256": "eb0a608aa43f33ecfc8c1d98a09cc6351544e19253d178ce9cc64061ce55dd35",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 120598,
+      "satsPerProof": 1231,
+      "cycleWallMs": 205732,
+      "cycleWallSec": 206
+    },
+    {
+      "cycleIdx": 17,
+      "cycleId": "bc1c7495-017",
+      "recordCount": 100,
+      "scrapeWallMs": 18,
+      "captainTaskId": "c2f4bcf4-3513-43ec-99da-e69e67ab40aa",
+      "captainIter": 2,
+      "captainSats": 117361,
+      "workerTaskId": "87d00cb0-57e1-420c-8eb7-d8a349d5aca2",
+      "workerSats": 13685,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "32a8ec33937c20a0364073d06d10fa94add92115b46a990f93d2b246d2388638",
+      "lastTxid": "da90d4c615ccd1211ecc32dbd6db48d71aeac350e83bdbe5d99ab0d4d5c09d5b",
+      "manifestSha256": "eb0a608aa43f33ecfc8c1d98a09cc6351544e19253d178ce9cc64061ce55dd35",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 131046,
+      "satsPerProof": 1337,
+      "cycleWallMs": 73207,
+      "cycleWallSec": 73
+    },
+    {
+      "cycleIdx": 18,
+      "cycleId": "bc1c7495-018",
+      "recordCount": 100,
+      "scrapeWallMs": 10,
+      "captainTaskId": "ec45103b-a590-40ca-b275-8054b0f07d95",
+      "captainIter": 2,
+      "captainSats": 118238,
+      "workerTaskId": "f1b1c462-befe-458b-bd6e-f3a236a85ed2",
+      "workerSats": 16762,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "67ba1b27136242d73b27c47ebff65ce6cbf2a927856f7ad7aeac6422fa5ff8b3",
+      "lastTxid": "f5e21d25dc7c219a3c13d96f25e3f2afe7472e069e15fe56bd665156ecc59b43",
+      "manifestSha256": "6a0b39251a4a6dbe65455dc0db23701d50a01bfda7cafa868ba00028130deb20",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 135000,
+      "satsPerProof": 1350,
+      "cycleWallMs": 191322,
+      "cycleWallSec": 191
+    },
+    {
+      "cycleIdx": 19,
+      "cycleId": "bc1c7495-019",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "132b7b6f-6c45-412f-85d4-37ef0badd16f",
+      "captainIter": 2,
+      "captainSats": 115115,
+      "workerTaskId": "2fa200bb-5487-461a-aa0e-fe346b8f336c",
+      "workerSats": 14475,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "4d8acbc2f5dbced80c4a9c07faefe714f643494f50c0d99398297bbbe759c69e",
+      "lastTxid": "f04760c656a198157dc9beffcf28df01b97a54963633913240636ad14b5bbba8",
+      "manifestSha256": "60f74fdcc7b4e46d57a23078487956716dcc129f7a0267f9ab5c76181b2a7759",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 129590,
+      "satsPerProof": 1296,
+      "cycleWallMs": 85335,
+      "cycleWallSec": 85
+    },
+    {
+      "cycleIdx": 20,
+      "cycleId": "bc1c7495-020",
+      "recordCount": 100,
+      "scrapeWallMs": 17,
+      "captainTaskId": "9044e68a-4015-475b-ba4a-50069da24f70",
+      "captainIter": 2,
+      "captainSats": 92660,
+      "workerTaskId": "494dffd5-d69e-4b03-b7df-d5cba835e4a3",
+      "workerSats": 14846,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "30c25d448d946179baa64a1570741d845ef264bb0128179694e00409ac68c115",
+      "lastTxid": "fe068a113d2603287a045b18d15d4534b3e15811865a1c853d34559ebb003a32",
+      "manifestSha256": "daa2bb5644ee0eb007f76eac4df42d53fa1bec7121be5fcd7f1d5eac436ceec6",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 107506,
+      "satsPerProof": 1075,
+      "cycleWallMs": 196364,
+      "cycleWallSec": 196
+    },
+    {
+      "cycleIdx": 21,
+      "cycleId": "bc1c7495-021",
+      "recordCount": 100,
+      "scrapeWallMs": 72,
+      "captainTaskId": "c5036d21-0418-46cd-8eee-95ed5379c66b",
+      "captainIter": 2,
+      "captainSats": 118023,
+      "workerTaskId": "482313ca-b40d-4a20-a43e-e6ad137da825",
+      "workerSats": 14308,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "0cb9adf27b1152fc9d8a651305c2f0af2e0e26a33ee9445db4df95ee42f07686",
+      "lastTxid": "6f6e1715560c669b35a2d273edf9c8d01ef71fec781c888b67d78e94e353ecbe",
+      "manifestSha256": "dab8b0ad0a26877517373886d91c4a2f7e3d41543504a9f7f9e5eaac9294cec6",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 132331,
+      "satsPerProof": 1323,
+      "cycleWallMs": 92493,
+      "cycleWallSec": 92
+    },
+    {
+      "cycleIdx": 22,
+      "cycleId": "bc1c7495-022",
+      "recordCount": 100,
+      "scrapeWallMs": 18,
+      "captainTaskId": "709dfa56-c5ef-4ced-86d7-26d0302154ad",
+      "captainIter": 2,
+      "captainSats": 109224,
+      "workerTaskId": "828dc5aa-f715-47de-be43-08d1f91b538d",
+      "workerSats": 13863,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "ed0f41b00f4e0642f1a64b559be78d55eea13b8baa9ea774f257664ed56aed93",
+      "lastTxid": "ba339dc5c6c652e9a13e71c111c8830085b766a772cdaeb7e8660e5c7b09caa0",
+      "manifestSha256": "c15b225111d93c89407a7c07e7bab8a1922cde5fa2cffa042165dd785725a7bd",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 123087,
+      "satsPerProof": 1231,
+      "cycleWallMs": 98290,
+      "cycleWallSec": 98
+    },
+    {
+      "cycleIdx": 23,
+      "cycleId": "bc1c7495-023",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "2f50d9a4-e9cd-4661-b519-435ef171645f",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "db470dc2-40a2-4aea-96e3-6454b308af79",
+      "workerSats": 13893,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "3671496b90af584fda8a5ef5d7c5370fca1aee88dad625f4b02c980c2571ec10",
+      "lastTxid": "f14c46f2e945a1717bbb66b956c081f72c50308813090eb3304a1a12a0d5fd0c",
+      "manifestSha256": "2abc2aa8e04cc32115e6405617ea65bead952b80e04cd1cc2ab42d3ad76317c9",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 15693,
+      "satsPerProof": 157,
+      "cycleWallMs": 112068,
+      "cycleWallSec": 112
+    },
+    {
+      "cycleIdx": 24,
+      "cycleId": "bc1c7495-024",
+      "recordCount": 100,
+      "scrapeWallMs": 17,
+      "captainTaskId": "dc5ac2d4-2cfa-4c79-aa26-602bb2f566c8",
+      "captainIter": 2,
+      "captainSats": 111258,
+      "workerTaskId": "db470dc2-40a2-4aea-96e3-6454b308af79",
+      "workerSats": 13893,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "3671496b90af584fda8a5ef5d7c5370fca1aee88dad625f4b02c980c2571ec10",
+      "lastTxid": "f14c46f2e945a1717bbb66b956c081f72c50308813090eb3304a1a12a0d5fd0c",
+      "manifestSha256": "2abc2aa8e04cc32115e6405617ea65bead952b80e04cd1cc2ab42d3ad76317c9",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 125151,
+      "satsPerProof": 1252,
+      "cycleWallMs": 137705,
+      "cycleWallSec": 138
+    },
+    {
+      "cycleIdx": 25,
+      "cycleId": "bc1c7495-025",
+      "recordCount": 100,
+      "scrapeWallMs": 19,
+      "captainTaskId": "eaa92f7c-0496-42bd-a973-15e4e5f73e51",
+      "captainIter": 2,
+      "captainSats": 105009,
+      "workerTaskId": "92b907f1-8e52-49b1-a582-1647a82bd6b3",
+      "workerSats": 113317,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "295fe332c7adb80455e58430e0e61bfc71948cb2b6d55ba9707fac9905c8331c",
+      "lastTxid": "7ece182a9d220eb047f470620c76012d373e38b190904d177de3bb83dadde445",
+      "manifestSha256": "46aa64177117263865bb5a5291fc383949952b0c1360beaaaa9e797324f5f819",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 218326,
+      "satsPerProof": 2228,
+      "cycleWallMs": 302202,
+      "cycleWallSec": 302
+    },
+    {
+      "cycleIdx": 26,
+      "cycleId": "bc1c7495-026",
+      "recordCount": 100,
+      "scrapeWallMs": 30,
+      "captainTaskId": "ecf3aa05-c228-4407-b49c-f735a53af469",
+      "captainIter": 2,
+      "captainSats": 96793,
+      "workerTaskId": "d0a6c306-4a9c-44c4-a253-7f8f3de8df75",
+      "workerSats": 113425,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "1277b223c1cdb2bb76c7bc8b198e8b9fa64f6aaad0a660a6a052d84e8e20de1f",
+      "lastTxid": "8ce73424255cc1d31302e358fc41e81e4e8eec3b03074f67467816cb838b0765",
+      "manifestSha256": "cf1038bf66861cf9403b958f14cb1987a8e3a94ab7461777d8fc35eecd8d98ac",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 210218,
+      "satsPerProof": 2102,
+      "cycleWallMs": 186818,
+      "cycleWallSec": 187
+    },
+    {
+      "cycleIdx": 27,
+      "cycleId": "bc1c7495-027",
+      "recordCount": 100,
+      "scrapeWallMs": 33,
+      "captainTaskId": "18d784b1-01f5-430d-986b-5316af1c0f85",
+      "captainIter": 2,
+      "captainSats": 107205,
+      "workerTaskId": "b8335ab3-8f98-4879-9c42-3a3bdeeb92bf",
+      "workerSats": 62831,
+      "proofsCreated": 96,
+      "proofErrors": 4,
+      "firstTxid": "f8d9b242c25e424d68eff632c1e4e3a267cc64067cd5758a7522728214c99dd2",
+      "lastTxid": "7a7ad5c69d8f13694655816b7790917071cb9bf7e19693bc919df36613b8bfa9",
+      "manifestSha256": "3f19a46b844102e78980bebd668b784eff309b385ab6ab3a6b0e14f5a2ac8bdc",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 96,
+      "totalSats": 170036,
+      "satsPerProof": 1771,
+      "cycleWallMs": 149729,
+      "cycleWallSec": 150
+    },
+    {
+      "cycleIdx": 28,
+      "cycleId": "bc1c7495-028",
+      "recordCount": 100,
+      "scrapeWallMs": 18,
+      "captainTaskId": "143634d9-233f-4db6-a4bc-e526c611f2e3",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "07fd0e71-a9a7-46ae-b7c5-7c9c31c91430",
+      "workerSats": 64941,
+      "proofsCreated": 97,
+      "proofErrors": 3,
+      "firstTxid": "5a855955f8dc7966475acfca8b2e18827d5097157f3b6aac111620d602d93548",
+      "lastTxid": "e6c52c4e7509e60feeeff6bd38df23d59dea28d94fe9976bedcdb3d2776cf826",
+      "manifestSha256": "5cba45b53b1b3ffadcc77706be7823c725efa2691b95db92e7aa2060ded1b4f9",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 97,
+      "totalSats": 66741,
+      "satsPerProof": 688,
+      "cycleWallMs": 176082,
+      "cycleWallSec": 176
+    },
+    {
+      "cycleIdx": 29,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 30,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 31,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 32,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 33,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 34,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 35,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 36,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 37,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 38,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 39,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 40,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 41,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 42,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 43,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 44,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 45,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 46,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 47,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 48,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 49,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 50,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 51,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 52,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 53,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 54,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 55,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 56,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 57,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 58,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 59,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 60,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 61,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 62,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 63,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 64,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 65,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 66,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 67,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 68,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 69,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 70,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 71,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 72,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 73,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 74,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 75,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 76,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 77,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 78,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 79,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 80,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 81,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 82,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 83,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 84,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 85,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 86,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 87,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 88,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 89,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 90,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 91,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 92,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 93,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 94,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 95,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 96,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 97,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 98,
+      "error": "submit failed: HTTP 403 \"\""
+    },
+    {
+      "cycleIdx": 99,
+      "error": "submit failed: HTTP 403 \"\""
+    }
+  ]
+}

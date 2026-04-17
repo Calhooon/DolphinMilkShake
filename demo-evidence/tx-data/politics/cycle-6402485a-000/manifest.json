@@ -1,0 +1,13 @@
+{
+  "cycleId": "6402485a-000",
+  "runNonce": "6402485a",
+  "cycleIdx": 0,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "be0a8391a29bac2cae5d9a4fc42bd1166607ecd8d476d92440eaaa57873f383d",
+  "lastTxid": "643866b251c0133bb340505063a0017e3e345f9ddaf9d8e4ca568e78c30c7fce",
+  "manifestSha256": "6f00890e2fa6350e745485fd313d012aba81bac849ecbc38fa72179dc7ac013b",
+  "txidFile": "/tmp/dolphinsense-shared/politics/cycle-6402485a-000/records.jsonl.txids",
+  "createdAt": "2026-04-14T21:07:23.408Z"
+}

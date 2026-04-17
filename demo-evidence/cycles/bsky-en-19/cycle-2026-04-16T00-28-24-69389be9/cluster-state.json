@@ -1,0 +1,78 @@
+{
+  "createdAt": "2026-04-16T00:28:29.012Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-bsky-en-19": {
+      "name": "captain-bsky-en-19",
+      "port": 8181,
+      "walletPort": 3481,
+      "identityKey": "035fbf4a2c5d48209953b8105e7ae8bd5f9c06ac838736e3217890b4a9b77b6af7",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/captain-bsky-en-19",
+      "certHash": "dm-captain-bsky-en-19-035fbf4a-1776294406",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:28:29.012Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/captain-bsky-en-19/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/captain-bsky-en-19/server-stderr.log"
+    },
+    "worker-bsky-en-19": {
+      "name": "worker-bsky-en-19",
+      "port": 8182,
+      "walletPort": 3482,
+      "identityKey": "02da1c6742b7e66df78d109988c02cccf896dd54aa807c48d20048dd0606f69aee",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/worker-bsky-en-19",
+      "certHash": "dm-worker-bsky-en-19-02da1c67-1776294411",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:28:29.012Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/worker-bsky-en-19/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/worker-bsky-en-19/server-stderr.log"
+    },
+    "synthesis-bsky-en-19": {
+      "name": "synthesis-bsky-en-19",
+      "port": 8183,
+      "walletPort": 3483,
+      "identityKey": "02f3d7381348fa5f676e759969f48138890226efffabe35502bfc53c57f2e4f308",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/synthesis-bsky-en-19",
+      "certHash": "dm-synthesis-bsky-en-19-02f3d738-1776294413",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "synthesis",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-16T00:28:29.011Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/synthesis-bsky-en-19/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/bsky-en-19/synthesis-bsky-en-19/server-stderr.log"
+    }
+  }
+}

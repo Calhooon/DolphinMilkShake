@@ -1,0 +1,163 @@
+{
+  "runNonce": "39d6a23f",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 15,
+  "successCycles": 4,
+  "completedCycles": 15,
+  "inProgress": false,
+  "synthesisEnabled": true,
+  "totalSats": 768636,
+  "totalProofs": 400,
+  "satsPerProofAvg": 1922,
+  "avgCycleSats": 192159,
+  "avgCycleWallSec": 475,
+  "totalWallSec": 4283,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "39d6a23f-000",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "20113391-9ecf-4225-8141-aa65a45bad81",
+      "captainIter": 2,
+      "captainSats": 104703,
+      "workerTaskId": "2a97dc73-5a05-4119-adc6-ff0ebb13475a",
+      "workerSats": 14085,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "c711e2b0368e87886720308f0647ff2346f424631ae54d4d6b964d491173e42a",
+      "lastTxid": "e9aea758de4ed6612bca3675f93ae515fa7b2f84a73fd3ba28b19d8860c22a8e",
+      "manifestSha256": "0aab522ae09dd56a8ed9520403d0a856f4271f7c06bc060609c96480f7d73b21",
+      "synthesisTaskId": "5beeacae-0c4a-4c35-97d3-3842e2651444",
+      "synthesisSats": 295595,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 414383,
+      "satsPerProof": 4144,
+      "cycleWallMs": 1079635,
+      "cycleWallSec": 1080
+    },
+    {
+      "cycleIdx": 1,
+      "cycleId": "39d6a23f-001",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "1b8e8637-b9e0-4c7e-8967-ca74522d1b3e",
+      "captainIter": 2,
+      "captainSats": 108988,
+      "workerTaskId": "b4ba50f2-8f29-405b-b9f0-d7a5377c1bd1",
+      "workerSats": 15539,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "fd0bdb4990a69bf6371f5f022d0cb9da7799014ba5f58bbf96756f810bf8f317",
+      "lastTxid": "5dfa0afc2f18e4e82c5825472643b4da7678701bee0906b486c1f45bf48f5a6e",
+      "manifestSha256": "c857ca10fb4bcbf44eb96d4029cc2f1aee64b9b6b919274947eccae633876354",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 124527,
+      "satsPerProof": 1245,
+      "cycleWallMs": 326304,
+      "cycleWallSec": 326
+    },
+    {
+      "cycleIdx": 2,
+      "cycleId": "39d6a23f-002",
+      "recordCount": 100,
+      "scrapeWallMs": 14,
+      "captainTaskId": "6b05ecf2-45a0-452f-85d0-bb0fae612e73",
+      "captainIter": 2,
+      "captainSats": 106389,
+      "workerTaskId": "c261b760-0334-4121-8b6f-05df11f2d227",
+      "workerSats": 14921,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "cfc786394e128b61a856f5fcde1a261538e56c9d81516e9bcce5af58bd5d672e",
+      "lastTxid": "dcf63a5464343c5ac9b1e3c09cdeca48047e1c60bf004e941e79e846ae02a9af",
+      "manifestSha256": "45a92399aabde21c67ae42c6bb620440e40932967d0c2f0e347325ec22157a9a",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 121310,
+      "satsPerProof": 1213,
+      "cycleWallMs": 347100,
+      "cycleWallSec": 347
+    },
+    {
+      "cycleIdx": 3,
+      "error": "cycle 39d6a23f-003: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 4,
+      "cycleId": "39d6a23f-004",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "5eaba3be-73bf-4763-9829-874fd7b64e13",
+      "captainIter": 2,
+      "captainSats": 94958,
+      "workerTaskId": "0f1d3dc2-e4e3-4941-8d1c-1bc90778eeb8",
+      "workerSats": 13458,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "e475d14c66dbe2c939bef2c5d7d1b5e3f50e7a0699ae0f2103e4ca85f886361b",
+      "lastTxid": "e145a8847c8704bb73897f01a4781f936827872a962dd13098cc9ad46956a80e",
+      "manifestSha256": "488e501acae70d2691cc45ba3aba924c0d12e943091c67cefde4d1bfc3988382",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 108416,
+      "satsPerProof": 1084,
+      "cycleWallMs": 146867,
+      "cycleWallSec": 147
+    },
+    {
+      "cycleIdx": 5,
+      "error": "task ea9d4797-b6c7-40a8-8e94-03871f17c845 did not complete before deadline"
+    },
+    {
+      "cycleIdx": 6,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 7,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 8,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 9,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 10,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 11,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 12,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 13,
+      "error": "submit failed: HTTP 401 \"\""
+    },
+    {
+      "cycleIdx": 14,
+      "error": "submit failed: HTTP 401 \"\""
+    }
+  ]
+}

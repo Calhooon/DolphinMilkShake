@@ -1,0 +1,79 @@
+{
+  "createdAt": "2026-04-17T14:07:42.828Z",
+  "parentKey": "03ef3231669022cc03aa26c74de784648faddb76609465c7181393efb335cbc7e0",
+  "overlayUrl": "https://rust-overlay.dev-a3e.workers.dev",
+  "agents": {
+    "captain-wiki-en-4": {
+      "name": "captain-wiki-en-4",
+      "port": 8151,
+      "walletPort": 3451,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/captain-wiki-en-4",
+      "certHash": "dm-worker-bsky-en-12-02501414-1776434801",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:07:42.828Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/captain-wiki-en-4/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/captain-wiki-en-4/server-stderr.log"
+    },
+    "worker-wiki-en-4": {
+      "name": "worker-wiki-en-4",
+      "port": 8152,
+      "walletPort": 3452,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/worker-wiki-en-4",
+      "certHash": "dm-worker-bsky-en-12-02501414-1776434801",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "scraping",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:07:42.618Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/worker-wiki-en-4/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/worker-wiki-en-4/server-stderr.log"
+    },
+    "synthesis-wiki-en-4": {
+      "name": "synthesis-wiki-en-4",
+      "port": 8153,
+      "walletPort": 3453,
+      "identityKey": "025014145b03992597469b10250e6a6ad9031bbce13bba4a7658218acd7d980aa0",
+      "workspace": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/synthesis-wiki-en-4",
+      "certHash": "dm-synthesis-bsky-en-11-02501414-1776434803",
+      "certCapabilities": [
+        "llm",
+        "memory",
+        "messaging",
+        "orchestration",
+        "schedule",
+        "synthesis",
+        "tools",
+        "wallet",
+        "x402"
+      ],
+      "overlayRegistered": true,
+      "overlayRegisteredAt": "2026-04-17T14:07:42.742Z",
+      "spawnedByUs": true,
+      "stdoutLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/synthesis-wiki-en-4/server-stdout.log",
+      "stderrLogPath": "/Users/johncalhoun/bsv/rust-bsv-worm/test-workspaces/fleet/wiki-en-4/synthesis-wiki-en-4/server-stderr.log"
+    }
+  }
+}

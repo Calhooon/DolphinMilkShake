@@ -1,0 +1,1028 @@
+{
+  "runNonce": "0048f1fc",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 100,
+  "successCycles": 29,
+  "completedCycles": 100,
+  "inProgress": false,
+  "synthesisEnabled": true,
+  "totalSats": 3692724,
+  "totalProofs": 2884,
+  "satsPerProofAvg": 1280,
+  "avgCycleSats": 127335,
+  "avgCycleWallSec": 130,
+  "totalWallSec": 4722,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "0048f1fc-000",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "b8f52932-57fe-4bb6-8326-5f9a6304cfc0",
+      "captainIter": 2,
+      "captainSats": 100607,
+      "workerTaskId": "cc4a7b00-8744-4509-9612-272fb2782d33",
+      "workerSats": 13771,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "3a57db78b4e3ef1d6b98cd87de65c0d46efcb4b8c7da929caaf5f7d12e229e2c",
+      "lastTxid": "f4bef1a2999c8a25f83ba2ffbf7517361058e147e6e13ea3c53a254d49d83257",
+      "manifestSha256": "472d15859794178a2f8e0fdefe37882a90720e3f1b262e54f58cf394f168424d",
+      "synthesisTaskId": "bb360613-8c21-4f44-b6e7-c99cca2c504f",
+      "synthesisSats": 108558,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 222936,
+      "satsPerProof": 2229,
+      "cycleWallMs": 181150,
+      "cycleWallSec": 181
+    },
+    {
+      "cycleIdx": 1,
+      "cycleId": "0048f1fc-001",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "41176e11-fbbd-45b9-bfc3-c3985176713e",
+      "captainIter": 2,
+      "captainSats": 122748,
+      "workerTaskId": "d95f445b-f98f-4beb-bb16-a7248868bef8",
+      "workerSats": 14557,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "1a9e47426f90a8bd8ef14aafb203cc76a0b16138c6377764b573551fc7926b3e",
+      "lastTxid": "661ab5c6c9f3edbeddd7b21f13a9133ba88bf72704b18437b50d26c488c33dcc",
+      "manifestSha256": "30a0d59d5fb5320a7c792b656c3b48d8b3f2aae149b82edd8e14050ba66a09df",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 137305,
+      "satsPerProof": 1373,
+      "cycleWallMs": 202197,
+      "cycleWallSec": 202
+    },
+    {
+      "cycleIdx": 2,
+      "cycleId": "0048f1fc-002",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "0133b333-417d-44ff-97ca-4c6d40821d84",
+      "captainIter": 2,
+      "captainSats": 98356,
+      "workerTaskId": "d95f445b-f98f-4beb-bb16-a7248868bef8",
+      "workerSats": 14557,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "1a9e47426f90a8bd8ef14aafb203cc76a0b16138c6377764b573551fc7926b3e",
+      "lastTxid": "661ab5c6c9f3edbeddd7b21f13a9133ba88bf72704b18437b50d26c488c33dcc",
+      "manifestSha256": "30a0d59d5fb5320a7c792b656c3b48d8b3f2aae149b82edd8e14050ba66a09df",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 112913,
+      "satsPerProof": 1129,
+      "cycleWallMs": 60705,
+      "cycleWallSec": 61
+    },
+    {
+      "cycleIdx": 3,
+      "cycleId": "0048f1fc-003",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "8ca8f01e-8a39-494f-be8d-3fbd4d9d3614",
+      "captainIter": 2,
+      "captainSats": 106887,
+      "workerTaskId": "eed45f83-f827-472b-9928-8fc87f6b4d65",
+      "workerSats": 14146,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "819bdee0c08b6dea68ae6c00110c7d189d56faa84de305c7996e8e6c58fd80a8",
+      "lastTxid": "51e5fe6282371b6976c63ee9b5661854804e2ebf750025883608ab923bdff663",
+      "manifestSha256": "11d2e8a60823c5da4f5a7f864916c1700955a2a3ad96beb285ca99b56213fb89",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 121033,
+      "satsPerProof": 1210,
+      "cycleWallMs": 102895,
+      "cycleWallSec": 103
+    },
+    {
+      "cycleIdx": 4,
+      "cycleId": "0048f1fc-004",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "5dbf1601-39ba-4f5a-9988-7adae53a2e66",
+      "captainIter": 2,
+      "captainSats": 111404,
+      "workerTaskId": "4e4b968f-a8d7-4458-bd2c-34c0b3c7e70c",
+      "workerSats": 17030,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "222dc80ba61f331f6e7eb7e07468e83b4546845ff85e7cd6f4f3eb111869769f",
+      "lastTxid": "a76aaae572dad04be50400d81e269da9371c71981e562f964f77252d72527c63",
+      "manifestSha256": "e342a8fe63b7695398f61be9524baab3d07764c236732cf665a7021f82ad40a1",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 128434,
+      "satsPerProof": 1284,
+      "cycleWallMs": 72461,
+      "cycleWallSec": 72
+    },
+    {
+      "cycleIdx": 5,
+      "cycleId": "0048f1fc-005",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "6aaa1c5f-cc66-4cbc-880d-45bf401c0811",
+      "captainIter": 2,
+      "captainSats": 111795,
+      "workerTaskId": "4e4b968f-a8d7-4458-bd2c-34c0b3c7e70c",
+      "workerSats": 17030,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "222dc80ba61f331f6e7eb7e07468e83b4546845ff85e7cd6f4f3eb111869769f",
+      "lastTxid": "a76aaae572dad04be50400d81e269da9371c71981e562f964f77252d72527c63",
+      "manifestSha256": "e342a8fe63b7695398f61be9524baab3d07764c236732cf665a7021f82ad40a1",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 128825,
+      "satsPerProof": 1288,
+      "cycleWallMs": 75813,
+      "cycleWallSec": 76
+    },
+    {
+      "cycleIdx": 6,
+      "cycleId": "0048f1fc-006",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "5989e4a7-fbe2-4c46-8a0a-0e4e838da34e",
+      "captainIter": 2,
+      "captainSats": 96363,
+      "workerTaskId": "594179f1-7135-4c17-a2d0-7b693f568e57",
+      "workerSats": 19419,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "0bfd85b2c548948d173f949b341fd6911aa9f4a303f45df8d272a0d0bb5f0921",
+      "lastTxid": "eb7e4ae3eb73dc6f5e45e73f7a1aabb7766ab1933a40ba169b7e636da635ea95",
+      "manifestSha256": "0acc6876b2e1d5099f6cbbc2edc7e18276bd15f7a20e9c0edbf3c45884666e01",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 115782,
+      "satsPerProof": 1158,
+      "cycleWallMs": 99449,
+      "cycleWallSec": 99
+    },
+    {
+      "cycleIdx": 7,
+      "cycleId": "0048f1fc-007",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "bb07dd1f-b4f6-4da0-8303-7b6ac82465a8",
+      "captainIter": 2,
+      "captainSats": 113522,
+      "workerTaskId": "909f5ba5-6749-49d8-86f1-1de749b24e53",
+      "workerSats": 14332,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "f34ab692e8a5e016755651d769db2cd72ececa8c47d70201aec370e6239b499d",
+      "lastTxid": "6d47c9c0f2b88f5db67195733b8e7e9f49a027d091fa5ea690dfbb6751627bc9",
+      "manifestSha256": "bcb5e8de7fc8acacb0ba33fdcb5b420094219cf6d8d628f2417d444a7076b888",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 127854,
+      "satsPerProof": 1279,
+      "cycleWallMs": 87502,
+      "cycleWallSec": 88
+    },
+    {
+      "cycleIdx": 8,
+      "cycleId": "0048f1fc-008",
+      "recordCount": 100,
+      "scrapeWallMs": 13,
+      "captainTaskId": "7793a499-e09b-4495-a7f8-45445ace8f48",
+      "captainIter": 2,
+      "captainSats": 99137,
+      "workerTaskId": "909f5ba5-6749-49d8-86f1-1de749b24e53",
+      "workerSats": 14332,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "f34ab692e8a5e016755651d769db2cd72ececa8c47d70201aec370e6239b499d",
+      "lastTxid": "6d47c9c0f2b88f5db67195733b8e7e9f49a027d091fa5ea690dfbb6751627bc9",
+      "manifestSha256": "bcb5e8de7fc8acacb0ba33fdcb5b420094219cf6d8d628f2417d444a7076b888",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 113469,
+      "satsPerProof": 1135,
+      "cycleWallMs": 69410,
+      "cycleWallSec": 69
+    },
+    {
+      "cycleIdx": 9,
+      "cycleId": "0048f1fc-009",
+      "recordCount": 100,
+      "scrapeWallMs": 11,
+      "captainTaskId": "a63cfa84-c74d-4992-ab73-3b63c4831e4b",
+      "captainIter": 2,
+      "captainSats": 105149,
+      "workerTaskId": "cbcdba57-3804-4a50-a61b-d284605e6270",
+      "workerSats": 14122,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "5ecfba4e18deab7f949c254fdb63f3edc2a63422528cc5665dc6bddea6cb7c75",
+      "lastTxid": "a8b8501e6d687ab400ea16f8c2056b6184680dedb60e87f68521e91361e69c82",
+      "manifestSha256": "8a2a568b8774b2957615c84f5d5f0e5a50da686eb8020d1e91013fc7eee01c2f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 119271,
+      "satsPerProof": 1193,
+      "cycleWallMs": 105812,
+      "cycleWallSec": 106
+    },
+    {
+      "cycleIdx": 10,
+      "cycleId": "0048f1fc-010",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "2cad531f-8102-454b-ac81-dd4fa010382c",
+      "captainIter": 2,
+      "captainSats": 108298,
+      "workerTaskId": "c364f9f4-1db9-44d7-b46b-9ec37acf139b",
+      "workerSats": 13708,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "410fc74100f650112bffca61c9b788744078a802251d3c074c4ddef5af793bdc",
+      "lastTxid": "5efaef5a931afcc2813c2f5d977b7d72e29614b6a63858ad2aa4ab89a7e0ae7a",
+      "manifestSha256": "032cfa77327d1b38682101fb451c6967a8539232f5704bc0a5f87594ac996e53",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 122006,
+      "satsPerProof": 1220,
+      "cycleWallMs": 117710,
+      "cycleWallSec": 118
+    },
+    {
+      "cycleIdx": 11,
+      "cycleId": "0048f1fc-011",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "268660b3-aba4-4812-a6cd-ac579b13cf57",
+      "captainIter": 2,
+      "captainSats": 100919,
+      "workerTaskId": "78c3daee-256b-40fd-9c4c-6b92a555ed8b",
+      "workerSats": 15597,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "d625e0963f874eae33c57e4d5302cb524945a78c6f9f2d09ca0fe683d813f51c",
+      "lastTxid": "86979b9f77d32bb93b97a75d950a94cbe825e9caf3f7ee37772fa5bad2b61f7c",
+      "manifestSha256": "be643a39de8e10f14e5c8e039a10533c8d6cb6a3fe073c25b84d02de38a7db2b",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 116516,
+      "satsPerProof": 1165,
+      "cycleWallMs": 119022,
+      "cycleWallSec": 119
+    },
+    {
+      "cycleIdx": 12,
+      "cycleId": "0048f1fc-012",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "7b2498ab-1908-4f4e-852d-f4328d303983",
+      "captainIter": 2,
+      "captainSats": 76229,
+      "workerTaskId": "3086a79b-afb5-4c04-a139-cc0b0c673868",
+      "workerSats": 20996,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "dd5be32e6abd5b35b1934d4981a0ffddff8eca697ce795d1f8bcf33cf55c1b03",
+      "lastTxid": "93c553296a9cbc9a88a649af2ba47d98f7301e9c3a252868b6d34f0ce394f328",
+      "manifestSha256": "635b17f9046ce8e79eacb865d7804dae4de66d544dfbb0d8b433022ff541cd46",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 97225,
+      "satsPerProof": 972,
+      "cycleWallMs": 180133,
+      "cycleWallSec": 180
+    },
+    {
+      "cycleIdx": 13,
+      "cycleId": "0048f1fc-013",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "6ecc35af-b854-4bdf-a559-a2dbf971e710",
+      "captainIter": 2,
+      "captainSats": 108190,
+      "workerTaskId": "3086a79b-afb5-4c04-a139-cc0b0c673868",
+      "workerSats": 20996,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "dd5be32e6abd5b35b1934d4981a0ffddff8eca697ce795d1f8bcf33cf55c1b03",
+      "lastTxid": "93c553296a9cbc9a88a649af2ba47d98f7301e9c3a252868b6d34f0ce394f328",
+      "manifestSha256": "635b17f9046ce8e79eacb865d7804dae4de66d544dfbb0d8b433022ff541cd46",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 129186,
+      "satsPerProof": 1292,
+      "cycleWallMs": 110909,
+      "cycleWallSec": 111
+    },
+    {
+      "cycleIdx": 14,
+      "cycleId": "0048f1fc-014",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "d141fbbc-94b5-455d-b7c5-6f3c46fea95e",
+      "captainIter": 2,
+      "captainSats": 106311,
+      "workerTaskId": "6bd2b2fd-0503-4d3a-bfa7-50b1d02d7f7a",
+      "workerSats": 17115,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "1d98f554463a1d89e4aee0c5496ba20f078311d86d6867933956bc45795ec182",
+      "lastTxid": "ebcf7cc1e5ef793ccb3a4aaca61dd1f722a9c60e015c94b42ba9f31c445d154e",
+      "manifestSha256": "3dcb80e679ec1f4dfa3bfcaf77fa9ec9325f94fb5dd9bdb67dcf29b5a8264db5",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 123426,
+      "satsPerProof": 1247,
+      "cycleWallMs": 192529,
+      "cycleWallSec": 193
+    },
+    {
+      "cycleIdx": 15,
+      "cycleId": "0048f1fc-015",
+      "recordCount": 100,
+      "scrapeWallMs": 14,
+      "captainTaskId": "403a1467-4b0b-494d-8bc1-5516fdf9e568",
+      "captainIter": 2,
+      "captainSats": 89841,
+      "workerTaskId": "4b189a85-13f9-4ad9-b1ec-eef80ef673a5",
+      "workerSats": 15187,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "bc64ea99393ac396edb73a505c65859c46e25b3d36766ca3bd616e8112832a8d",
+      "lastTxid": "af7bb7829fd4f864be52ec7afeb590fbc363dadbbf16c665c349215a2eb841aa",
+      "manifestSha256": "f1b4ad0bbd45e181519d6e56c728d804c2f18dae55ce0378a96ed058e9a545c7",
+      "synthesisTaskId": "42d4d7ba-c110-434a-83a8-3a4a98760b92",
+      "synthesisSats": 95608,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 200636,
+      "satsPerProof": 2006,
+      "cycleWallMs": 215831,
+      "cycleWallSec": 216
+    },
+    {
+      "cycleIdx": 16,
+      "cycleId": "0048f1fc-016",
+      "recordCount": 100,
+      "scrapeWallMs": 37,
+      "captainTaskId": "3e78f97f-3e1d-4a41-a6b8-540cdff937ca",
+      "captainIter": 2,
+      "captainSats": 115910,
+      "workerTaskId": "b5ad3f2b-b8f0-48a1-aef8-b8b02ec97ecd",
+      "workerSats": 13441,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "e04d5318ec3d5c76fdd77246a55c2789a9e4c534b156d1e70e46ea3cd62cf12c",
+      "lastTxid": "6e856a509bec6d6379046b0ef8a5ecad31a792d080c352095d8e5f74f310bc24",
+      "manifestSha256": "62d764ee39e8c857f5849b2449ee6edde588339c869bcf3f7dd7412f633c2e98",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 129351,
+      "satsPerProof": 1320,
+      "cycleWallMs": 163868,
+      "cycleWallSec": 164
+    },
+    {
+      "cycleIdx": 17,
+      "cycleId": "0048f1fc-017",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "41957fcf-6fc9-4d8b-91ce-05f3b63dd4b6",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "ae2d493a-012d-432d-8140-010acb89cb23",
+      "workerSats": 14904,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "ea131b66d4600433ca69822f4e4b78d93fab0a3d72a38e7ad426d8a1b6500004",
+      "lastTxid": "16ad86bfb90e73d70416ff801880796a2cc2a34a2a709844d6512c0abe0e86fc",
+      "manifestSha256": "fcac4bf2856fa443a2789a456eca9fbfcb2775dcfaf5c950dc664d0bfb0d7c41",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 16704,
+      "satsPerProof": 169,
+      "cycleWallMs": 132399,
+      "cycleWallSec": 132
+    },
+    {
+      "cycleIdx": 18,
+      "cycleId": "0048f1fc-018",
+      "recordCount": 100,
+      "scrapeWallMs": 14,
+      "captainTaskId": "19337e1c-cf7b-4edc-8a8f-728fa62ccaa8",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "ae2d493a-012d-432d-8140-010acb89cb23",
+      "workerSats": 14904,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "ea131b66d4600433ca69822f4e4b78d93fab0a3d72a38e7ad426d8a1b6500004",
+      "lastTxid": "16ad86bfb90e73d70416ff801880796a2cc2a34a2a709844d6512c0abe0e86fc",
+      "manifestSha256": "fcac4bf2856fa443a2789a456eca9fbfcb2775dcfaf5c950dc664d0bfb0d7c41",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 16704,
+      "satsPerProof": 169,
+      "cycleWallMs": 12872,
+      "cycleWallSec": 13
+    },
+    {
+      "cycleIdx": 19,
+      "error": "cycle 0048f1fc-019: worker proof not found before deadline"
+    },
+    {
+      "cycleIdx": 20,
+      "cycleId": "0048f1fc-020",
+      "recordCount": 100,
+      "scrapeWallMs": 14,
+      "captainTaskId": "cc5fe5af-fd4b-459f-aa06-7883a55b9ca2",
+      "captainIter": 2,
+      "captainSats": 108020,
+      "workerTaskId": "c9836650-8551-4983-b554-ca4ad6924665",
+      "workerSats": 15730,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "856a1a51d591dce33de48fc63ebe9d23ba10a6ca4602583cd20cd62ada024d74",
+      "lastTxid": "80136083711c58be7a1c8d3c1f25f2ad271c05c49be35691d0de9cf07beb4f8d",
+      "manifestSha256": "2f99eed2abcef61797ef1d70daf46426f6c3ecbdb662902eb3bf55e91460e0ba",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 123750,
+      "satsPerProof": 1238,
+      "cycleWallMs": 226204,
+      "cycleWallSec": 226
+    },
+    {
+      "cycleIdx": 21,
+      "cycleId": "0048f1fc-021",
+      "recordCount": 100,
+      "scrapeWallMs": 15,
+      "captainTaskId": "3aee7697-3f61-4f4e-80cf-d9f3bce25b36",
+      "captainIter": 2,
+      "captainSats": 113224,
+      "workerTaskId": "c9836650-8551-4983-b554-ca4ad6924665",
+      "workerSats": 15730,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "856a1a51d591dce33de48fc63ebe9d23ba10a6ca4602583cd20cd62ada024d74",
+      "lastTxid": "80136083711c58be7a1c8d3c1f25f2ad271c05c49be35691d0de9cf07beb4f8d",
+      "manifestSha256": "2f99eed2abcef61797ef1d70daf46426f6c3ecbdb662902eb3bf55e91460e0ba",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 128954,
+      "satsPerProof": 1290,
+      "cycleWallMs": 80084,
+      "cycleWallSec": 80
+    },
+    {
+      "cycleIdx": 22,
+      "cycleId": "0048f1fc-022",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "15a57218-9c6e-43c6-8cb4-d99d3cc2856f",
+      "captainIter": 2,
+      "captainSats": 105367,
+      "workerTaskId": "0fa950cc-077e-4cb6-a046-3835252704a0",
+      "workerSats": 13040,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "ff5335ec1f5e00387fb22a9db0c91a774edb165caf994800af15a29f81fba72d",
+      "lastTxid": "d1662afb737360f386778812f7ec53986f5078fdd011ef869a6dae455281dfea",
+      "manifestSha256": "9498ce71f4ae8f8b9f2fbd5808c6a5b28577a124bdbd72e973c181d05707bf3f",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 118407,
+      "satsPerProof": 1184,
+      "cycleWallMs": 155898,
+      "cycleWallSec": 156
+    },
+    {
+      "cycleIdx": 23,
+      "cycleId": "0048f1fc-023",
+      "recordCount": 100,
+      "scrapeWallMs": 20,
+      "captainTaskId": "4ee1765c-309b-4b9d-9054-eb36056db05f",
+      "captainIter": 2,
+      "captainSats": 107245,
+      "workerTaskId": "9e4946f9-ca19-4fd2-8d85-9b8765ee6265",
+      "workerSats": 62736,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "a7f512b9a59c070275329dc547361c665618116350e43965ef775c6826cd2a81",
+      "lastTxid": "d6963e5e62beefaf8e17fa70ab9ce79ba17cb09e2fa052adb77ed9a8277b379c",
+      "manifestSha256": "3b32080dba1aa8c3d7ba6ad91de2660bb172bc68759a2c090cb0fa111cf4df80",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 169981,
+      "satsPerProof": 1717,
+      "cycleWallMs": 115893,
+      "cycleWallSec": 116
+    },
+    {
+      "cycleIdx": 24,
+      "cycleId": "0048f1fc-024",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "7093c574-f073-4287-8074-0d5b54163b83",
+      "captainIter": 2,
+      "captainSats": 112298,
+      "workerTaskId": "9e4946f9-ca19-4fd2-8d85-9b8765ee6265",
+      "workerSats": 62736,
+      "proofsCreated": 99,
+      "proofErrors": 1,
+      "firstTxid": "a7f512b9a59c070275329dc547361c665618116350e43965ef775c6826cd2a81",
+      "lastTxid": "d6963e5e62beefaf8e17fa70ab9ce79ba17cb09e2fa052adb77ed9a8277b379c",
+      "manifestSha256": "3b32080dba1aa8c3d7ba6ad91de2660bb172bc68759a2c090cb0fa111cf4df80",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 99,
+      "totalSats": 175034,
+      "satsPerProof": 1768,
+      "cycleWallMs": 80522,
+      "cycleWallSec": 81
+    },
+    {
+      "cycleIdx": 25,
+      "cycleId": "0048f1fc-025",
+      "recordCount": 100,
+      "scrapeWallMs": 14,
+      "captainTaskId": "3c5ea20d-8e3c-4b8c-bb55-5449a51d69ce",
+      "captainIter": 2,
+      "captainSats": 111471,
+      "workerTaskId": "8780f6a6-01e0-40b8-990c-948645f90adc",
+      "workerSats": 7197,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "98014c60bb3bd18d4f7af53e41f93196d94824d069a29e898ce72123348e6261",
+      "lastTxid": "b4440ff9b8e34e882f3b6e5ececa110a1e99b31e514ecb1039a5d719bbb5a28f",
+      "manifestSha256": "abda0f466c17631fab0fb8a1eb29defc583a7b02a6c2b2ecb8b61ec15706b209",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 118668,
+      "satsPerProof": 1187,
+      "cycleWallMs": 138268,
+      "cycleWallSec": 138
+    },
+    {
+      "cycleIdx": 26,
+      "cycleId": "0048f1fc-026",
+      "recordCount": 100,
+      "scrapeWallMs": 20,
+      "captainTaskId": "8123080c-af2b-4172-a649-3b38fa1c7d05",
+      "captainIter": 2,
+      "captainSats": 111405,
+      "workerTaskId": "6cfe82f4-84d7-40ea-b23b-5a2e4058f784",
+      "workerSats": 56970,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "2aed9eac4c965a5a26d1a7c0c3ea8a9477fd74bfc963dd051aff23c4101212aa",
+      "lastTxid": "fb9bc4ee110f0818f05ddbf95f3cccad3485e3a228726d44d64ab5263641410b",
+      "manifestSha256": "93890b356c0da7a2f796be671f862b7e96694ace4398ff18643345b75ea9cd8e",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 168375,
+      "satsPerProof": 1718,
+      "cycleWallMs": 125937,
+      "cycleWallSec": 126
+    },
+    {
+      "cycleIdx": 27,
+      "cycleId": "0048f1fc-027",
+      "recordCount": 100,
+      "scrapeWallMs": 16,
+      "captainTaskId": "adf5f641-d71c-4669-b793-c319f5d9abc4",
+      "captainIter": 2,
+      "captainSats": 104747,
+      "workerTaskId": "604af67b-6b76-4ae3-b6f2-30f5590eb2de",
+      "workerSats": 65120,
+      "proofsCreated": 98,
+      "proofErrors": 2,
+      "firstTxid": "063a98a3fc82aca2924c4356344ed06f3f93da440f35dd6c1076b70296a66cad",
+      "lastTxid": "d0aa27f8af6d1ff0a04df62b1e384a6c24acc4f898aa52fc7801276edcf3d954",
+      "manifestSha256": "322f0ef4893922bc595ab6b46b35721a36eaf3eab127e07fb459904e44d50571",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 98,
+      "totalSats": 169867,
+      "satsPerProof": 1733,
+      "cycleWallMs": 214474,
+      "cycleWallSec": 214
+    },
+    {
+      "cycleIdx": 28,
+      "cycleId": "0048f1fc-028",
+      "recordCount": 100,
+      "scrapeWallMs": 21,
+      "captainTaskId": "5f07b6c7-9a71-4e4c-b478-2b11c9212f1b",
+      "captainIter": 2,
+      "captainSats": 107842,
+      "workerTaskId": "df079845-678b-44ad-92b6-be66ee8cbee9",
+      "workerSats": 65325,
+      "proofsCreated": 95,
+      "proofErrors": 5,
+      "firstTxid": "a1c853ef4a3c5d0296b2bbe4313ef07b68075cdcf0c029ba6f72a0106c0acbdc",
+      "lastTxid": "a63fb7aced9af0b713d50309c9189b3702b5890256a2217a0cb7861142bb97e6",
+      "manifestSha256": "766e9845e653f6e7fcfa577e95231e23cd6e33f410ade00cd9d2889fd45288fe",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 95,
+      "totalSats": 173167,
+      "satsPerProof": 1823,
+      "cycleWallMs": 103699,
+      "cycleWallSec": 104
+    },
+    {
+      "cycleIdx": 29,
+      "cycleId": "0048f1fc-029",
+      "recordCount": 100,
+      "scrapeWallMs": 28,
+      "captainTaskId": "0f4cb482-dacb-46dc-93d1-2892b6426ddb",
+      "captainIter": 1,
+      "captainSats": 1800,
+      "workerTaskId": "544cc03e-3fae-4638-ba8d-afad7e61a3e4",
+      "workerSats": 65145,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "0488ef805f1d6b3ed822255146f6895d911995340148a45c39a69c351577068b",
+      "lastTxid": "0ca3fb578a66e818ddf4ca5da7af05c31b4b405da3e1d1ad1b0fc1b0a2189221",
+      "manifestSha256": "38e6eb03ec616d60b9c9ea47347cc4460beb1e0a253346469d73aaa81c8af08d",
+      "synthesisTaskId": null,
+      "synthesisSats": 0,
+      "nanostoreUrl": null,
+      "txidsUrl": null,
+      "annotatedCount": 100,
+      "totalSats": 66945,
+      "satsPerProof": 669,
+      "cycleWallMs": 235858,
+      "cycleWallSec": 236
+    },
+    {
+      "cycleIdx": 30,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 31,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 32,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 33,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 34,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 35,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 36,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 37,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 38,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 39,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 40,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 41,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 42,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 43,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 44,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 45,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 46,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 47,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 48,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 49,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 50,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 51,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 52,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 53,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 54,
+      "error": "Wallet getPublicKey: Permission denied."
+    },
+    {
+      "cycleIdx": 55,
+      "error": "socket hang up"
+    },
+    {
+      "cycleIdx": 56,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 57,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 58,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 59,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 60,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 61,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 62,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 63,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 64,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 65,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 66,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 67,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 68,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 69,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 70,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 71,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 72,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 73,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 74,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 75,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 76,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 77,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 78,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 79,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 80,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 81,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 82,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 83,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 84,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 85,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 86,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 87,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 88,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 89,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 90,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 91,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 92,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 93,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 94,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 95,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 96,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 97,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 98,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    },
+    {
+      "cycleIdx": 99,
+      "error": "connect ECONNREFUSED 127.0.0.1:3321"
+    }
+  ]
+}

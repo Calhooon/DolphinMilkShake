@@ -1,0 +1,13 @@
+{
+  "cycleId": "24e40cb2-000",
+  "runNonce": "24e40cb2",
+  "cycleIdx": 0,
+  "recordCount": 100,
+  "proofsCreated": 100,
+  "errors": 0,
+  "firstTxid": "b91944cb5d45ee55f8e68499971cee322a1e4943abe7b1ef51d78e015e38ace4",
+  "lastTxid": "af90f9e2ef614bbb1ad20de9669794e814fc92d1bf7a31ee3914281938a9aba1",
+  "manifestSha256": "57b608849346aaedf4b9871ada8dfb0708199a71be5e62c4554a7a2d42b116b4",
+  "txidFile": "/tmp/dolphinsense-shared/worldnews/cycle-307a7fd4-000/records.jsonl.txids",
+  "createdAt": "2026-04-14T20:52:51.133Z"
+}

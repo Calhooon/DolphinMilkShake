@@ -1,0 +1,23 @@
+{
+  "runNonce": "b0ce9c14",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 0,
+  "completedCycles": 1,
+  "inProgress": false,
+  "synthesisEnabled": false,
+  "totalSats": 0,
+  "totalProofs": 0,
+  "satsPerProofAvg": null,
+  "avgCycleSats": null,
+  "avgCycleWallSec": null,
+  "totalWallSec": 910,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "error": "cycle b0ce9c14-000: worker proof not found before deadline"
+    }
+  ]
+}

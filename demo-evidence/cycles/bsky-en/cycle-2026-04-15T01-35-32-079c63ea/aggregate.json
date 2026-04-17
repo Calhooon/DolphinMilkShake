@@ -1,0 +1,42 @@
+{
+  "runNonce": "079c63ea",
+  "mode": "POSTS_ONLY",
+  "batchCap": 100,
+  "soakCycles": 1,
+  "successCycles": 1,
+  "synthesisEnabled": true,
+  "totalSats": 440756,
+  "totalProofs": 100,
+  "satsPerProofAvg": 4408,
+  "avgCycleSats": 440756,
+  "avgCycleWallSec": 350,
+  "totalWallSec": 361,
+  "fatalError": null,
+  "cycles": [
+    {
+      "cycleIdx": 0,
+      "cycleId": "079c63ea-000",
+      "recordCount": 100,
+      "scrapeWallMs": 12,
+      "captainTaskId": "d3c80c52-f7df-4c80-9885-62dd8bb4ec54",
+      "captainIter": 2,
+      "captainSats": 99053,
+      "workerTaskId": "2cffd6c8-9398-45b5-aebc-ab88b9799e57",
+      "workerSats": 13411,
+      "proofsCreated": 100,
+      "proofErrors": 0,
+      "firstTxid": "99e0e6f6e21e5dbf5cbceea405f87c9ee80ead6a01bf350b9be6eab62627d9b3",
+      "lastTxid": "3e26ee931a1b8294ee2e87513f41ed68c2a079e7b6dfd8f297e455a6605e6294",
+      "manifestSha256": "2d994be1d497bc4befedf6855891163cf09159f7417e586726631acd16a1f238",
+      "synthesisTaskId": "c121113b-bb70-4df1-8d36-896d3f762d12",
+      "synthesisSats": 328292,
+      "nanostoreUrl": "https://storage.googleapis.com/prod-uhrp/cdn/MiMVrLBqUK7J4YWAJRN9iC",
+      "txidsUrl": "https://storage.googleapis.com/prod-uhrp/cdn/KBg4PLwTG7H5wSM2gD2fGo",
+      "annotatedCount": 100,
+      "totalSats": 440756,
+      "satsPerProof": 4408,
+      "cycleWallMs": 350239,
+      "cycleWallSec": 350
+    }
+  ]
+}
