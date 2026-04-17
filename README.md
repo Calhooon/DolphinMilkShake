@@ -24,7 +24,7 @@ Dolphinsense is the opposite — every agent thought is a transaction, every cit
 ## Reproduce the dashboard in 30 seconds
 
 ```bash
-git clone https://github.com/Calgooon/DolphinMilkShake.git
+git clone https://github.com/Calhooon/DolphinMilkShake.git
 cd DolphinMilkShake
 npm install                # only needs node stdlib, but picks up package-lock
 node ui/server.js
