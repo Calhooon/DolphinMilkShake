@@ -4,6 +4,10 @@
 >
 > **1.6M+ on-chain transactions. Every one verifiable.**
 
+## 📺 Demo video
+
+**[Watch the demo →](https://drive.google.com/file/d/1s2X742VS-sWmm6JhXt3lYGP2Dyp0GJ5A/view?usp=sharing)**
+
 ## What this is
 
 The current AI stack is a black box: you pay a subscription, send a prompt, get an answer. You can't audit what it did, what it cost, or what it cited.
