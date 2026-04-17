@@ -161,7 +161,7 @@ treats it as the canonical render source and uses every field.
 
 - `/tmp/dolphinsense-shared/` — fleet-generated evidence, read-only from UI.
 - `/tmp/dolphinsense-firehose/` — feeder evidence, read-only from UI.
-- `~/bsv/rust-bsv-worm/test-workspaces/fleet/` — agent session transcripts,
+- `~/bsv/dolphin-milk/test-workspaces/fleet/` — agent session transcripts,
   read-only from UI.
 - `~/bsv/wallets/fleet/*.env` — wallet daemon config, DO NOT READ (secrets)
   and DO NOT WRITE.

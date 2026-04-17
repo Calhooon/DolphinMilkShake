@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # launch.sh -- Start the DolphinSense agent pod
 #
-# Launches 4 rust-bsv-worm instances (Captain, Coral, Reef, Pearl) with
+# Launches 4 dolphin-milk instances (Captain, Coral, Reef, Pearl) with
 # their own wallets, ports, configs, and system prompts.
 #
 # Usage:
@@ -13,7 +13,7 @@
 #   ./scripts/launch.sh logs captain # Tail Captain's logs
 #
 # Prerequisites:
-#   - dolphin-milk binary in PATH (from rust-bsv-worm)
+#   - dolphin-milk binary in PATH (from dolphin-milk)
 #   - bsv-wallet binary in PATH
 #   - Python 3 for the classifier (tools/classifier.py)
 

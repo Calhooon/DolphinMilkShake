@@ -40,7 +40,7 @@ Env vars (all optional):
 - `POLL_MS` — file poll interval (default 500ms)
 - `LANES_FILE` — default `../fleet/lanes.json`
 - `INVENTORY_FILE` — default `~/bsv/wallets/fleet/INVENTORY.json`
-- `FLEET_WORKSPACE` — default `~/bsv/rust-bsv-worm/test-workspaces/fleet`
+- `FLEET_WORKSPACE` — default `~/bsv/dolphin-milk/test-workspaces/fleet`
 - `SHARED_DIR` — default `/tmp/dolphinsense-shared`
 - `FIREHOSE_DIR` — default `/tmp/dolphinsense-firehose`
 

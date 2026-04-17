@@ -47,7 +47,7 @@ const { authGet, authPost } = require('./lib/auth');
 // Lane-aware config — reads LANE_ID + lanes.json + INVENTORY.json
 // -----------------------------------------------------------------------------
 //
-// This is dolphinmilkshake's fleet version of rust-bsv-worm's
+// This is dolphinmilkshake's fleet version of dolphin-milk's
 // tests/multi-worm/test_cycle_v2.js. Each invocation runs ONE lane's cycle
 // loop, identified by LANE_ID env var (or --lane <id> CLI arg).
 //
@@ -133,8 +133,8 @@ const ENABLE_SYNTHESIS = process.env.ENABLE_SYNTHESIS !== '0';
 // after the 30-lane smoke test showed 13/16 nanostore uploads failing.
 const SKIP_NANOSTORE_UPLOAD = process.env.SKIP_NANOSTORE_UPLOAD === '1';
 // SYNTHESIS_EVERY_N: amortization schedule. Synthesis runs only when
-// (cycleIdx % SYNTHESIS_EVERY_N === 0). Default 25 per PLAN-C-SCALE.md
-// (1-in-25 cycles). Value 1 means "every cycle" (pre-amortization behavior).
+// (cycleIdx % SYNTHESIS_EVERY_N === 0). Default 25 (1-in-25 cycles).
+// Value 1 means "every cycle" (pre-amortization behavior).
 // Value 0 has no effect — ENABLE_SYNTHESIS=0 is the dedicated off switch.
 // For single-cycle runs (SOAK_CYCLES=1), cycleIdx=0 always matches so
 // synthesis runs on the first cycle regardless of SYNTHESIS_EVERY_N.

@@ -4,7 +4,7 @@
 # Each agent submits a PushDrop transaction to tm_agent, making it
 # discoverable by other agents via ls_agent lookups.
 #
-# This script is a placeholder until rust-bsv-worm#309 (overlay integration)
+# This script is a placeholder until dolphin-milk#309 (overlay integration)
 # is implemented. Once that lands, agents will self-register on startup.
 #
 # Usage:
@@ -62,7 +62,7 @@ check_overlay() {
 #   2. Agent wraps it in a BEEF envelope
 #   3. POST /submit with topic=tm_agent and the BEEF tx
 #
-# Until rust-bsv-worm#309 is implemented, this script verifies the agent
+# Until dolphin-milk#309 is implemented, this script verifies the agent
 # is running and prints what the registration payload WOULD look like.
 register_agent() {
     local name="$1"
@@ -89,7 +89,7 @@ print(data.get('identity_key', 'unknown'))
     log "$name endpoint: $endpoint"
     log "$name capabilities: $capabilities"
 
-    # TODO (rust-bsv-worm#309): Replace this with actual PushDrop registration
+    # TODO (dolphin-milk#309): Replace this with actual PushDrop registration
     # The registration transaction should contain:
     #   Field 0: identity_key (33 bytes, compressed pubkey)
     #   Field 1: endpoint URL (UTF-8)
@@ -102,7 +102,7 @@ print(data.get('identity_key', 'unknown'))
     #   X-Topics: tm_agent
     #   Body: BEEF-encoded transaction
 
-    warn "$name: Registration stub -- full PushDrop registration requires rust-bsv-worm#309"
+    warn "$name: Registration stub -- full PushDrop registration requires dolphin-milk#309"
     ok "$name: Would register at ${OVERLAY_URL} with tm_agent topic"
 }
 

@@ -5,7 +5,7 @@
 # Loops through ~/bsv/wallets/fleet/INVENTORY.json and calls fund-wallet.sh
 # for each entry with role-specific amounts + split counts.
 #
-# Sizing (per WALLETS.md + E20d measured numbers):
+# Sizing (measured numbers from 2026-04 fleet runs):
 #   - captain:    10M sats, split 10  → 1M/UTXO   (handles ~25 cycles/hr × 91K sats)
 #   - worker:      5M sats, split 20  → 250K/UTXO (handles ~2500 createActions/hr)
 #   - synthesis:   3M sats, split 10  → 300K/UTXO (handles ~1 synth/hr amortized)
