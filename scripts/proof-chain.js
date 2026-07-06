@@ -76,7 +76,8 @@ const BATCH_CAP = parseInt(process.env.BATCH_CAP || '500', 10);
 const SEED_SATS = parseInt(process.env.SEED_SATS || '100000', 10);
 
 const ARC_URL = process.env.ARC_URL || 'https://api.taal.com/arc';
-const TAAL_API_KEY = process.env.TAAL_API_KEY || process.env.MAIN_TAAL_API_KEY || 'REDACTED-TAAL-KEY';
+const TAAL_API_KEY = process.env.TAAL_API_KEY || process.env.MAIN_TAAL_API_KEY;
+if (!TAAL_API_KEY) throw new Error('TAAL_API_KEY (or MAIN_TAAL_API_KEY) must be set');
 
 const RUN_NONCE = crypto.randomBytes(4).toString('hex');
 const FLEET_WORKSPACE_ROOT = path.join(RUST_BSV_WORM_DIR, 'test-workspaces/fleet');
